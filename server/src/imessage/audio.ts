@@ -141,11 +141,21 @@ export type VoiceReplyDeps = {
   schedule?: (fn: () => void, ms: number) => void;
   cleanupAfterMs?: number;
   now?: () => number;
+  // "caf" sends the reply in the format a phone's own voice notes use (Opus in a CAF file named
+  // "Audio Message.caf"); "mp3" sends the file as ElevenLabs returned it. If converting to caf
+  // fails, the mp3 is sent instead.
+  format?: "mp3" | "caf";
+  convert?: (inputPath: string, outputPath: string) => Promise<void>;
   // After this many failed spoken replies in a row, stop trying for `pauseMs`. Each try spends
   // speech credits and leaves a failed bubble in the conversation on the Mac.
   maxFailures?: number;
   pauseMs?: number;
 };
+
+// MP3 to the Opus-in-CAF format iMessage voice notes use, with macOS's own converter.
+export function convertToVoiceNote(input: string, output: string, exec: Exec = execFile as unknown as Exec): Promise<void> {
+  return run(exec, "/usr/bin/afconvert", ["-f", "caff", "-d", "opus@24000", "-c", "1", input, output]);
+}
 
 // Messages could not read the file from ~/Library/Caches (the send was accepted, then nothing arrived).
 // ~/Pictures is a place the Messages app can read.
@@ -163,6 +173,7 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
       setTimeout(fn, ms).unref();
     });
   const cleanupAfterMs = deps.cleanupAfterMs ?? 120_000;
+  const convertFn = deps.convert ?? ((i: string, o: string) => convertToVoiceNote(i, o));
   let preferred = 0; // the method that last worked
   const now = deps.now ?? Date.now;
   const maxFailures = deps.maxFailures ?? 2;
@@ -175,9 +186,9 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
   async function sweep(): Promise<void> {
     try {
       for (const name of await readdir(dir)) {
-        if (!/^airlock-.*\.mp3$/.test(name)) continue;
+        if (!name.startsWith("airlock-")) continue; // our files, and the folders of voice-note replies
         const f = join(dir, name);
-        if (Date.now() - (await stat(f)).mtimeMs > 10 * 60_000) await rm(f, { force: true });
+        if (Date.now() - (await stat(f)).mtimeMs > 10 * 60_000) await rm(f, { recursive: true, force: true });
       }
     } catch {
       /* nothing to sweep */
@@ -187,6 +198,7 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
   return async function voiceReply(handle: string, replyText: string): Promise<void> {
     if (now() < pausedUntil) return; // paused after repeated failures; the text reply already went out
     let file: string | null = null;
+    const cleanupPaths: string[] = [];
     let delivered = false;
     try {
       const spoken = toSpoken(replyText);
@@ -194,8 +206,25 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
       await mkdir(dir, { recursive: true });
       await sweep();
       const audio = await speakFn(spoken);
-      file = join(dir, `airlock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp3`);
-      await writeFile(file, audio, { mode: 0o600 });
+      const id = `airlock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const mp3 = join(dir, `${id}.mp3`);
+      await writeFile(mp3, audio, { mode: 0o600 });
+      cleanupPaths.push(mp3);
+      file = mp3;
+      if ((deps.format ?? "mp3") === "caf") {
+        // The format of a phone's own voice notes, in a folder of its own so the file can be named
+        // "Audio Message.caf" every time.
+        const folder = join(dir, id);
+        cleanupPaths.push(folder);
+        try {
+          await mkdir(folder, { recursive: true });
+          const caf = join(folder, "Audio Message.caf");
+          await convertFn(mp3, caf);
+          file = caf;
+        } catch {
+          log("could not convert the reply to a voice-note file, sending the mp3 instead");
+        }
+      }
       const count = Math.max(1, deps.strategies ?? 1);
       let result: DeliveryResult | null = null;
       let handedOver = false;
@@ -240,10 +269,7 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
         log(`spoken replies paused for ${Math.round(pauseMs / 60_000)} minutes after repeated failures; text replies are unaffected`);
       }
       // Not deleted at once: Messages may still be reading the file when send returns.
-      if (file) {
-        const f = file;
-        schedule(() => void rm(f, { force: true }), cleanupAfterMs);
-      }
+      for (const p of cleanupPaths) schedule(() => void rm(p, { recursive: true, force: true }), cleanupAfterMs);
     }
   };
 }

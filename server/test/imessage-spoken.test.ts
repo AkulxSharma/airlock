@@ -1,9 +1,9 @@
-import { existsSync, mkdtempSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { SEND_FILE_SCRIPT, SEND_FILE_SCRIPTS, createOsascriptFileSender, openDeliveryChecker } from "../src/imessage/adapters.js";
-import { createVoiceReplier, toSpoken } from "../src/imessage/audio.js";
+import { convertToVoiceNote, createVoiceReplier, toSpoken } from "../src/imessage/audio.js";
 
 const FULL = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
 const CONFIRM = `Risk signal: MEDIUM (score 40).\n- [medium] Contract code contains DELEGATECALL, which runs other code with this contract's storage and funds.\n- [medium] Contract stores an implementation or admin address (EIP-1967). The logic can be swapped later.\nIn plain words: The logic behind this contract can be swapped after you check it.\nTo send: 0.005 test ETH to ${FULL}.\nThis is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in 60 seconds.`;
@@ -486,5 +486,98 @@ describe("voice replier: pauses after repeated failures", () => {
     const t = make(() => ({ status: "error", code: 22 }), { maxFailures: 99 });
     for (let i = 0; i < 4; i++) await t.reply("h", say);
     expect(t.logs.filter((l) => /^hint:/.test(l))).toHaveLength(1);
+  });
+});
+
+describe("voice replier: voice-note format", () => {
+  function make(over: Partial<Parameters<typeof createVoiceReplier>[0]> = {}) {
+    const dir = mkdtempSync(join(tmpdir(), "airlock-caf-"));
+    dirs2.push(dir);
+    const logs: string[] = [];
+    const scheduled: Array<() => void> = [];
+    const sent: string[] = [];
+    const verified: string[] = [];
+    const converts: Array<[string, string]> = [];
+    const reply = createVoiceReplier({
+      dir,
+      speak: async () => new Uint8Array([1, 2, 3]),
+      format: "caf",
+      convert: async (i, o) => { converts.push([i, o]); writeFileSync(o, "caf"); },
+      sendFile: async (_h, p) => { sent.push(p); },
+      mark: () => 0,
+      verify: async (n) => { verified.push(n); return { status: "sent" }; },
+      log: (l) => logs.push(l),
+      schedule: (fn) => scheduled.push(fn),
+      ...over,
+    });
+    return { reply, dir, logs, scheduled, sent, verified, converts };
+  }
+  const say = "Refused. Risk signal is HIGH, so Airlock will not send.";
+
+  it("converts the mp3 and sends a file named Audio Message.caf, checking delivery by that name", async () => {
+    const t = make();
+    await t.reply("h", say);
+    expect(t.converts).toHaveLength(1);
+    expect(t.converts[0][0]).toMatch(/airlock-\d+-\w+\.mp3$/);
+    expect(t.converts[0][1]).toMatch(/airlock-\d+-\w+\/Audio Message\.caf$/);
+    expect(t.sent).toEqual([t.converts[0][1]]);
+    expect(t.verified).toEqual(["Audio Message.caf"]);
+    expect(t.logs).toEqual(["spoken reply delivered"]);
+  });
+
+  it("deletes both the mp3 and the folder later", async () => {
+    const t = make();
+    await t.reply("h", say);
+    expect(t.scheduled).toHaveLength(2);
+    expect(existsSync(t.converts[0][0])).toBe(true);
+    t.scheduled.forEach((fn) => fn());
+    await new Promise((r) => setTimeout(r, 40));
+    expect(existsSync(t.converts[0][0])).toBe(false);
+    expect(existsSync(t.converts[0][1])).toBe(false);
+  });
+
+  it("falls back to the mp3 when the conversion fails, and says so", async () => {
+    const t = make({ convert: async () => { throw new Error("afconvert failed"); } });
+    await t.reply("h", say);
+    expect(t.logs[0]).toBe("could not convert the reply to a voice-note file, sending the mp3 instead");
+    expect(t.sent[0]).toMatch(/\.mp3$/);
+    expect(t.verified[0]).toMatch(/^airlock-.*\.mp3$/);
+    expect(t.scheduled).toHaveLength(2); // the mp3 and the empty folder are both cleaned up
+  });
+
+  it("the default format is mp3 and never converts", async () => {
+    const t = make({ format: undefined });
+    await t.reply("h", say);
+    expect(t.converts).toHaveLength(0);
+    expect(t.sent[0]).toMatch(/\.mp3$/);
+  });
+
+  it("removes old leftover reply folders as well as files", async () => {
+    const t = make();
+    const oldFolder = join(t.dir, "airlock-1-oldfolder");
+    mkdirSync(oldFolder);
+    writeFileSync(join(oldFolder, "Audio Message.caf"), "x");
+    const longAgo = new Date(Date.now() - 20 * 60_000);
+    utimesSync(oldFolder, longAgo, longAgo);
+    await t.reply("h", say);
+    expect(existsSync(oldFolder)).toBe(false);
+  });
+});
+
+describe("convertToVoiceNote (really converts, on macOS)", () => {
+  const can = process.platform === "darwin" && existsSync("/usr/bin/afconvert") && existsSync("/usr/bin/say");
+  it.skipIf(!can)("turns audio into Opus in a CAF container at 24 kHz mono, like a phone's voice note", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const dir = mkdtempSync(join(tmpdir(), "airlock-conv-"));
+    dirs2.push(dir);
+    execFileSync("/usr/bin/say", ["-o", join(dir, "in.aiff"), "Airlock audio test."]);
+    await convertToVoiceNote(join(dir, "in.aiff"), join(dir, "Audio Message.caf"));
+    const info = execFileSync("/usr/bin/afinfo", [join(dir, "Audio Message.caf")]).toString();
+    expect(info).toMatch(/File type ID:\s+caff/);
+    expect(info).toMatch(/1 ch,\s+24000 Hz, opus/);
+  });
+  it("rejects when the converter fails", async () => {
+    const exec = ((_f: string, _a: string[], cb: (e: Error | null, o: string, s: string) => void) => cb(new Error("bad"), "", "")) as never;
+    await expect(convertToVoiceNote("/x", "/y", exec)).rejects.toThrow("bad");
   });
 });
