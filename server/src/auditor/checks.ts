@@ -13,6 +13,18 @@ const MINIMAL_PROXY_HEX_LENGTH = (10 + 20 + 15) * 2;
 
 export const TINY_CODE_BYTES = 32;
 
+// Every finding id the auditor can produce. The Gemini reply check uses this list to
+// catch a reply that mentions a finding the audit did not report.
+export const FINDING_IDS = [
+  "no-code",
+  "selfdestruct",
+  "delegatecall",
+  "callcode",
+  "minimal-proxy",
+  "upgradeable-proxy",
+  "tiny-code",
+] as const;
+
 export function normalizedHex(hex: string): string {
   return hex.trim().replace(/^0x/i, "").toLowerCase();
 }
