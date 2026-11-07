@@ -31,6 +31,7 @@ export function auditBytecode(
     checkCallcode(ops),
     checkMinimalProxy(hex),
     checkTinyCode(code.length, minimalProxy),
+    ...extraFindings,
   ].filter((f): f is Finding => f !== null);
 
   const riskScore = scoreFindings(findings);
