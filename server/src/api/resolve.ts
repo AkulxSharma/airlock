@@ -10,9 +10,23 @@ export type ResolveResult = { address: `0x${string}` } | { error: string };
 
 // Turns what the user typed into a real 0x address, or an error.
 // An error is treated as a refusal by the gate, never as "let it through".
-export async function resolveTarget(input: string, client: EnsClient): Promise<ResolveResult> {
+// Demo names like drainer.demo map to the Sepolia demo contracts. They use a .demo suffix,
+// never .eth, so they can not shadow a real ENS name.
+export type Aliases = Record<string, string>;
+
+export async function resolveTarget(
+  input: string,
+  client: EnsClient,
+  aliases: Aliases = {},
+): Promise<ResolveResult> {
   const text = input.trim();
   if (text === "") return { error: "No address or name was given." };
+
+  if (/\.demo$/i.test(text)) {
+    const hit = aliases[text.toLowerCase()];
+    if (hit && isAddress(hit)) return { address: getAddress(hit) };
+    return { error: `${text} is not a known demo name.` };
+  }
 
   if (/^0x/i.test(text)) {
     // strict: a mixed-case address must carry a valid EIP-55 checksum.
