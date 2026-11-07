@@ -1,3 +1,5 @@
+import { extractWakeCommand } from "../../../voice/wake.js";
+
 // Pure helpers for the iMessage bridge: reading message text out of the Messages database
 // and deciding who is allowed to use the line.
 
@@ -34,9 +36,13 @@ export function extractText(blob: Uint8Array | null | undefined): string | null 
 }
 
 // The text of a message row: the plain column when present, else the decoded blob.
+// An attachment shows up as the object-replacement character U+FFFC, which is not text.
+const clean = (s: string) => s.replace(/\uFFFC/g, "").trim();
+
 export function messageText(text: string | null, attributedBody: Uint8Array | null): string {
-  if (text && text.trim() !== "") return text.trim();
-  return (extractText(attributedBody) ?? "").trim();
+  const plain = text ? clean(text) : "";
+  if (plain !== "") return plain;
+  return clean(extractText(attributedBody) ?? "");
 }
 
 // Phone numbers compare by their digits (last 10 when long enough, so +1 prefixes match);
@@ -72,4 +78,15 @@ export function maskHandle(handle: string): string {
     return `${user.slice(0, 1)}***@${domain}`;
   }
   return handle.length > 4 ? `***${handle.slice(-4)}` : "***";
+}
+
+// The wake word ("Airlock" or "Hey Airlock", any case) is required to START anything. Returns what
+// was said after it ("" if only the wake word was said), or null if the message is not for us.
+// A message that only mentions a domain like airlock.eth does not count as saying the name.
+export function matchWake(text: string): string | null {
+  const { woke, command } = extractWakeCommand(text);
+  if (!woke) return null;
+  const domainOnly =
+    /\bair[\s-]?lock\.[a-z0-9]/i.test(text) && !/\bair[\s-]?lock(?![.\w-])/i.test(text);
+  return domainOnly ? null : command;
 }

@@ -3,6 +3,7 @@
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
+import { createVoiceTranscriber } from "./audio.js";
 import { createFileCursor, createHttpApi, createOsascriptSender, openMessagesDb } from "./adapters.js";
 import { createBridge } from "./bridge.js";
 import { parseAllowlist } from "./text.js";
@@ -21,7 +22,7 @@ if (!allowlist.anyone && allowlist.handles.size === 0) {
   process.exit(1);
 }
 if (allowlist.anyone) {
-  console.warn("WARNING: IMESSAGE_ALLOWLIST=* lets anyone who texts this line request a testnet transfer (capped).");
+  console.warn("IMESSAGE_ALLOWLIST=*: anyone may text this line, but it only answers messages that say \"Airlock\" or \"Hey Airlock\" (plus a YES or NO to a confirmation it asked for).");
 }
 
 const dbPath = env.IMESSAGE_DB_PATH || `${homedir()}/Library/Messages/chat.db`;
@@ -43,6 +44,14 @@ const send = dryRun
   ? async (handle: string, text: string) => console.log(`[dry run] would reply (${text.length} characters):\n${text}\n`)
   : realSend;
 
+// Voice notes: on when an ElevenLabs key is set, unless IMESSAGE_VOICE=off.
+const voiceOn = env.IMESSAGE_VOICE !== "off" && Boolean(env.ELEVENLABS_API_KEY?.trim());
+console.log(
+  voiceOn
+    ? "Voice notes: on (short notes from allowed senders are transcribed by ElevenLabs, only to check for the wake word)"
+    : "Voice notes: off (set ELEVENLABS_API_KEY in airlock/.env to turn on)",
+);
+
 const bridge = createBridge({
   source,
   send,
@@ -51,6 +60,9 @@ const bridge = createBridge({
   allowlist,
   log: (line) => console.log(`${new Date().toISOString()} ${line}`),
   maxPerMinute: Number(env.IMESSAGE_MAX_PER_MINUTE) || 8,
+  maxGlobalPerMinute: Number(env.IMESSAGE_MAX_GLOBAL_PER_MINUTE) || 20,
+  maxVoicePerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
+  transcribe: voiceOn ? createVoiceTranscriber({ log: (line) => console.log(`${new Date().toISOString()} ${line}`) }) : undefined,
 });
 
 console.log(`Airlock iMessage bridge running${dryRun ? " (dry run)" : ""}. Press Ctrl+C to stop.`);

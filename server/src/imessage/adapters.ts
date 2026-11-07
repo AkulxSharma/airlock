@@ -1,17 +1,26 @@
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { AirlockApi, CursorStore, InboundMessage, MessageSource, ReplySender } from "./bridge.js";
+import type { AirlockApi, AirlockReply, CursorStore, InboundMessage, MessageSource, ReplySender } from "./bridge.js";
 import { messageText } from "./text.js";
 
 // --- reads inbound texts from the Messages database, read-only ---------------------------
 
-type Row = { ROWID: number; text: string | null; attributedBody: Uint8Array | null; handle: string | null };
+type Row = {
+  ROWID: number;
+  text: string | null;
+  attributedBody: Uint8Array | null;
+  handle: string | null;
+  audioFile: string | null;
+};
 
 // Only incoming, one-to-one, non-reaction messages. Group chats (cache_roomnames set) and
 // tapbacks (associated_message_type not 0) are skipped.
 const SINCE_SQL = `
-  SELECT m.ROWID AS ROWID, m.text AS text, m.attributedBody AS attributedBody, h.id AS handle
+  SELECT m.ROWID AS ROWID, m.text AS text, m.attributedBody AS attributedBody, h.id AS handle,
+    (SELECT a.filename FROM message_attachment_join j JOIN attachment a ON a.ROWID = j.attachment_id
+      WHERE j.message_id = m.ROWID AND (a.mime_type LIKE 'audio/%' OR a.uti = 'com.apple.coreaudio-format')
+      ORDER BY a.ROWID LIMIT 1) AS audioFile
   FROM message m
   LEFT JOIN handle h ON m.handle_id = h.ROWID
   WHERE m.ROWID > ?
@@ -35,6 +44,7 @@ export async function openMessagesDb(dbPath: string): Promise<MessageSource> {
           rowid: Number(r.ROWID),
           handle: r.handle ?? "",
           text: messageText(r.text, r.attributedBody),
+          ...(r.audioFile ? { audioPath: r.audioFile } : {}),
         }),
       ),
   };
@@ -106,16 +116,16 @@ export function createFileCursor(path: string): CursorStore {
 // --- talks to the local Airlock server ---------------------------------------------------
 
 export function createHttpApi(baseUrl: string, fetchImpl: typeof fetch = fetch, timeoutMs = 45_000): AirlockApi {
-  return async (sessionId, text) => {
+  return async (sessionId, text, channel = "imessage") => {
     const res = await fetchImpl(`${baseUrl}/api/message`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sessionId, channel: "imessage", text }),
+      body: JSON.stringify({ sessionId, channel, text }),
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) throw new Error(`airlock server answered ${res.status}`);
-    const body = (await res.json()) as { reply?: unknown };
+    const body = (await res.json()) as { reply?: unknown; needsConfirm?: unknown };
     if (typeof body.reply !== "string" || body.reply === "") throw new Error("empty reply");
-    return body.reply;
+    return { reply: body.reply, needsConfirm: body.needsConfirm === true } satisfies AirlockReply;
   };
 }

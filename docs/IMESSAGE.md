@@ -1,36 +1,59 @@
 # Airlock: iMessage bridge
 
-Text Airlock like you would use the GUI: "send 0.001 to drainer.demo", then "yes" or "no". The bridge is a small program that runs on a Mac signed into Messages. It reads new texts from the Messages database, sends each one to the local Airlock server (`POST /api/message` with `channel: "imessage"`, one session per sender), and sends the server's reply back through the Messages app. All decisions stay in the server: the risk gate, the 60-second confirmation and the 0.01 ETH cap behave exactly as they do in the GUI.
+Text Airlock, or send it a voice note. Start with its name: "Airlock send 0.001 to weth.demo" or "Hey Airlock, send 0.001 to weth.demo". It audits the address and asks you to confirm; reply "yes" or "no". The bridge is a small program that runs on a Mac signed into Messages. It reads new messages from the Messages database, sends each one to the local Airlock server (`POST /api/message`, one session per sender), and sends the reply back through the Messages app. All decisions stay in the server: the risk gate, the 60-second confirmation and the 0.01 ETH cap behave exactly as they do in the GUI.
 
 Code: `server/src/imessage/`. Run it with `npm run imessage` in `server/`.
 
+## Who can use it, and the wake word
+
+- **Anyone can text the line** (`IMESSAGE_ALLOWLIST=*` in `airlock/.env`). The bridge only answers a message that says "Airlock" or "Hey Airlock" (any case; "air lock" and similar spellings count). Whatever is said before the name is ignored; the command is what follows it. The word is stripped before the command reaches the server. If a message is only the name, the sender gets the help text.
+- **Why the name matters:** this is a real Mac with a real inbox, so the bridge sees friends' and family's messages too. Anything without the name is dropped without a reply and without being logged. A message that only mentions an `airlock.eth` domain does not count as saying the name.
+- **YES and NO without the name:** after Airlock asks for a confirmation, the same sender can reply with a bare "yes" or "no" for 60 seconds. Only the exact words count ("sure, go ahead" does not), only from that sender, and each confirmation can be answered once. The server still enforces its own 60-second window and the cap.
+- **A shorter list:** set `IMESSAGE_ALLOWLIST` to specific numbers or emails (comma-separated, for example `+17165550100,me@example.com`) to restrict the line. Numbers match by digits, so formatting and a +1 prefix do not matter. An empty list allows nobody, and the bridge refuses to start.
+
+## Voice notes
+
+A voice note ("Audio Message.caf" in the Messages attachments) works the same way as typed text, with the voice rules from the GUI.
+
+1. The bridge converts the note to a small WAV (macOS `afconvert`, with `ffmpeg` as a fallback) and sends it to **ElevenLabs speech-to-text** (the `voice/transcribe.ts` helper). It needs `ELEVENLABS_API_KEY` in `airlock/.env` on the demo Mac. Without a key, voice notes are ignored and typed texts still work.
+2. The transcript is checked for the wake word like typed text. A voice note that does not say "Airlock" gets no reply.
+3. It is sent to the server as a **voice** message, so the voice safety rules apply: an address spoken aloud is refused (speech can mishear it), with a message asking the sender to type the address or use a name like `weth.demo` or `vitalik.eth`. Spoken numbers like "zero point zero one" and "dot demo" are understood. A spoken "yes" or "no" answers an open confirmation.
+
+**Privacy, because the wake word is only known after transcribing:** every voice note from an allowed sender is uploaded to ElevenLabs for transcription before Airlock knows whether it was meant for Airlock. With `IMESSAGE_ALLOWLIST=*` that includes voice notes friends and family send to this Mac. To limit it:
+- Only notes of 20 seconds or less and 2 MB or less are ever uploaded; longer ones are skipped.
+- At most 6 notes a minute across the whole line are transcribed (`IMESSAGE_MAX_VOICE_PER_MINUTE`), which also protects the ElevenLabs quota.
+- The converted files are deleted right away, and neither the transcript nor the file path is logged.
+- Set `IMESSAGE_VOICE=off` to turn voice notes off entirely, or use a shorter allowlist. For the demo, a dedicated Apple ID on the Mac avoids the issue completely.
+
 ## One-time setup (macOS)
 
-1. **Full Disk Access.** The Messages database is protected. In System Settings > Privacy & Security > Full Disk Access, turn on the app that will run the bridge (Terminal, iTerm, or your editor). Quit and reopen that app afterwards. Without this, the bridge prints the same instruction and exits.
+1. **Full Disk Access.** The Messages database is protected. In System Settings > Privacy & Security > Full Disk Access, turn on the app that will run the bridge (Terminal, iTerm, or your editor). Quit and reopen that app afterwards. Without this, the bridge prints the same instruction and exits. Voice notes live in the same protected folder.
 2. **Automation.** The first time it sends a reply, macOS asks whether that app may control Messages. Allow it.
 3. **Messages signed in.** The Mac must be signed into iMessage, and must stay awake and plugged in while people text it. People text the phone number or Apple ID that the Mac is signed in with.
-4. **Allowlist.** Set `IMESSAGE_ALLOWLIST` in `airlock/.env` to a comma-separated list of phone numbers and emails that may use the line, for example `+17165550100,me@example.com`. Numbers match by digits, so formatting and a +1 prefix do not matter. An empty list allows nobody, and the bridge refuses to start. `*` allows anyone who texts the line to request a testnet transfer (capped at 0.01 ETH); use it only for a demo where judges need to try it.
+4. **Keys in `airlock/.env`.** `IMESSAGE_ALLOWLIST=*` (or a list), and `ELEVENLABS_API_KEY` for voice notes.
 
 ## Running it
 
 1. Start the server: `npm run dev` in `server/`.
 2. In a second terminal, from `server/`: `npm run imessage`. Add `-- --dry-run` to read and answer without sending anything; it prints what it would reply.
-3. From an allowlisted phone, text the Mac's number.
+3. From another phone, text the Mac's number: "Hey Airlock, send 0.001 to weth.demo". Then try a voice note saying the same, and a voice note with no name in it (no reply expected).
+
+**Texting yourself does not work.** If the phone and the Mac share an Apple ID, a text to your own number is stored as sent by you, and the bridge ignores messages you sent. Text from a different phone or a different Apple ID.
 
 ## What it will not do
 
-- It ignores anyone not on the allowlist, group chats, reactions (tapbacks) and messages with no text. It never replays old conversations: the first run starts after the newest message, and the last handled message is saved in `server/.data/imessage-cursor.json`, so a restart does not answer anything twice.
-- It limits each sender to 8 messages a minute (`IMESSAGE_MAX_PER_MINUTE`) and ignores a text that is just one of its own replies coming back, so two bots can not loop.
-- Its logs show only a masked sender (the last 4 digits) and the reply length, never message text.
+- It ignores group chats, reactions (tapbacks), its own replies echoed back, and anything without the wake word. It never replays old conversations: the first run starts after the newest message, and the last handled message is saved in `server/.data/imessage-cursor.json`, so a restart does not answer anything twice.
+- It limits each sender to 8 messages a minute (`IMESSAGE_MAX_PER_MINUTE`) and the whole line to 20 a minute (`IMESSAGE_MAX_GLOBAL_PER_MINUTE`), so a crowd or two bots can not flood it or loop.
+- Its logs show only a masked sender (the last 4 digits) and the reply length, never message text or transcripts.
 - If the Airlock server is down, the sender gets "Airlock is not available right now. Nothing was sent." instead of silence.
-- It opens the Messages database read-only and passes message text to AppleScript as an argument, never inside the script, so a text can not inject commands.
+- It opens the Messages database read-only, only opens audio files inside the Messages attachments folder, and passes message text to AppleScript as an argument, never inside the script, so a text can not inject commands.
 
 ## Status
 
-Code and tests are done (38 tests, including a throwaway database that mimics the Messages schema and the attributedBody format newer macOS versions use). Not yet verified live: reading a real incoming text and sending a real reply, which needs Full Disk Access and Automation to be granted on the demo Mac. Do that check before the demo.
+Code and tests are done (the throwaway-database tests mimic the Messages schema, including the attributedBody format and audio attachments; the voice conversion test really decodes an Opus CAF file made on this Mac). Not yet verified live: reading a real incoming text or voice note and sending a real reply, and a real ElevenLabs transcription of a voice note. Those need Full Disk Access and Automation on the demo Mac, and the ElevenLabs key. Do that check before the demo.
 
 ## Limits to know
 
 - One Mac, one line. If the Mac sleeps, signs out or loses its network, the line goes quiet.
+- Replies are text. Airlock does not send voice replies over iMessage.
 - The Gemini free tier allows only a few requests a minute, so the plain-language note may be missing from some replies; the fixed lines (verdict, findings, full address, amount, YES or NO prompt) always appear.
-- Replies are plain text. The Etherscan link appears in the text; iMessage shows it as a link.
