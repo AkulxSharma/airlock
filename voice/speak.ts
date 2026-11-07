@@ -1,5 +1,5 @@
 // Server-side only: the ElevenLabs key must never reach the browser.
-const DEFAULT_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
+const DEFAULT_VOICE_ID = "onwK4e9ZLuTAKqWW03F9"; // "Daniel": calm, authoritative British male (chosen by Muhammad)
 const DEFAULT_MODEL_ID = "eleven_multilingual_v2";
 export const MAX_SPEAK_CHARS = 1000; // protects credits from a runaway reply
 
