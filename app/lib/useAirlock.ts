@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, checkHealth, sendMessage, streamUrl, type Stage } from "./api";
 import { parseReply, type ParsedReply } from "./parseReply";
+import { createStagePacer } from "./stagePacer";
 
 export interface ChatMessage {
   id: number;
@@ -38,6 +39,8 @@ export function useAirlock() {
   const [busy, setBusy] = useState(false);
   const [online, setOnline] = useState<boolean | null>(null);
   const [streamUp, setStreamUp] = useState(false);
+  // Stage updates play one at a time so people can watch the check move step by step.
+  const [pacer] = useState(() => createStagePacer((s) => setStages((prev) => ({ ...prev, [s.name]: s }))));
   const counter = useRef(0);
   const nextId = () => ++counter.current;
 
@@ -66,13 +69,13 @@ export function useAirlock() {
     es.addEventListener("stage", (e) => {
       try {
         const stage = JSON.parse((e as MessageEvent).data) as Stage;
-        setStages((s) => ({ ...s, [stage.name]: stage }));
+        pacer.push(stage);
         addLog("stage", `${stage.name}: ${stage.status}${stage.detail ? ` (${stage.detail})` : ""}`);
       } catch { /* ignore a malformed event */ }
     });
     es.onerror = () => { setStreamUp(false); };
     return () => es.close();
-  }, [sessionId, addLog]);
+  }, [sessionId, addLog, pacer]);
 
   // Drop the confirm state when its time is up (the server enforces the real expiry).
   useEffect(() => {
@@ -87,21 +90,24 @@ export function useAirlock() {
     if (!clean || !sessionId) return null;
     setBusy(true);
     setPending(null);
+    pacer.reset();
     setStages({});
     setMessages((m) => [...m, { id: nextId(), from: "you", text: clean, channel }]);
     addLog("message", `you (${channel}): ${clean}`);
     try {
       const res = await sendMessage({ sessionId, channel, text: clean });
       const parsed = parseReply(res.reply, res.needsConfirm);
+      // The response carries each stage's final state. Queue them in order after anything the stream
+      // already sent (repeats are dropped), then wait for the cards to finish playing before showing
+      // the verdict, so the order on screen is: stages one by one, then the answer.
+      for (const name of STAGE_NAMES) { const st = res.stages.find((s) => s.name === name); if (st) pacer.push(st); }
+      await pacer.drain();
       setMessages((m) => [...m, { id: nextId(), from: "airlock", text: res.reply, parsed }]);
       addLog("message", `airlock: ${parsed.headline}`);
       if (parsed.kind === "confirm" || parsed.kind === "refused" || parsed.kind === "sent") setVerdict(parsed);
       if (parsed.kind === "confirm" && parsed.expiresInSeconds) {
         setPending({ expiresAt: Date.now() + parsed.expiresInSeconds * 1000, to: parsed.to, amountEth: parsed.amountEth });
       }
-      // The response carries each stage's final state. It overwrites the stream's value, because
-      // a late "pending" event can arrive after the response and would leave a stage spinning.
-      setStages((s) => { const out = { ...s }; for (const st of res.stages) out[st.name] = st; return out; });
       return parsed;
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Something went wrong sending that.";
@@ -112,14 +118,14 @@ export function useAirlock() {
     } finally {
       setBusy(false);
     }
-  }, [sessionId, addLog]);
+  }, [sessionId, addLog, pacer]);
 
   /** Start over: new session id (so the stream and any pending confirm are fresh) and a clean screen. */
   const reset = useCallback(() => {
     const id = crypto.randomUUID();
     try { localStorage.setItem("airlock-session", id); } catch { /* private window */ }
-    setMessages([]); setStages({}); setVerdict(null); setPending(null); setLog([]); setSessionId(id);
-  }, []);
+    pacer.reset(); setMessages([]); setStages({}); setVerdict(null); setPending(null); setLog([]); setSessionId(id);
+  }, [pacer]);
 
   const clearLog = useCallback(() => setLog([]), []);
 

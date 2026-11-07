@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, RotateCcw, SendHorizonal, ShieldCheck, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { ChatMessage, LogEntry, Pending } from "@/lib/useAirlock";
 import type { ParsedReply } from "@/lib/parseReply";
 import type { Stage } from "@/lib/api";
@@ -30,8 +30,6 @@ const Label = ({ children }: { children: React.ReactNode }) => (
 
 export function Console({ messages, stages, log, verdict, pending, busy, voice, onSend, onAnswer, onReset, onClearLog }: Props) {
   const [text, setText] = useState("");
-  const end = useRef<HTMLDivElement>(null);
-  useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages.length]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +75,6 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
           </div>
         ))}
         {busy && <p className="text-sm text-muted-foreground">Checking…</p>}
-        <div ref={end} />
       </section>
 
       <form onSubmit={submit} className="sticky bottom-4 z-10 flex items-center gap-3 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur">
