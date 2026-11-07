@@ -17,11 +17,15 @@ export function useVoice(onTranscript: (text: string) => void) {
   const chunks = useRef<Blob[]>([]);
   const audio = useRef<HTMLAudioElement | null>(null);
   const stopped = useRef(false);
+  const starting = useRef(false); // true while getUserMedia is pending (the permission prompt)
+  const wantStop = useRef(false); // button released before the recorder was ready
 
   const fail = useCallback((msg: string) => { setError(msg); setState("error"); }, []);
 
   const startListening = useCallback(async () => {
-    if (recorder.current) return;
+    if (recorder.current || starting.current) return;
+    starting.current = true;
+    wantStop.current = false;
     setError(null);
     stopped.current = false;
     audio.current?.pause();
@@ -51,12 +55,17 @@ export function useVoice(onTranscript: (text: string) => void) {
       recorder.current = rec;
       rec.start();
       setState("listening");
+      starting.current = false;
+      // The user let go while the permission prompt was open: stop right away.
+      if (wantStop.current) { wantStop.current = false; stopped.current = true; rec.stop(); }
     } catch {
+      starting.current = false;
       fail("Microphone blocked. Allow it in the browser to use voice.");
     }
   }, [fail, onTranscript]);
 
   const stopListening = useCallback(() => {
+    if (starting.current) { wantStop.current = true; return; }
     const rec = recorder.current;
     if (rec && rec.state !== "inactive" && !stopped.current) { stopped.current = true; rec.stop(); }
   }, []);

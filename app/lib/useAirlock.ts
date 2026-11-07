@@ -97,8 +97,9 @@ export function useAirlock() {
       if (parsed.kind === "confirm" && parsed.expiresInSeconds) {
         setPending({ expiresAt: Date.now() + parsed.expiresInSeconds * 1000, to: parsed.to, amountEth: parsed.amountEth });
       }
-      // Final stage states from the response fill any the stream missed.
-      setStages((s) => { const out = { ...s }; for (const st of res.stages) out[st.name] = out[st.name] ?? st; return out; });
+      // The response carries each stage's final state. It overwrites the stream's value, because
+      // a late "pending" event can arrive after the response and would leave a stage spinning.
+      setStages((s) => { const out = { ...s }; for (const st of res.stages) out[st.name] = st; return out; });
       return parsed;
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Something went wrong sending that.";

@@ -57,6 +57,22 @@ describe("parseReply", () => {
   });
 });
 
+describe("parseReply on a real server reply", () => {
+  // Captured from the running server on 2026-11-07: send 0.01 to vitalik.eth (Sepolia, no contract code).
+  const REAL = "Risk signal: LOW (score 5).\n- [low] Address has no contract code, so it looks like a normal wallet. That is informational, not a risk by itself.\nTo send: 0.01 test ETH to 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045.\nThis is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in 4 seconds.";
+  it("parses the live confirm reply", () => {
+    const p = parseReply(REAL, true);
+    expect(p.kind).toBe("confirm");
+    expect(p.verdict).toBe("LOW");
+    expect(p.score).toBe(5);
+    expect(p.findings).toHaveLength(1);
+    expect(p.findings[0].severity).toBe("low");
+    expect(p.amountEth).toBe("0.01");
+    expect(p.to).toBe("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+    expect(p.expiresInSeconds).toBe(4);
+  });
+});
+
 describe("speechFor", () => {
   it("speaks a short confirm summary that says it is not a guarantee, and never says safe", () => {
     const s = speechFor(parseReply(CONFIRM, true));

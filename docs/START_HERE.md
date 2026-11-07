@@ -36,8 +36,8 @@ Goal: a server folder that installs, type-checks and runs tests.
    - `Stage = { name: "address" | "bytecode" | "source" | "gate"; status: "pending" | "done" | "error"; detail?: string }`
 6. Create `.env.example` at the repo root:
    ```
-   RPC_URL_SEPOLIA=https://rpc.sepolia.org
-   RPC_URL_SEPOLIA_FALLBACK=
+   RPC_URL_SEPOLIA=https://ethereum-sepolia-rpc.publicnode.com
+   RPC_URL_SEPOLIA_FALLBACK=https://1rpc.io/sepolia
    PRIVATE_KEY_TESTNET=0x0000000000000000000000000000000000000000000000000000000000000000
    MAX_TRANSFER_ETH=0.01
    CONFIRM_TTL_SECONDS=60
@@ -180,7 +180,8 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [ ] Step 8: Gemini agent
 - [ ] Step 9: Source checks
 - [ ] Step 10: iMessage bridge
-- [ ] Step 11: Demo GUI, voice, real GUI
+- [x] Step 11a: Demo GUI + voice routes (Muhammad, 2026-11-07, `app/`, Otto-style layout, deep-space background)
+- [ ] Step 11b: Real GUI polish, landing view, demo-target buttons with real addresses
 - [ ] Step 12: Wrap-up
 
 ## Open questions

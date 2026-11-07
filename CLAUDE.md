@@ -11,7 +11,7 @@ This file records decisions agreed between Muhammad and Akul on 2026-11-07. Clau
 
 - **Akul** owns the whole backend: contract auditor, risk gate, Gemini agent, iMessage bridge, testnet send, and the API (`POST /api/message`, `GET /api/stream`). This includes the mock versions of those two endpoints, so the GUI has something to talk to before the real server is done. See `docs/TASKS.md` for the full split.
 - **Muhammad** owns the GUI (Next.js in `app/`: chat, voice button, verdict card, live log), the ElevenLabs STT/TTS work in `voice/`, and demo polish and recording.
-- Muhammad will start the GUI after the backend is done. He has a GUI example to follow and will share it then. Do not build the GUI or guess at the look before that.
+- The demo GUI exists in `app/` (Next.js 16, Tailwind 4; Otto-style layout with a deep-space background; routes `/api/speak` and `/api/transcribe` call `voice/`). It belongs to Muhammad: do not edit `app/` without asking. Run it with `npm run dev` in `app/` and open exactly `http://localhost:3000` (the server's CORS allows only that origin). The real GUI polish comes after the backend is done.
 - Do not build another person's area without asking first. It causes merge conflicts.
 
 ## Keys
