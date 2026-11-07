@@ -415,3 +415,47 @@ describe("just the name, end to end with the real handler", () => {
     }
   });
 });
+
+describe("voice note logging (what happened, never what was said)", () => {
+  const voice = (rowid: number): InboundMessage => ({ rowid, handle: ME, text: "", audioPath: `/a/${rowid}.caf` });
+  function lsetup(transcript: string | null, withTranscriber = true) {
+    const logs: string[] = [];
+    const bridge = createBridge({
+      source: { maxRowId: () => 0, since: (r) => (r < 2 ? [voice(2)] : []) },
+      cursor: { load: () => 1, save: () => {} },
+      api: async (_s, t) => ({ reply: `r:${t}`, needsConfirm: false }),
+      send: async () => {},
+      allowlist: parseAllowlist("*"),
+      log: (l) => logs.push(l),
+      transcribe: withTranscriber ? async () => transcript : undefined,
+    });
+    return { bridge, logs };
+  }
+
+  it("says when a voice note was found and how many words it had, when it did say the wake word", async () => {
+    const t = lsetup("Hey Airlock, send zero point zero one ETH to weth dot demo");
+    await t.bridge.poll();
+    const all = t.logs.join("\n");
+    expect(all).toMatch(/voice note from \*\*\*0100: found, transcribing/);
+    expect(all).toMatch(/transcribed \(\d+ words\)/);
+    expect(all).toMatch(/replied to/);
+    expect(all).not.toMatch(/weth|demo|send zero/i);
+  });
+
+  it("says plainly when a voice note did not contain the wake word", async () => {
+    const t = lsetup("happy birthday to you");
+    await t.bridge.poll();
+    const all = t.logs.join("\n");
+    expect(all).toMatch(/did not say the wake word, ignored/);
+    expect(all).not.toMatch(/birthday/i);
+  });
+
+  it("says when voice notes are off, and when a note could not be transcribed it stays quiet here (the transcriber logs why)", async () => {
+    const off = lsetup("airlock hi", false);
+    await off.bridge.poll();
+    expect(off.logs.join("\n")).toMatch(/voice notes are off/);
+    const failed = lsetup(null);
+    await failed.bridge.poll();
+    expect(failed.logs.join("\n")).not.toMatch(/did not say the wake word/);
+  });
+});

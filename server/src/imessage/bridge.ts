@@ -120,14 +120,20 @@ export function createBridge(deps: BridgeDeps) {
       let spoken = false;
       let said = msg.text;
       if (!said && msg.audioPath) {
-        if (!deps.transcribe) continue;
+        if (!deps.transcribe) {
+          log(`voice note from ${maskHandle(msg.handle)} ignored: voice notes are off`);
+          continue;
+        }
         if (voiceLimited()) {
           log(`voice note skipped for ${maskHandle(msg.handle)}: voice quota reached`);
           continue;
         }
+        log(`voice note from ${maskHandle(msg.handle)}: found, transcribing`);
         said = (await deps.transcribe(msg.audioPath)) ?? "";
         spoken = true;
-        if (!said) continue;
+        if (!said) continue; // the transcriber has already logged why
+        // Only the word count is logged, never the words.
+        log(`voice note from ${maskHandle(msg.handle)}: transcribed (${said.split(/\s+/).filter(Boolean).length} words)`);
       }
       if (ownReplies.includes(said)) continue;
 
@@ -142,7 +148,10 @@ export function createBridge(deps: BridgeDeps) {
         const expires = awaiting.get(msg.handle);
         const kind = parseCommand(said).kind;
         if (expires !== undefined && now() < expires && (kind === "yes" || kind === "no")) text = said;
-        else continue;
+        else {
+          if (spoken) log(`voice note from ${maskHandle(msg.handle)} did not say the wake word, ignored`);
+          continue;
+        }
       }
 
       if (rateLimited(msg.handle) || globalLimited()) {
