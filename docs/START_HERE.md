@@ -175,7 +175,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [x] Step 3: Address resolve (Akul, 2026-11-07)
 - [x] Step 4: Chain client and live audit (Akul, 2026-11-07)
 - [x] Step 5: Testnet send with cap (Akul, 2026-11-07)
-- [ ] Step 6: API with rule-based parser
+- [x] Step 6: API with rule-based parser (Akul, 2026-11-07)
 - [ ] Step 7: Demo targets
 - [ ] Step 8: Gemini agent
 - [ ] Step 9: Source checks
