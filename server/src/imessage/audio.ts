@@ -140,6 +140,11 @@ export type VoiceReplyDeps = {
   log?: (line: string) => void;
   schedule?: (fn: () => void, ms: number) => void;
   cleanupAfterMs?: number;
+  now?: () => number;
+  // After this many failed spoken replies in a row, stop trying for `pauseMs`. Each try spends
+  // speech credits and leaves a failed bubble in the conversation on the Mac.
+  maxFailures?: number;
+  pauseMs?: number;
 };
 
 // Messages could not read the file from ~/Library/Caches (the send was accepted, then nothing arrived).
@@ -159,6 +164,12 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
     });
   const cleanupAfterMs = deps.cleanupAfterMs ?? 120_000;
   let preferred = 0; // the method that last worked
+  const now = deps.now ?? Date.now;
+  const maxFailures = deps.maxFailures ?? 2;
+  const pauseMs = deps.pauseMs ?? 10 * 60_000;
+  let failStreak = 0;
+  let pausedUntil = 0;
+  let hinted = false;
 
   // Old files are removed on each use, in case the process stopped before a scheduled delete.
   async function sweep(): Promise<void> {
@@ -174,7 +185,9 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
   }
 
   return async function voiceReply(handle: string, replyText: string): Promise<void> {
+    if (now() < pausedUntil) return; // paused after repeated failures; the text reply already went out
     let file: string | null = null;
+    let delivered = false;
     try {
       const spoken = toSpoken(replyText);
       if (!spoken) return;
@@ -205,12 +218,27 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
       }
       if (!handedOver) throw new Error("no way of sending the file could be started");
       if (!result) log("sent a spoken reply");
-      else if (result.status === "sent") log("spoken reply delivered");
-      else if (result.status === "error") log(`spoken reply failed: Messages could not send it (error ${result.code})`);
-      else log("spoken reply handed to Messages, but delivery could not be confirmed");
+      else if (result.status === "sent") {
+        delivered = true;
+        log("spoken reply delivered");
+      } else if (result.status === "error") {
+        log(`spoken reply failed: Messages could not send it (error ${result.code})`);
+        if (!hinted) {
+          hinted = true;
+          log("hint: if a file sent by hand from the Messages app also shows Not Delivered, this Mac's network or iMessage account is blocking attachments (text replies are unaffected). Try another network, such as a phone hotspot.");
+        }
+      } else log("spoken reply handed to Messages, but delivery could not be confirmed");
+      if (!deps.verify) delivered = true; // nothing to check against: treat a successful hand-over as success
     } catch {
       log("spoken reply failed; the text reply was already sent");
     } finally {
+      if (delivered) {
+        failStreak = 0;
+      } else if (++failStreak >= maxFailures) {
+        pausedUntil = now() + pauseMs;
+        failStreak = 0;
+        log(`spoken replies paused for ${Math.round(pauseMs / 60_000)} minutes after repeated failures; text replies are unaffected`);
+      }
       // Not deleted at once: Messages may still be reading the file when send returns.
       if (file) {
         const f = file;

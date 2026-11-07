@@ -210,7 +210,8 @@ describe("voice replier: delivery check", () => {
 
   it("logs a failure with Messages' error code when the send was rejected", async () => {
     const t = await run(async () => ({ status: "error", code: 22 }));
-    expect(t.logs).toEqual(["spoken reply failed: Messages could not send it (error 22)"]);
+    expect(t.logs[0]).toBe("spoken reply failed: Messages could not send it (error 22)");
+    expect(t.logs[1]).toMatch(/^hint: if a file sent by hand from the Messages app also shows Not Delivered/);
   });
 
   it("says plainly when delivery could not be confirmed", async () => {
@@ -403,5 +404,87 @@ describe("delivery checker (throwaway Messages database)", () => {
     add(12, "b.mp3", 1, 1, 0);
     db.close();
     expect((await openDeliveryChecker(path, quick)).mark()).toBe(12);
+  });
+});
+
+describe("voice replier: pauses after repeated failures", () => {
+  function make(outcome: () => Delivery | "throw" | "skip-verify", opts: { maxFailures?: number } = {}) {
+    const dir = mkdtempSync(join(tmpdir(), "airlock-pause-"));
+    dirs2.push(dir);
+    const logs: string[] = [];
+    let clock = 1_000_000;
+    let spoken = 0;
+    let sendCalls = 0;
+    const mode = () => outcome();
+    const reply = createVoiceReplier({
+      dir,
+      speak: async () => { spoken++; return new Uint8Array([1, 2, 3]); },
+      sendFile: async () => { sendCalls++; if (mode() === "throw") throw new Error("no"); },
+      mark: () => 0,
+      verify: async () => { const o = mode(); return o === "throw" || o === "skip-verify" ? { status: "unknown" } : o; },
+      log: (l) => logs.push(l),
+      schedule: () => {},
+      now: () => clock,
+      pauseMs: 10 * 60_000,
+      ...opts,
+    });
+    return { reply, logs, tick: (ms: number) => { clock += ms; }, counts: () => ({ spoken, sendCalls }) };
+  }
+  const say = "Refused. Risk signal is HIGH, so Airlock will not send.";
+
+  it("after two failures in a row it stops speaking and sending, and says so once", async () => {
+    const t = make(() => ({ status: "error", code: 22 }));
+    await t.reply("h", say);
+    await t.reply("h", say);
+    const before = t.counts();
+    await t.reply("h", say);
+    await t.reply("h", say);
+    expect(t.counts()).toEqual(before); // no more speech credits, no more attempts
+    expect(t.logs.filter((l) => /paused for 10 minutes/.test(l))).toHaveLength(1);
+  });
+
+  it("starts trying again after the pause", async () => {
+    const t = make(() => ({ status: "error", code: 22 }));
+    await t.reply("h", say);
+    await t.reply("h", say);
+    const paused = t.counts().spoken;
+    t.tick(10 * 60_000 + 1);
+    await t.reply("h", say);
+    expect(t.counts().spoken).toBe(paused + 1);
+  });
+
+  it("one success resets the count, so a single failure never pauses", async () => {
+    let n = 0;
+    const t = make(() => (++n % 8 === 0 ? { status: "sent" } : { status: "error", code: 22 }), { maxFailures: 3 });
+    await t.reply("h", say); // fails
+    await t.reply("h", say); // fails
+    expect(t.logs.some((l) => /paused/.test(l))).toBe(false);
+  });
+
+  it("a delivered reply keeps it going and never pauses", async () => {
+    const t = make(() => ({ status: "sent" }));
+    for (let i = 0; i < 5; i++) await t.reply("h", say);
+    expect(t.counts().spoken).toBe(5);
+    expect(t.logs.some((l) => /paused|failed/.test(l))).toBe(false);
+  });
+
+  it("not being able to confirm delivery counts as a failure too", async () => {
+    const t = make(() => ({ status: "unknown" }));
+    await t.reply("h", say);
+    await t.reply("h", say);
+    expect(t.logs.some((l) => /paused/.test(l))).toBe(true);
+  });
+
+  it("every method failing to start counts as a failure", async () => {
+    const t = make(() => "throw");
+    await t.reply("h", say);
+    await t.reply("h", say);
+    expect(t.logs.some((l) => /paused/.test(l))).toBe(true);
+  });
+
+  it("the hint about attachments is logged only once", async () => {
+    const t = make(() => ({ status: "error", code: 22 }), { maxFailures: 99 });
+    for (let i = 0; i < 4; i++) await t.reply("h", say);
+    expect(t.logs.filter((l) => /^hint:/.test(l))).toHaveLength(1);
   });
 });
