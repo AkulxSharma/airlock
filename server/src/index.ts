@@ -31,6 +31,7 @@ try {
   console.warn(`Sending is disabled: ${err instanceof Error ? err.message : err}`);
 }
 
+const demoAliases = loadDemoAliases();
 const ttlSeconds = Number(env.CONFIRM_TTL_SECONDS);
 const bus = createStageBus();
 const handle = createMessageHandler({
