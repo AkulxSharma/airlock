@@ -100,6 +100,10 @@ describe("scoring", () => {
     expect(verdictFor(70, [])).toBe("HIGH");
   });
 
+  it("a lone medium finding is at least MEDIUM, not LOW", () => {
+    expect(verdictFor(20, [f("medium")])).toBe("MEDIUM");
+  });
+
   it("weights are high 40, medium 20, low 5, capped at 100", () => {
     expect(scoreFindings([f("high"), f("medium"), f("low")])).toBe(65);
     expect(scoreFindings([f("high"), f("high"), f("high")])).toBe(100);
