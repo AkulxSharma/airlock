@@ -49,10 +49,15 @@ export function createMessageHandler(deps: MessageDeps) {
       final.set(stage.name, stage);
       deps.publish(req.sessionId, stage);
     };
-    const done = (reply: string, needsConfirm = false): MessageResponse => ({
+    const done = (
+      reply: string,
+      needsConfirm = false,
+      extra: Pick<MessageResponse, "audit" | "pending"> = {},
+    ): MessageResponse => ({
       reply,
       stages: [...final.values()],
       needsConfirm,
+      ...extra,
     });
 
     let text = req.text;
