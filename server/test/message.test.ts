@@ -264,3 +264,47 @@ describe("wording", () => {
     expect(t.store.peek("a")).toBeDefined();
   });
 });
+
+describe("structured fields for the GUI", () => {
+  it("a confirm reply carries the audit and the pending transfer with its expiry", async () => {
+    const t = setup();
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.audit?.verdict).toBe("LOW");
+    expect(r.audit?.target).toBe(ADDR);
+    expect(r.pending).toEqual({ to: ADDR, amountEth: "0.005", expiresAt: t.clock.t + 60_000 });
+  });
+
+  it("a HIGH refusal carries the audit but no pending transfer", async () => {
+    const t = setup({ outcome: audit("HIGH", [SELFDESTRUCT]) });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.audit?.verdict).toBe("HIGH");
+    expect(r.audit?.findings[0].id).toBe("selfdestruct");
+    expect(r.pending).toBeUndefined();
+  });
+
+  it("an audit error or timeout carries neither field", async () => {
+    for (const outcome of [{ error: "rpc down" }, { timeout: true as const }]) {
+      const t = setup({ outcome });
+      const r = await track(t.say("send 0.005 to vitalik.eth"));
+      expect(r.audit).toBeUndefined();
+      expect(r.pending).toBeUndefined();
+    }
+  });
+
+  it("other replies carry neither field", async () => {
+    const t = setup();
+    for (const text of ["hello", "yes", "no"]) {
+      const r = await track(t.say(text));
+      expect(r.audit).toBeUndefined();
+      expect(r.pending).toBeUndefined();
+    }
+  });
+});
+
+describe("spoken demo names", () => {
+  it("a voice request for 'drainer dot demo' resolves drainer.demo", async () => {
+    const t = setup();
+    await track(t.say("send zero point zero zero one ETH to drainer dot demo", "s1", "voice"));
+    expect(t.resolve).toHaveBeenCalledWith("drainer.demo");
+  });
+});

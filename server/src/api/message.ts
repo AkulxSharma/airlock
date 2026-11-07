@@ -65,7 +65,8 @@ export function createMessageHandler(deps: MessageDeps) {
       // A heard address can be a different, valid-looking address. Never use one by voice.
       const guard = guardVoiceInput(text);
       if (!guard.ok) return done(guard.reason);
-      text = normalizeTranscript(text);
+      // The shared normalizer knows "dot eth"; demo names (.demo) are handled here.
+      text = normalizeTranscript(text).replace(/\s+dot\s+demo\b/gi, ".demo");
     }
 
     const intent = await agent.handle(text);

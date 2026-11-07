@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { auditBytecode } from "../src/auditor/index.js";
 import { checkUpgradeableProxy } from "../src/auditor/checks.js";
+import type { Finding } from "../src/types.js";
 import {
   cleanInit,
   cleanRuntime,
@@ -14,7 +15,7 @@ import {
 
 const IMPL = "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9";
 const T = "0x0000000000000000000000000000000000000001";
-const audit = (runtime: string, extra = []) => auditBytecode("0x" + runtime, T, 11155111, extra);
+const audit = (runtime: string, extra: Finding[] = []) => auditBytecode("0x" + runtime, T, 11155111, extra);
 const ids = (r: ReturnType<typeof audit>) => r.findings.map((f) => f.id);
 
 describe("demo target bytecode audits as intended", () => {
@@ -47,7 +48,7 @@ describe("demo target bytecode audits as intended", () => {
 describe("hand-assembled layout", () => {
   it("proxy runtime is 67 bytes and its jump target is a JUMPDEST", () => {
     expect(proxyRuntime.length / 2).toBe(67);
-    const target = parseInt(proxyRuntime.slice(56 * 2 + 2, 56 * 2 + 4), 16); // PUSH1 operand before JUMPI
+    const target = parseInt(proxyRuntime.slice(56 * 2, 56 * 2 + 2), 16); // PUSH1 operand before JUMPI
     expect(target).toBe(0x3e);
     expect(proxyRuntime.slice(target * 2, target * 2 + 2)).toBe("5b");
     expect(proxyRuntime.slice(57 * 2, 57 * 2 + 2)).toBe("57");

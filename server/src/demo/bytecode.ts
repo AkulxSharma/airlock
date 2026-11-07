@@ -43,7 +43,7 @@ export const proxyRuntime =
   "36" + "6000" + "6000" + "37" + // calldatacopy(0, 0, calldatasize)
   "6000" + "6000" + "36" + "6000" + "7f" + EIP1967_IMPLEMENTATION_SLOT_HEX + "54" + "5a" + "f4" + // delegatecall(gas, sload(slot), 0, size, 0, 0)
   "3d" + "6000" + "6000" + "3e" + // returndatacopy(0, 0, returndatasize)
-  "6000" + "3e" + "57" + // if result != 0 jump to 0x3e (the JUMPDEST below)
+  "603e" + "57" + // PUSH1 0x3e; JUMPI: if result != 0 jump to the JUMPDEST below
   "3d" + "6000" + "fd" + // revert(0, returndatasize)
   "5b" + "3d" + "6000" + "f3"; // return(0, returndatasize)
 
