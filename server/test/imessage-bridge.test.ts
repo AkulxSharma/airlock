@@ -459,3 +459,35 @@ describe("voice note logging (what happened, never what was said)", () => {
     expect(failed.logs.join("\n")).not.toMatch(/did not say the wake word/);
   });
 });
+
+describe("debug transcripts (opt-in)", () => {
+  const voice: InboundMessage = { rowid: 2, handle: ME, text: "", audioPath: "/a/2.caf" };
+  const run = async (debug: boolean | undefined, transcript: string) => {
+    const logs: string[] = [];
+    const bridge = createBridge({
+      source: { maxRowId: () => 0, since: (r) => (r < 2 ? [voice] : []) },
+      cursor: { load: () => 1, save: () => {} },
+      api: async () => ({ reply: "r", needsConfirm: false }),
+      send: async () => {},
+      allowlist: parseAllowlist("*"),
+      log: (l) => logs.push(l),
+      transcribe: async () => transcript,
+      debugTranscripts: debug,
+    });
+    await bridge.poll();
+    return logs.join("\n");
+  };
+
+  it("off by default: the words of an ignored note are never logged", async () => {
+    expect(await run(undefined, "hey eric lock send it")).not.toMatch(/eric lock/);
+    expect(await run(false, "hey eric lock send it")).not.toMatch(/eric lock/);
+  });
+
+  it("on: the transcript of an ignored note is printed so the misheard name can be seen", async () => {
+    expect(await run(true, "hey eric lock send it")).toMatch(/\[debug\] transcript was: "hey eric lock send it"/);
+  });
+
+  it("on: a note that did say the wake word prints no transcript", async () => {
+    expect(await run(true, "Hey Airlock help")).not.toMatch(/\[debug\]/);
+  });
+});

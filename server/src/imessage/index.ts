@@ -63,6 +63,10 @@ const voiceReply = !repliesOn
     ? async (_handle: string, text: string) => console.log(`[dry run] would also send a spoken reply: ${toSpoken(text)}`)
     : createVoiceReplier({ sendFile: createOsascriptFileSender(), log: logLine });
 
+if (env.IMESSAGE_DEBUG_TRANSCRIPTS === "1") {
+  console.warn("DEBUG: transcripts of ignored voice notes will be printed here. Turn this off when you are done.");
+}
+
 const bridge = createBridge({
   source,
   send,
@@ -74,6 +78,7 @@ const bridge = createBridge({
   maxGlobalPerMinute: Number(env.IMESSAGE_MAX_GLOBAL_PER_MINUTE) || 20,
   maxVoicePerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
   voiceReply,
+  debugTranscripts: env.IMESSAGE_DEBUG_TRANSCRIPTS === "1",
   maxSpokenRepliesPerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
   transcribe: voiceOn ? createVoiceTranscriber({ log: (line) => console.log(`${new Date().toISOString()} ${line}`) }) : undefined,
 });

@@ -30,6 +30,9 @@ export type BridgeDeps = {
   maxGlobalPerMinute?: number;
   confirmWindowMs?: number;
   transcribe?: VoiceTranscriber;
+  // Debug only, off by default: also print the transcript of a voice note that was ignored for
+  // not saying the wake word, so a misheard name can be diagnosed. Prints the words themselves.
+  debugTranscripts?: boolean;
   maxVoicePerMinute?: number;
   // Sends a spoken copy of a reply (best effort, never throws). Used only when the sender spoke.
   voiceReply?: (handle: string, text: string) => Promise<void>;
@@ -149,7 +152,10 @@ export function createBridge(deps: BridgeDeps) {
         const kind = parseCommand(said).kind;
         if (expires !== undefined && now() < expires && (kind === "yes" || kind === "no")) text = said;
         else {
-          if (spoken) log(`voice note from ${maskHandle(msg.handle)} did not say the wake word, ignored`);
+          if (spoken) {
+            log(`voice note from ${maskHandle(msg.handle)} did not say the wake word, ignored`);
+            if (deps.debugTranscripts) log(`[debug] transcript was: ${JSON.stringify(said)}`);
+          }
           continue;
         }
       }
