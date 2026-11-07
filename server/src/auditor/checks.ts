@@ -76,6 +76,28 @@ export function checkMinimalProxy(hex: string): Finding | null {
   };
 }
 
+// EIP-1967 storage slots. A non-zero value means the logic address (or the admin who can
+// change it) lives in storage, so the code can be swapped after you check it.
+export const EIP1967_IMPLEMENTATION_SLOT =
+  "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+export const EIP1967_ADMIN_SLOT =
+  "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103";
+
+export function isNonZeroSlot(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return /[1-9a-fA-F]/.test(value.replace(/^0x/i, ""));
+}
+
+export function checkUpgradeableProxy(slotValues: Array<string | null | undefined>): Finding | null {
+  if (!slotValues.some(isNonZeroSlot)) return null;
+  return {
+    id: "upgradeable-proxy",
+    severity: "medium",
+    message:
+      "Contract stores an implementation or admin address (EIP-1967). The logic can be swapped later, so today's check may not hold tomorrow.",
+  };
+}
+
 export function checkTinyCode(byteLength: number, minimalProxy: boolean): Finding | null {
   if (byteLength === 0 || minimalProxy || byteLength >= TINY_CODE_BYTES) return null;
   return {
