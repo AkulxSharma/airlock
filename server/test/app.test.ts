@@ -123,7 +123,12 @@ describe("GET /api/stream and /health", () => {
 
 describe("parseAllowedOrigins", () => {
   it("defaults to the local GUI origins and trims a custom list", () => {
-    expect(parseAllowedOrigins(undefined)).toEqual(["http://localhost:3000", "http://127.0.0.1:3000"]);
+    expect(parseAllowedOrigins(undefined)).toEqual([
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:3100",
+      "http://127.0.0.1:3100",
+    ]);
     expect(parseAllowedOrigins(" http://a.test , http://b.test ,, ")).toEqual(["http://a.test", "http://b.test"]);
   });
 });

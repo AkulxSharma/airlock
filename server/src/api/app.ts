@@ -12,7 +12,7 @@ export type AppDeps = {
 };
 
 export function parseAllowedOrigins(raw: string | undefined): string[] {
-  const list = (raw ?? "http://localhost:3000,http://127.0.0.1:3000")
+  const list = (raw ?? "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3100,http://127.0.0.1:3100")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
