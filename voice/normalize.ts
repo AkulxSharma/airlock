@@ -1,6 +1,9 @@
 // Canonicalize speech-to-text output so "zero point zero one" and "0.01", "self-destruct" and
 // "selfdestruct", "vitalik dot eth" and "vitalik.eth" compare equal. The command parser should
 // run on normalizeTranscript(text) so spoken and typed input behave the same.
+import {
+  CANCEL_PHRASES, CONFIRM_PHRASES, CONNECTORS, CURRENCY_WORDS, POLITE_OPENERS, SEND_VERBS,
+} from "./vocabulary.js";
 import { stripWakeWord } from "./wake.js";
 
 const ONES: Record<string, number> = {
@@ -46,7 +49,14 @@ function parseNumber(tokens: string[], i: number): [string, number] {
 function wordsToNumbers(tokens: string[]): string[] {
   const out: string[] = [];
   for (let i = 0; i < tokens.length; ) {
-    if (tokens[i] in ONES || tokens[i] in TENS) {
+    if (tokens[i] === "point" && isDigitWord(tokens[i + 1]) && !/^[\d.]+$/.test(out[out.length - 1] ?? "")) {
+      // "point zero one" with no whole number before it means 0.01
+      let dec = "";
+      let j = i + 1;
+      while (isDigitWord(tokens[j])) dec += ONES[tokens[j++]];
+      out.push("0." + dec);
+      i = j;
+    } else if (tokens[i] in ONES || tokens[i] in TENS) {
       const [text, next] = parseNumber(tokens, i);
       out.push(text);
       i = next;
@@ -73,6 +83,35 @@ function joinHexAfter0x(tokens: string[]): string[] {
   return out;
 }
 
+
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** A list of words as a regex alternation (longest first; an apostrophe matches the space it became). */
+const alt = (list: string[]) =>
+  [...list].sort((a, b) => b.length - a.length).map((w) => esc(w).replace(/'/g, " ").replace(/\s+/g, "\\s+")).join("|");
+const TAIL = "(?:\\s+(?:please|now|it|that|this|the\\s+(?:transfer|payment|send)|transfer|payment))*";
+const POLITE = new RegExp(`^(?:(?:${alt(POLITE_OPENERS)})\\s+)+`);
+const CONFIRM = new RegExp(`^(?:${alt(CONFIRM_PHRASES)})${TAIL}$`);
+const CANCEL = new RegExp(`^(?:${alt(CANCEL_PHRASES)})${TAIL}$`);
+const SEND_VERB = new RegExp(`^(?:${alt(SEND_VERBS)})(?=\\s+(?:\\d|point\\b))`);
+const COIN = new RegExp(`(?<=\\d)\\s+(?:${alt(CURRENCY_WORDS)})\\b`);
+const TO = new RegExp(`(?<=\\d(?:\\s+eth)?)\\s+(?:${alt(CONNECTORS)})\\s+`);
+
+/**
+ * Map the many ways of saying a command onto the few the strict parser knows:
+ *   "could you please pay 0.01 ether over to vitalik.eth" -> "send 0.01 eth to vitalik.eth"
+ *   "go ahead" / "yes please" / "confirm the transfer"     -> "yes"
+ *   "never mind" / "cancel that" / "hold on"               -> "no"
+ * Takes text already cleaned by normalizeTranscript. Words that are easy to say in passing ("ok",
+ * "sure", "do it") are NOT mapped to yes (see NEVER_CONFIRM in vocabulary.ts).
+ */
+export function canonicalizeCommand(text: string): string {
+  let t = text.replace(POLITE, "").trim();
+  if (CONFIRM.test(t)) return "yes";
+  if (CANCEL.test(t)) return "no";
+  t = t.replace(SEND_VERB, "send").replace(COIN, " eth").replace(TO, " to ");
+  return t.replace(/\s+/g, " ").trim();
+}
+
 export function normalizeTranscript(input: string): string {
   // "Hey Airlock, send ..." and "Airlock, send ..." mean the same as "send ...".
   let s = stripWakeWord(input).toLowerCase().replace(/[-–—_]/g, " ");
@@ -90,5 +129,5 @@ export function normalizeTranscript(input: string): string {
     .replace(/\bhoney pot/g, "honeypot")
     .replace(/\bre entrancy/g, "reentrancy");
   s = s.replace(/[^a-z0-9.\s]/g, " ").replace(/(?<![0-9a-z])\.|\.(?![0-9a-z])/g, " ");
-  return s.replace(/\s+/g, " ").trim();
+  return canonicalizeCommand(s.replace(/\s+/g, " ").trim());
 }

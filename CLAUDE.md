@@ -38,6 +38,7 @@ This file records decisions agreed between Muhammad and Akul on 2026-11-07. Clau
 - **Enforcement (Akul, API step):** when `channel` is `voice`, run the transcript through `guardVoiceInput()` from `voice/guard.ts` before parsing. If it returns `ok: false`, refuse to use the text, reply with its `reason`, and ask for a pasted address or an ENS name. ENS names such as `vitalik.eth` are fine by voice.
 - **Normalize first:** run voice text through `normalizeTranscript()` from `voice/normalize.ts` before the command parser, so "zero point zero one ETH to vitalik dot eth" and "0.01 ETH to vitalik.eth" parse the same.
 - **Speak replies with `toSpeakable()`** from `voice/speakable.ts`: it says only the start and end of an address, spells long numbers, and reads amounts digit by digit (0.005 can be heard as 0.05, which is 10 times off). The full address and exact amount always stay in the on-screen text.
+- **Vocabulary and synonyms:** `voice/vocabulary.ts` lists every word Airlock should understand (see `docs/VOCABULARY.md`). On the voice path, "pay", "transfer", "go ahead", "never mind" and similar are mapped onto the commands the parser knows. "ok", "sure" and "do it" are deliberately NOT treated as YES. Scribe also gets keyterms (Airlock, Sepolia, ETH, ...) so those words are spelled right.
 - **Always show the parsed amount and full destination on screen before YES**, whatever channel the command came from. The cap of 0.01 ETH is the second safety net for a misheard amount.
 
 ## Reminder: the submission video (do not forget)

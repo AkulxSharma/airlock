@@ -4,16 +4,9 @@
 // parser expects. Keep the list short and plain text. This stays in this file on purpose: the
 // GUI's Next.js routes import this file, and Next cannot resolve a relative "./x.js" import.
 export const KEYTERMS = [
-  "Airlock",
-  "Hey Airlock",
-  "vitalik",
-  "Sepolia",
-  "ETH",
-  "ENS",
-  "testnet",
-  "gwei",
-  "selfdestruct",
-  "delegatecall",
+  "Airlock", "Hey Airlock", "vitalik", "Sepolia", "testnet", "ETH", "ENS", "gwei", "wei", "Etherscan",
+  "Sourcify", "selfdestruct", "delegatecall", "callcode", "bytecode", "reentrancy", "honeypot", "upgradeable",
+  "proxy", "blacklist", "tx origin", "minimal proxy", "unverified", "mainnet", "faucet", "nonce",
 ];
 const DEFAULT_STT_MODEL = "scribe_v2";
 export const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB, far above a spoken command

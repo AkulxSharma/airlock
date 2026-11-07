@@ -6,7 +6,7 @@ describe("normalizeTranscript", () => {
   it.each([
     ["Send zero point zero one ETH to vitalik dot eth.", "send 0.01 eth to vitalik.eth"],
     ["Send 0.01 ETH to vitalik.eth", "send 0.01 eth to vitalik.eth"],
-    ["transfer zero point zero zero five", "transfer 0.005"],
+    ["transfer zero point zero zero five", "send 0.005"], // "transfer" is a synonym for "send"
     ["This contract contains a self-destruct opcode", "this contract contains a selfdestruct opcode"],
     ["delegate call to an unknown address", "delegatecall to an unknown address"],
     ["Honey pot token", "honeypot token"],
@@ -52,7 +52,7 @@ describe("toSpeakable", () => {
   it("speaks decimal amounts digit by digit so 0.005 cannot be heard as 0.05", () => {
     expect(toSpeakable("Transfer 0.005 ETH")).toBe("Transfer zero point zero zero five ETH");
     expect(toSpeakable("send 0.01 ETH")).toBe("send zero point zero one ETH");
-    expect(n(toSpeakable("Transfer 0.005 ETH"))).toBe("transfer 0.005 eth");
+    expect(n(toSpeakable("Transfer 0.005 ETH"))).toBe("send 0.005 eth");
   });
   it("survives a round trip through the normalizer", () => {
     expect(n(toSpeakable("Chain ID 11155111"))).toBe("chain id 11155111");

@@ -92,6 +92,18 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 **Fix:** either add a root script that installs `server/`, `voice/` and `app/` in one command (for example `npm run setup`), or add one line to `CLAUDE.md` saying "after you pull, run `npm install` in each folder whose `package.json` changed".
 
+## 9. Synonyms only work on the voice path
+
+- [ ] Fixed
+
+**Where:** `server/src/api/message.ts`, the `req.channel === "voice"` block that calls `normalizeTranscript`.
+
+**Problem:** `canonicalizeCommand` (`voice/normalize.ts`, list in `voice/vocabulary.ts`, see `docs/VOCABULARY.md`) turns "pay 0.01 ether over to vitalik.eth", "go ahead" and "never mind" into the commands the strict parser knows, but only for voice. A typed GUI message or an iMessage text goes to the parser unchanged, so the same wording fails there unless Gemini is on.
+
+**Fix:** apply the mapping to every channel. Do not run the whole `normalizeTranscript` on typed text, because it lowercases the destination and would lose the checksum casing of a pasted address. Either make `canonicalizeCommand` case-insensitive and have it leave the destination token untouched, or lowercase only a copy for matching and rebuild the command with the original destination.
+
+**Done when:** tests show typed `Pay 0.01 ETH to Vitalik.eth` and `Go ahead` parse as send and yes on the gui and imessage channels, a mixed-case 0x address keeps its casing, and `ok` and `sure` still do not confirm.
+
 ## Already fixed, for reference
 
 - `.env.example` pointed at `rpc.sepolia.org`, which is dead; it now uses publicnode with a 1rpc fallback.
