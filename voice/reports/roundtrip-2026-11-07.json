@@ -1,0 +1,311 @@
+{
+  "rows": [
+    {
+      "id": "cmd-01",
+      "cat": "command",
+      "said": "Send zero point zero one ETH to vitalik dot eth.",
+      "heard": "Send 0.01 ETH to vitalik.eth",
+      "wer": 0.7,
+      "missing": [],
+      "verdict": "WARN",
+      "ms": 1408
+    },
+    {
+      "id": "cmd-02",
+      "cat": "command",
+      "said": "Send 0.01 ETH to vitalik.eth.",
+      "heard": "Send 0.01 ETH to vitalik.eth",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1016
+    },
+    {
+      "id": "cmd-03",
+      "cat": "command",
+      "said": "Transfer 0.005 test ETH to my savings wallet.",
+      "heard": "Transfer 0.005 test ETH to my savings wallet",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1539
+    },
+    {
+      "id": "cmd-04",
+      "cat": "command",
+      "said": "Check this address before I send anything.",
+      "heard": "Check this address before I send anything",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1415
+    },
+    {
+      "id": "cmd-05",
+      "cat": "command",
+      "said": "Yes, confirm the transfer.",
+      "heard": "Yes, confirm the transfer.",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1433
+    },
+    {
+      "id": "cmd-06",
+      "cat": "command",
+      "said": "No, cancel the transfer.",
+      "heard": "No, cancel the transfer",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1500
+    },
+    {
+      "id": "cmd-07",
+      "cat": "command",
+      "said": "Yes.",
+      "heard": "Yes.",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1198
+    },
+    {
+      "id": "cmd-08",
+      "cat": "command",
+      "said": "Is this contract risky?",
+      "heard": "Is this contract risky?",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1248
+    },
+    {
+      "id": "gate-01",
+      "cat": "gate",
+      "said": "Risk signal, not a guarantee.",
+      "heard": "Risk signal, not a guarantee",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1644
+    },
+    {
+      "id": "gate-02",
+      "cat": "gate",
+      "said": "Confirmation expires in sixty seconds.",
+      "heard": "Confirmation expires in 60 seconds",
+      "wer": 0.2,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1571
+    },
+    {
+      "id": "gate-03",
+      "cat": "gate",
+      "said": "This transfer is above the cap of 0.01 ETH and was refused.",
+      "heard": "This transfer is above the cap of 0.01 ETH and was refused",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1442
+    },
+    {
+      "id": "gate-04",
+      "cat": "gate",
+      "said": "The audit timed out. Transfer refused.",
+      "heard": "The audit timed out. Transfer refused",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1573
+    },
+    {
+      "id": "hard-01",
+      "cat": "hard",
+      "said": "Chain ID 11155111 is the Sepolia test network.",
+      "heard": "Chain ID 1155111 is the Sepolia test network",
+      "wer": 0.125,
+      "missing": [
+        "/11155111|11,155,111/"
+      ],
+      "verdict": "FAIL",
+      "ms": 2167
+    },
+    {
+      "id": "hard-02",
+      "cat": "hard",
+      "said": "The EIP 1967 implementation slot holds a non zero value.",
+      "heard": "The EIP 1967 implementation slot holds a non-zero value",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 2079
+    },
+    {
+      "id": "hard-03",
+      "cat": "hard",
+      "said": "Send 0.01 ETH to 0x71C7656EC7ab88b098defB751B7401B5f6d8976F.",
+      "heard": "Send 0.01 ETH to 071C7656EC7B88B098FB751B7401B5F6D8976F",
+      "wer": 0.2,
+      "missing": [
+        "/0x71c7656ec7ab88b098defb751b7401b5f6d8976f/"
+      ],
+      "verdict": "FAIL",
+      "ms": 2837
+    },
+    {
+      "id": "hard-04",
+      "cat": "hard",
+      "said": "Contract address zero x d e a d b e e f.",
+      "heard": "Contract address zero XDEADBEEF",
+      "wer": 0.75,
+      "missing": [],
+      "verdict": "WARN",
+      "ms": 2995
+    },
+    {
+      "id": "hard-05",
+      "cat": "hard",
+      "said": "Gas price is thirty gwei and the nonce is forty two.",
+      "heard": "Gas price is 30 Gwei and the nonce is 42",
+      "wer": 0.2727272727272727,
+      "missing": [],
+      "verdict": "WARN",
+      "ms": 2253
+    },
+    {
+      "id": "hard-06",
+      "cat": "hard",
+      "said": "Transaction hash begins with zero x a b c one two three.",
+      "heard": "Transaction hash begins with zero XABC123.",
+      "wer": 0.5833333333333334,
+      "missing": [],
+      "verdict": "WARN",
+      "ms": 2291
+    },
+    {
+      "id": "sec-01",
+      "cat": "security",
+      "said": "This contract contains a selfdestruct opcode.",
+      "heard": "This contract contains a self-destruct opcode",
+      "wer": 0.3333333333333333,
+      "missing": [],
+      "verdict": "WARN",
+      "ms": 1732
+    },
+    {
+      "id": "sec-02",
+      "cat": "security",
+      "said": "The contract uses delegatecall to an unknown address.",
+      "heard": "The contract uses delegate call to an unknown address.",
+      "wer": 0.25,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1668
+    },
+    {
+      "id": "sec-03",
+      "cat": "security",
+      "said": "Minimal proxy detected. The real logic lives at another address.",
+      "heard": "Minimal proxy detected. The real logic lives at another address",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1697
+    },
+    {
+      "id": "sec-04",
+      "cat": "security",
+      "said": "Upgradeable proxy with an admin slot. The logic can be swapped later.",
+      "heard": "Upgradable proxy with an admin slot. The logic can be swapped later",
+      "wer": 0.08333333333333333,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1798
+    },
+    {
+      "id": "sec-05",
+      "cat": "security",
+      "said": "Reentrancy risk found in the withdraw function.",
+      "heard": "Reentrancy risk found in the withdraw function",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 2095
+    },
+    {
+      "id": "sec-06",
+      "cat": "security",
+      "said": "Honeypot token. Sells are blocked for everyone except the owner.",
+      "heard": "Honeypot token. Cells are blocked for everyone except the owner",
+      "wer": 0.1,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 2376
+    },
+    {
+      "id": "sec-07",
+      "cat": "security",
+      "said": "Phishing address flagged. Transfer refused.",
+      "heard": "Phishing address flagged, transfer refused",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 2018
+    },
+    {
+      "id": "sec-08",
+      "cat": "security",
+      "said": "An unlimited token approval is a wallet drain risk.",
+      "heard": "An unlimited token approval is a wallet drain risk",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1583
+    },
+    {
+      "id": "sec-09",
+      "cat": "security",
+      "said": "Never share your private key or seed phrase with anyone.",
+      "heard": "Never share your private key or seed phrase with anyone",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1563
+    },
+    {
+      "id": "sec-10",
+      "cat": "security",
+      "said": "Verdict high. Risk score ninety two out of one hundred.",
+      "heard": "Verdict high risk score ninety-two out of one hundred",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1660
+    }
+  ],
+  "edges": [
+    {
+      "id": "stt-01",
+      "what": "2 seconds of silence",
+      "expect": "empty or near-empty text (no invented words)",
+      "ok": true,
+      "got": "\"\""
+    },
+    {
+      "id": "stt-02",
+      "what": "2000 random bytes labelled mp3",
+      "expect": "throws a clean HTTP error, no crash",
+      "ok": true,
+      "got": "Error: transcribe: ElevenLabs returned HTTP 400"
+    },
+    {
+      "id": "stt-03",
+      "what": "empty audio",
+      "expect": "rejected before any network call",
+      "ok": true,
+      "got": "Error: transcribe: audio is empty"
+    }
+  ]
+}
