@@ -115,6 +115,8 @@ export function createGeminiAgent(client: GeminiClient): Agent {
       const rule = parseCommand(text);
       // Exact commands and every YES/NO never reach the model.
       if (rule.kind !== "help") return rule;
+      // A plain greeting or "help" is just a request for the help text: no model call needed.
+      if (/^(?:help|hi|hello|hey|yo|\?)[\s.!?]*$/i.test(text.trim())) return rule;
 
       try {
         const r = await client.generate({ system: INTENT_SYSTEM, user: text, withTransferTool: true });

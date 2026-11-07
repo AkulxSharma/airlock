@@ -483,3 +483,26 @@ describe("ENS note", () => {
     expect((await track(t.say("send 0.005 to drainer.demo", "s2"))).reply).not.toMatch(/Note:/);
   });
 });
+
+describe("help text by channel", () => {
+  it("texting and voice are told to say the name; the GUI is not", async () => {
+    const t = setup();
+    for (const channel of ["imessage", "voice"] as const) {
+      const r = await track(t.say("help", `s-${channel}`, channel));
+      expect(r.reply).toMatch(/Text me: Airlock send 0\.001 to weth\.demo/);
+      expect(r.reply).toMatch(/YES or NO/);
+      expect(r.needsConfirm).toBe(false);
+    }
+    const gui = await track(t.say("help", "s-gui", "gui"));
+    expect(gui.reply).not.toMatch(/Text me/);
+    expect(gui.reply).toMatch(/send 0\.01 to vitalik\.eth/);
+  });
+
+  it("the help text never calls anything safe, secure or trusted and never mentions an amount that can move", async () => {
+    const t = setup();
+    const r = await track(t.say("help", "s", "imessage"));
+    expect(r.reply).not.toMatch(/\b(safe|secure|trusted)\b/i);
+    expect(t.sendTransaction).not.toHaveBeenCalled();
+    expect(t.store.peek("s")).toBeUndefined();
+  });
+});

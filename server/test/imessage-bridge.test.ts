@@ -382,3 +382,36 @@ describe("spoken replies", () => {
     expect(t.send).toHaveBeenCalledTimes(4);
   });
 });
+
+describe("just the name, end to end with the real handler", () => {
+  it("'Hey airlock' alone gets the help reply, in any case and punctuation", async () => {
+    const { createMessageHandler } = await import("../src/api/message.js");
+    const { createConfirmStore } = await import("../src/gate/confirm.js");
+    const handle = createMessageHandler({
+      resolve: async () => ({ error: "unused" }),
+      audit: async () => ({ error: "unused" }),
+      store: createConfirmStore(),
+      wallet: null,
+      now: () => 1,
+      maxTransferEth: "0.01",
+      publish: () => {},
+    });
+    for (const text of ["Hey airlock", "HEY AIRLOCK!", "airlock", "Airlock?", "hey, airlock."]) {
+      const sent: string[] = [];
+      const bridge = createBridge({
+        source: { maxRowId: () => 0, since: (r) => (r < 2 ? [{ rowid: 2, handle: ME, text }] : []) },
+        cursor: { load: () => 1, save: () => {} },
+        api: async (sessionId, t, channel) => {
+          const r = await handle({ sessionId, channel: channel ?? "imessage", text: t });
+          return { reply: r.reply, needsConfirm: r.needsConfirm };
+        },
+        send: async (_h, t) => { sent.push(t); },
+        allowlist: parseAllowlist("*"),
+      });
+      expect(await bridge.poll()).toBe(1);
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatch(/I'm Airlock/);
+      expect(sent[0]).toMatch(/Text me: Airlock send/);
+    }
+  });
+});

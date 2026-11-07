@@ -296,3 +296,21 @@ describe("whole-token matching (the model may only restate what the user wrote)"
     });
   });
 });
+
+describe("plain greetings never reach the model", () => {
+  it("help, hi, hello, hey and a question mark are answered without a model call", async () => {
+    const t = fake(transfer("1", "x.eth"));
+    const agent = createGeminiAgent(t.client);
+    for (const w of ["help", "Help!", "hi", "Hello.", "hey", "yo", "?", "  help  "]) {
+      expect(await agent.handle(w)).toEqual({ kind: "help" });
+    }
+    expect(t.generate).not.toHaveBeenCalled();
+  });
+
+  it("a longer message that merely starts with a greeting still goes to the model", async () => {
+    const t = fake(transfer("0.01", "vitalik.eth"));
+    const r = await createGeminiAgent(t.client).handle("hey could you send 0.01 eth to vitalik.eth");
+    expect(r).toEqual({ kind: "send", amountEth: "0.01", target: "vitalik.eth" });
+    expect(t.generate).toHaveBeenCalledTimes(1);
+  });
+});

@@ -29,6 +29,10 @@ export type MessageDeps = {
 const HELP =
   "I check a crypto address before any funds move. Try: send 0.01 to vitalik.eth (testnet only). I will audit it, then ask you to confirm with YES or NO.";
 
+// For texting and voice, people also need to know to say the name, or the line stays silent.
+const HELP_TEXTING =
+  "I'm Airlock. I check a crypto address before any funds move (testnet only). Text me: Airlock send 0.001 to weth.demo. I'll audit it, then ask you to confirm with YES or NO.";
+
 const SEND_FAILURE: Record<string, string> = {
   "invalid-address": "The send was stopped: the address is not valid.",
   "invalid-amount": "The send was stopped: the amount is not valid.",
@@ -90,7 +94,7 @@ export function createMessageHandler(deps: MessageDeps) {
 
     const intent = await agent.handle(text);
 
-    if (intent.kind === "help") return done(HELP);
+    if (intent.kind === "help") return done(req.channel === "gui" ? HELP : HELP_TEXTING);
 
     if (intent.kind === "no") {
       deps.store.cancel(req.sessionId);
