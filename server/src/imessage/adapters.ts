@@ -65,11 +65,46 @@ export const SEND_SCRIPT = `on run {theText, theHandle}
   end tell
 end run`;
 
+// Same idea for an audio file: the path and the handle are arguments, never part of the script.
+export const SEND_FILE_SCRIPT = `on run {theFile, theHandle}
+  tell application "Messages"
+    try
+      set svc to 1st service whose service type = iMessage
+      send (POSIX file theFile) to buddy theHandle of svc
+    on error
+      send (POSIX file theFile) to chat id ("iMessage;-;" & theHandle)
+    end try
+  end tell
+end run`;
+
 type ExecFile = (
   file: string,
   args: string[],
   cb: (err: Error | null, stdout: string, stderr: string) => void,
 ) => unknown;
+
+export function createOsascriptFileSender(
+  exec: ExecFile = execFile as unknown as ExecFile,
+  retries = 1,
+  waitMs = 1_000,
+): (handle: string, path: string) => Promise<void> {
+  const once = (handle: string, path: string) =>
+    new Promise<void>((resolve, reject) => {
+      exec("/usr/bin/osascript", ["-e", SEND_FILE_SCRIPT, path, handle], (err) => (err ? reject(err) : resolve()));
+    });
+  return async (handle, path) => {
+    let last: unknown;
+    for (let i = 0; i <= retries; i++) {
+      try {
+        return await once(handle, path);
+      } catch (err) {
+        last = err;
+        if (i < retries) await new Promise((r) => setTimeout(r, waitMs));
+      }
+    }
+    throw last;
+  };
+}
 
 export function createOsascriptSender(
   exec: ExecFile = execFile as unknown as ExecFile,

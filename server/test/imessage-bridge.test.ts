@@ -326,3 +326,59 @@ describe("voice notes", () => {
     expect(await t.bridge.poll()).toBe(0); // the confirmation was used up
   });
 });
+
+describe("spoken replies", () => {
+  const voice = (rowid: number, handle: string): InboundMessage => ({ rowid, handle, text: "", audioPath: `/a/${rowid}.caf` });
+
+  function ssetup(opts: { messages: InboundMessage[]; voiceReply?: (h: string, t: string) => Promise<void>; max?: number; noReplier?: boolean }) {
+    const order: string[] = [];
+    const send = vi.fn(async () => { order.push("text"); });
+    const voiceReply = vi.fn(opts.voiceReply ?? (async () => { order.push("voice"); }));
+    const bridge = createBridge({
+      source: { maxRowId: () => 0, since: (r) => opts.messages.filter((x) => x.rowid > r) },
+      cursor: { load: () => 1, save: () => {} },
+      api: async (_s, t) => ({ reply: `reply to: ${t}`, needsConfirm: false }),
+      send,
+      allowlist: parseAllowlist("*"),
+      now: () => 1_000_000,
+      transcribe: async () => "airlock hello",
+      voiceReply: opts.noReplier ? undefined : voiceReply,
+      maxSpokenRepliesPerMinute: opts.max,
+    });
+    return { bridge, send, voiceReply, order };
+  }
+
+  it("a spoken question gets the text reply first, then a spoken copy", async () => {
+    const t = ssetup({ messages: [voice(2, ME)] });
+    expect(await t.bridge.poll()).toBe(1);
+    expect(t.order).toEqual(["text", "voice"]);
+    expect(t.voiceReply).toHaveBeenCalledWith(ME, "reply to: hello");
+  });
+
+  it("a typed question gets text only", async () => {
+    const t = ssetup({ messages: [m(2, ME, "airlock hello")] });
+    await t.bridge.poll();
+    expect(t.voiceReply).not.toHaveBeenCalled();
+    expect(t.order).toEqual(["text"]);
+  });
+
+  it("if the spoken copy fails, the text reply stands and the bridge carries on", async () => {
+    const t = ssetup({ messages: [voice(2, ME), voice(3, ME)], voiceReply: async () => { throw new Error("tts down"); } });
+    expect(await t.bridge.poll()).toBe(2);
+    expect(t.send).toHaveBeenCalledTimes(2);
+  });
+
+  it("without a replier configured, only text goes out", async () => {
+    const t = ssetup({ messages: [voice(2, ME)], noReplier: true });
+    expect(await t.bridge.poll()).toBe(1);
+    expect(t.order).toEqual(["text"]);
+  });
+
+  it("caps spoken replies per minute but keeps sending text", async () => {
+    const msgs = Array.from({ length: 4 }, (_, i) => voice(i + 2, `+1999888770${i}`));
+    const t = ssetup({ messages: msgs, max: 2 });
+    expect(await t.bridge.poll()).toBe(4);
+    expect(t.voiceReply).toHaveBeenCalledTimes(2);
+    expect(t.send).toHaveBeenCalledTimes(4);
+  });
+});

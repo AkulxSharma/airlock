@@ -179,7 +179,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [x] Step 7: Demo targets (Akul, 2026-11-07, docs/DEMO.md)
 - [x] Step 8: Gemini agent (Akul, 2026-11-07)
 - [x] Step 9: Source checks (Akul, 2026-11-07; Sourcify is used only to fetch source text, the analysis is our own code)
-- [ ] Step 10: iMessage bridge (Akul: code and tests done (wake word, anyone can text, voice notes), see docs/IMESSAGE.md; live text and voice-note checks still pending, need Full Disk Access on the demo Mac and the ElevenLabs key)
+- [ ] Step 10: iMessage bridge (Akul: code and tests done (wake word, anyone can text, voice notes, spoken replies), see docs/IMESSAGE.md; live text, voice-note and spoken-reply checks still pending, need Full Disk Access on the demo Mac and the ElevenLabs key)
 - [x] Step 11a: Demo GUI + voice routes (Muhammad, 2026-11-07, `app/`, Otto-style layout, light by default, inverted dark mode)
 - [ ] Step 11b: Real GUI polish, landing view, demo-target buttons with real addresses
 - [ ] Step 12: Wrap-up (includes the 2-minute submission video)

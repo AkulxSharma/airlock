@@ -31,6 +31,9 @@ export type BridgeDeps = {
   confirmWindowMs?: number;
   transcribe?: VoiceTranscriber;
   maxVoicePerMinute?: number;
+  // Sends a spoken copy of a reply (best effort, never throws). Used only when the sender spoke.
+  voiceReply?: (handle: string, text: string) => Promise<void>;
+  maxSpokenRepliesPerMinute?: number;
 };
 
 const UNAVAILABLE = "Airlock is not available right now. Nothing was sent. Try again in a moment.";
@@ -43,6 +46,8 @@ export function createBridge(deps: BridgeDeps) {
   const confirmWindowMs = deps.confirmWindowMs ?? 60_000;
   const awaiting = new Map<string, number>(); // handle -> when their open confirmation expires
   const maxVoicePerMinute = deps.maxVoicePerMinute ?? 6;
+  const maxSpoken = deps.maxSpokenRepliesPerMinute ?? 6;
+  const spokenStamps: number[] = [];
   const voiceStamps: number[] = [];
   const globalStamps: number[] = [];
   const recent = new Map<string, number[]>(); // handle -> timestamps of handled messages
@@ -63,6 +68,14 @@ export function createBridge(deps: BridgeDeps) {
     while (voiceStamps.length > 0 && t - voiceStamps[0] >= 60_000) voiceStamps.shift();
     if (voiceStamps.length >= maxVoicePerMinute) return true;
     voiceStamps.push(t);
+    return false;
+  };
+
+  const spokenLimited = (): boolean => {
+    const t = now();
+    while (spokenStamps.length > 0 && t - spokenStamps[0] >= 60_000) spokenStamps.shift();
+    if (spokenStamps.length >= maxSpoken) return true;
+    spokenStamps.push(t);
     return false;
   };
 
@@ -153,6 +166,14 @@ export function createBridge(deps: BridgeDeps) {
         if (ownReplies.length > 20) ownReplies.shift();
         replied++;
         log(`replied to ${maskHandle(msg.handle)} (${reply.length} characters)`);
+        // Someone who spoke gets the answer spoken back as well, after the text is safely sent.
+        if (spoken && deps.voiceReply && !spokenLimited()) {
+          try {
+            await deps.voiceReply(msg.handle, reply);
+          } catch {
+            log("spoken reply failed");
+          }
+        }
       } catch {
         log(`could not send a reply to ${maskHandle(msg.handle)}`);
       }

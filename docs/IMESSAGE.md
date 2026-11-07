@@ -19,6 +19,8 @@ A voice note ("Audio Message.caf" in the Messages attachments) works the same wa
 2. The transcript is checked for the wake word like typed text. A voice note that does not say "Airlock" gets no reply.
 3. It is sent to the server as a **voice** message, so the voice safety rules apply: an address spoken aloud is refused (speech can mishear it), with a message asking the sender to type the address or use a name like `weth.demo` or `vitalik.eth`. Spoken numbers like "zero point zero one" and "dot demo" are understood. A spoken "yes" or "no" answers an open confirmation.
 
+**Spoken replies.** If you sent a voice note, Airlock answers in text first and then sends a spoken copy as an audio message, using ElevenLabs text-to-speech (the same voice as the GUI). A typed message gets text only. The spoken version is a short summary (the verdict, one finding, the amount and the question), not the whole findings list. It never says a full address: only the start and end, spelled out, and amounts are said digit by digit so 0.005 can not be heard as 0.05. The exact address and amount are always in the text reply. The spoken copy is best effort: if it fails, the text reply has already been sent. At most 6 spoken replies a minute (`IMESSAGE_MAX_VOICE_PER_MINUTE`, shared with transcription). Set `IMESSAGE_VOICE_REPLIES=off` to send text only. The audio file is saved briefly in `~/Library/Caches/airlock-imessage/` and deleted after about two minutes.
+
 **Privacy, because the wake word is only known after transcribing:** every voice note from an allowed sender is uploaded to ElevenLabs for transcription before Airlock knows whether it was meant for Airlock. With `IMESSAGE_ALLOWLIST=*` that includes voice notes friends and family send to this Mac. To limit it:
 - Only notes of 20 seconds or less and 2 MB or less are ever uploaded; longer ones are skipped.
 - At most 6 notes a minute across the whole line are transcribed (`IMESSAGE_MAX_VOICE_PER_MINUTE`), which also protects the ElevenLabs quota.
@@ -50,10 +52,10 @@ A voice note ("Audio Message.caf" in the Messages attachments) works the same wa
 
 ## Status
 
-Code and tests are done (the throwaway-database tests mimic the Messages schema, including the attributedBody format and audio attachments; the voice conversion test really decodes an Opus CAF file made on this Mac). Not yet verified live: reading a real incoming text or voice note and sending a real reply, and a real ElevenLabs transcription of a voice note. Those need Full Disk Access and Automation on the demo Mac, and the ElevenLabs key. Do that check before the demo.
+Code and tests are done (the throwaway-database tests mimic the Messages schema, including the attributedBody format and audio attachments; the voice conversion test really decodes an Opus CAF file made on this Mac). Not yet verified live: reading a real incoming text or voice note and sending a real reply, and a real ElevenLabs transcription of a voice note, and sending the spoken reply. Those need Full Disk Access and Automation on the demo Mac, and the ElevenLabs key. Do that check before the demo.
 
 ## Limits to know
 
 - One Mac, one line. If the Mac sleeps, signs out or loses its network, the line goes quiet.
-- Replies are text. Airlock does not send voice replies over iMessage.
+- Replies are text, plus a spoken copy for people who sent a voice note. The audio attachment is the least tested part: sending a file through the Messages app can be blocked by macOS permissions, and it has not been tried on a real phone yet. The text reply never depends on it.
 - The Gemini free tier allows only a few requests a minute, so the plain-language note may be missing from some replies; the fixed lines (verdict, findings, full address, amount, YES or NO prompt) always appear.

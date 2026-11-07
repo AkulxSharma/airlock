@@ -3,8 +3,8 @@
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
-import { createVoiceTranscriber } from "./audio.js";
-import { createFileCursor, createHttpApi, createOsascriptSender, openMessagesDb } from "./adapters.js";
+import { createVoiceReplier, createVoiceTranscriber, toSpoken } from "./audio.js";
+import { createFileCursor, createHttpApi, createOsascriptFileSender, createOsascriptSender, openMessagesDb } from "./adapters.js";
 import { createBridge } from "./bridge.js";
 import { parseAllowlist } from "./text.js";
 
@@ -52,6 +52,17 @@ console.log(
     : "Voice notes: off (set ELEVENLABS_API_KEY in airlock/.env to turn on)",
 );
 
+// Spoken replies: only to people who sent a voice note, after the text reply. A dry run prints
+// what it would say and spends no speech credits.
+const repliesOn = voiceOn && env.IMESSAGE_VOICE_REPLIES !== "off";
+console.log(repliesOn ? "Spoken replies: on (to voice notes only, after the text reply)" : "Spoken replies: off");
+const logLine = (line: string) => console.log(`${new Date().toISOString()} ${line}`);
+const voiceReply = !repliesOn
+  ? undefined
+  : dryRun
+    ? async (_handle: string, text: string) => console.log(`[dry run] would also send a spoken reply: ${toSpoken(text)}`)
+    : createVoiceReplier({ sendFile: createOsascriptFileSender(), log: logLine });
+
 const bridge = createBridge({
   source,
   send,
@@ -62,6 +73,8 @@ const bridge = createBridge({
   maxPerMinute: Number(env.IMESSAGE_MAX_PER_MINUTE) || 8,
   maxGlobalPerMinute: Number(env.IMESSAGE_MAX_GLOBAL_PER_MINUTE) || 20,
   maxVoicePerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
+  voiceReply,
+  maxSpokenRepliesPerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
   transcribe: voiceOn ? createVoiceTranscriber({ log: (line) => console.log(`${new Date().toISOString()} ${line}`) }) : undefined,
 });
 
