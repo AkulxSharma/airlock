@@ -8,6 +8,7 @@ import { createApp, parseAllowedOrigins } from "./api/app.js";
 import { createMessageHandler } from "./api/message.js";
 import { resolveTarget, type EnsClient } from "./api/resolve.js";
 import { createStageBus } from "./api/stream.js";
+import { loadDemoAliases } from "./demo/aliases.js";
 import { DEFAULT_TTL_MS, createConfirmStore } from "./gate/confirm.js";
 import { createSepoliaWallet, maxTransferFromEnv, type WalletLike } from "./wallet/send.js";
 
