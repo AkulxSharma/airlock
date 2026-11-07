@@ -51,7 +51,7 @@ export function AppShell() {
           {view === "console" && (
             <Console
               messages={air.messages} stages={air.stages} log={air.log} verdict={air.verdict} pending={air.pending}
-              busy={air.busy} voice={voice} onSend={sendTyped} onAnswer={(yes) => sendTyped(yes ? "yes" : "no")}
+              busy={air.busy} voice={voice} onSend={sendTyped} onAnswer={(yes) => sendTyped(yes ? "yes" : "no")} onReset={air.reset}
             />
           )}
           {view === "log" && (

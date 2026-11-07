@@ -12,14 +12,14 @@ export const metadata: Metadata = {
   description: "Say it. Airlock checks it. Then it moves. A risk signal for testnet crypto transfers, by voice or text.",
 };
 
-// Runs before paint so a saved light theme does not flash dark. Dark is the default.
-const themeScript = `try{if(localStorage.getItem("theme")==="light")document.documentElement.classList.remove("dark")}catch(e){}`;
+// Runs before paint so a saved dark (deep-space) theme does not flash light. Light is the default.
+const themeScript = `try{if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${cormorant.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${cormorant.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

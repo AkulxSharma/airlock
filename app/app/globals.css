@@ -101,6 +101,14 @@
   50% { transform: translate3d(40px, -30px, 0) scale(1.08); }
   100% { transform: translate3d(0, 0, 0) scale(1); }
 }
+@keyframes bar {
+  0%, 100% { transform: scaleY(0.45); }
+  50% { transform: scaleY(1.7); }
+}
+@keyframes ring {
+  0% { transform: scale(1); opacity: 0.45; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
 @keyframes orbPulse {
   0%, 100% { transform: scale(1); opacity: 0.35; }
   50% { transform: scale(1.18); opacity: 0.9; }

@@ -1,6 +1,6 @@
 "use client";
 
-import { SendHorizonal } from "lucide-react";
+import { Clock, RotateCcw, SendHorizonal, ShieldCheck, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, LogEntry, Pending } from "@/lib/useAirlock";
 import type { ParsedReply } from "@/lib/parseReply";
@@ -20,12 +20,19 @@ interface Props {
   voice: VoiceControls;
   onSend: (text: string) => void;
   onAnswer: (yes: boolean) => void;
+  onReset: () => void;
 }
 
-export function Console({ messages, stages, log, verdict, pending, busy, voice, onSend, onAnswer }: Props) {
+const Label = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{children}</h3>
+);
+
+export function Console({ messages, stages, log, verdict, pending, busy, voice, onSend, onAnswer, onReset }: Props) {
   const [text, setText] = useState("");
+  const [today, setToday] = useState(""); // set after mount so server and client markup match
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages.length]);
+  useEffect(() => setToday(new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).toUpperCase()), []);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,16 +42,31 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
   };
 
   return (
-    <div className="space-y-8">
-      <header className="animate-fade-in-up">
-        <h2 className="font-serif text-4xl italic tracking-tight">Say it. Airlock checks it.</h2>
-        <p className="mt-2 text-muted-foreground">Then it moves. Type or hold the mic. A rule in plain code decides, never the model.</p>
+    <div className="space-y-12">
+      <header className="animate-fade-in-up text-center">
+        <p className="flex items-center justify-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          <span className="flex items-center gap-2 text-foreground"><Sparkles className="h-3.5 w-3.5" /> Airlock console</span>
+          {today && <><span className="text-border">|</span><span>{today}</span></>}
+        </p>
+        <h2 className="mt-5 font-serif text-6xl tracking-tight">Check it before it moves</h2>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> Sepolia testnet</span>
+          <span className="flex items-center gap-2 rounded-full border border-low/40 bg-low/10 px-3 py-1 text-low"><ShieldCheck className="h-4 w-4" /> Risk signal, not a guarantee</span>
+          <button onClick={onReset} aria-label="Start a new session" title="Start a new session" className="rounded-full p-2 transition-colors hover:bg-accent hover:text-foreground">
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
-      <StageRows stages={stages} />
       <VerdictCard data={verdict} pending={pending} busy={busy} onAnswer={onAnswer} />
 
-      <section aria-label="Conversation" className="space-y-3">
+      <section aria-label="Audit stages" className="space-y-4">
+        <Label>Audit stages</Label>
+        <StageRows stages={stages} />
+      </section>
+
+      <section aria-label="Conversation" className="space-y-4">
+        <Label>Conversation</Label>
         {messages.length === 0 && <p className="text-sm text-muted-foreground">Try: <button className="underline underline-offset-4 hover:text-foreground" onClick={() => onSend("send 0.01 to vitalik.eth")}>send 0.01 to vitalik.eth</button></p>}
         {messages.map((m) => (
           <div key={m.id} className={`animate-fade-in-up flex ${m.from === "you" ? "justify-end" : "justify-start"}`}>
@@ -72,8 +94,8 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
         </button>
       </form>
 
-      <section aria-label="Recent events">
-        <h3 className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Live log</h3>
+      <section aria-label="Recent events" className="space-y-4">
+        <Label>Live log</Label>
         <EventLog log={log} />
       </section>
     </div>

@@ -10,6 +10,8 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  // The dev-only "N" badge sat on the sidebar footer; bottom-right is where Otto has it.
+  devIndicators: { position: "bottom-right" },
   // The voice helpers live in ../voice, so Turbopack must be allowed to read the repo root.
   turbopack: {
     root: path.join(process.cwd(), ".."),

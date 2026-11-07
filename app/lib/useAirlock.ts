@@ -112,5 +112,12 @@ export function useAirlock() {
     }
   }, [sessionId, addLog]);
 
-  return { sessionId, messages, stages, log, verdict, pending, busy, online, streamUp, send };
+  /** Start over: new session id (so the stream and any pending confirm are fresh) and a clean screen. */
+  const reset = useCallback(() => {
+    const id = crypto.randomUUID();
+    try { localStorage.setItem("airlock-session", id); } catch { /* private window */ }
+    setMessages([]); setStages({}); setVerdict(null); setPending(null); setLog([]); setSessionId(id);
+  }, []);
+
+  return { sessionId, messages, stages, log, verdict, pending, busy, online, streamUp, send, reset };
 }
