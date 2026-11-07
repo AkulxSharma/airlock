@@ -161,3 +161,18 @@ describe("toSpoken and the ENS note", () => {
     expect(s).toContain("Reply YES to send or NO to cancel");
   });
 });
+
+describe("toSpoken keeps voice replies short", () => {
+  it("leaves out 'No findings.' and the expiry, but keeps the decision and the question", () => {
+    const s = toSpoken(`Risk signal: LOW (score 0).\nNo findings.\nTo send: 0.005 test ETH to ${FULL}.\nThis is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in 60 seconds.`);
+    expect(s).not.toMatch(/No findings|expires/i);
+    expect(s).toContain("Risk signal: LOW");
+    expect(s).toContain("Reply YES to send or NO to cancel");
+    expect(s).toContain("not a guarantee");
+  });
+  it("the whole confirm summary is now clearly shorter than the full text", () => {
+    const full = `Risk signal: LOW (score 0).\nNo findings.\nTo send: 0.005 test ETH to ${FULL}.\nThis is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in 60 seconds.`;
+    expect(toSpoken(full).length).toBeLessThan(full.length + 40);
+    expect(toSpoken(full)).not.toContain(FULL);
+  });
+});

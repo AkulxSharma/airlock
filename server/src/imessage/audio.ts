@@ -109,7 +109,7 @@ export function toSpoken(reply: string): string {
   let findings = 0;
   for (const raw of reply.split("\n")) {
     const line = raw.trim();
-    if (!line || /https?:\/\//i.test(line) || /^Note:/i.test(line)) continue;
+    if (!line || /https?:\/\//i.test(line) || /^Note:/i.test(line) || /^No findings\.?$/i.test(line)) continue;
     const bullet = /^-\s*\[(?:low|medium|high)\]\s*(.*)$/i.exec(line);
     if (bullet) {
       if (findings++ >= 1) continue;
@@ -118,7 +118,9 @@ export function toSpoken(reply: string): string {
     }
     out.push(line);
   }
-  const text = toSpeakable(out.join(" ").replace(/\s+/g, " ").trim());
+  // The expiry is in the text reply; saying it aloud only makes the voice note longer.
+  const joined = out.join(" ").replace(/\s*It expires in \d+ seconds\.?/i, "");
+  const text = toSpeakable(joined.replace(/\s+/g, " ").trim());
   return text.length > MAX_SPEAK_CHARS ? text.slice(0, MAX_SPEAK_CHARS - 1).trimEnd() + "." : text;
 }
 
