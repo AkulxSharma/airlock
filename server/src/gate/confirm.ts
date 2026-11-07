@@ -51,7 +51,7 @@ export function createConfirmStore(): ConfirmStore {
       }
       if (current.id !== id) return { ok: false, reason: "wrong-id" };
       pending.delete(sessionId); // single use
-      return { ok: true, transfer: current };
+      return { ok: true, transfer: current as ConsumedTransfer };
     },
 
     cancel(sessionId) {
