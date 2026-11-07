@@ -15,7 +15,8 @@ export async function POST(req: Request) {
   if (file.size > MAX_AUDIO_BYTES) return Response.json({ error: "That recording is too long." }, { status: 413 });
   const mimeType = typeof form.get("mimeType") === "string" ? (form.get("mimeType") as string) : file.type || "audio/webm";
   try {
-    const text = await transcribe(new Uint8Array(await file.arrayBuffer()), { mimeType });
+    // English only: a short spoken command is sometimes guessed as another language when left to auto-detect.
+    const text = await transcribe(new Uint8Array(await file.arrayBuffer()), { mimeType, languageCode: "en" });
     return Response.json({ text });
   } catch (e) {
     // transcribe() errors never contain the key (it reports the HTTP status only)

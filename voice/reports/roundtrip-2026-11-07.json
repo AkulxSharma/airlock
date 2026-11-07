@@ -8,9 +8,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1936,
-      "runs": 3,
-      "passes": 3
+      "ms": 1550,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "cmd-02",
@@ -20,9 +20,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1102,
-      "runs": 3,
-      "passes": 3
+      "ms": 1217,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "cmd-03",
@@ -32,9 +32,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2386,
-      "runs": 3,
-      "passes": 3
+      "ms": 1697,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "cmd-04",
@@ -44,21 +44,21 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2080,
-      "runs": 3,
-      "passes": 3
+      "ms": 1774,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "cmd-05",
       "cat": "command",
       "said": "Yes, confirm the transfer.",
-      "heard": "Yes, confirm the transfer.",
+      "heard": "Yes, confirm the transfer",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1573,
-      "runs": 3,
-      "passes": 3
+      "ms": 1577,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "cmd-06",
@@ -68,9 +68,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1394,
-      "runs": 3,
-      "passes": 3
+      "ms": 1467,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "cmd-07",
@@ -80,9 +80,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1467,
-      "runs": 3,
-      "passes": 3
+      "ms": 1297,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "cmd-08",
@@ -92,9 +92,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1748,
-      "runs": 3,
-      "passes": 3
+      "ms": 1289,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "gate-01",
@@ -104,9 +104,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1700,
-      "runs": 3,
-      "passes": 3
+      "ms": 1779,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "gate-02",
@@ -116,160 +116,158 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1807,
-      "runs": 3,
-      "passes": 3
+      "ms": 1502,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "gate-03",
       "cat": "gate",
       "said": "This transfer is above the cap of zero point zero one ETH and was refused.",
-      "heard": "This transfer is above the cap of 0.01 ETH and was refused",
+      "heard": "This transfer is above the cap of 0.01 ETH and was refused.",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1945,
-      "runs": 3,
-      "passes": 3
+      "ms": 1577,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "gate-04",
       "cat": "gate",
       "said": "The audit timed out. Transfer refused.",
-      "heard": "The order timed out. Transfer refused",
-      "wer": 0.16666666666666666,
-      "missing": [
-        "/audit/"
-      ],
-      "verdict": "FAIL",
-      "ms": 1701,
-      "runs": 3,
-      "passes": 2
+      "heard": "The audit timed out. Transfer refused",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1584,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "hard-01",
       "cat": "hard",
       "said": "Chain ID 1 1 1 5 5 1 1 1 is the Sepolia test network.",
-      "heard": "Chain ID 11155111 is the Sepolia test network",
+      "heard": "Chain ID 11155111 is the Sepolia test network.",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2249,
-      "runs": 3,
-      "passes": 3
+      "ms": 1955,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "hard-02",
       "cat": "hard",
       "said": "The EIP 1967 implementation slot holds a non zero value.",
-      "heard": "The EIP 1967 implementation slot holds a non-zero value",
+      "heard": "The EIP-1967 implementation slot holds a non-zero value",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2323,
-      "runs": 3,
-      "passes": 3
+      "ms": 2004,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "hard-03",
       "cat": "hard",
       "said": "Send zero point zero one ETH to the address starting zero x 7 1 C 7, ending 9 7 6 F.",
-      "heard": "Send 0.01 ETH to the address starting 0x71c7 ending 976f",
+      "heard": "Send 0.01 ETH to the address starting 0x71c7 ending 976f.",
       "wer": 0.18181818181818182,
       "missing": [],
       "verdict": "PASS",
-      "ms": 3145,
-      "runs": 3,
-      "passes": 3
+      "ms": 3285,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "hard-04",
       "cat": "hard",
       "said": "Contract address zero x d e a d b e e f.",
-      "heard": "Contract address zero xd ead bef",
+      "heard": "Contract address 0xdeadbef",
       "wer": 0.3333333333333333,
       "missing": [
         "/dead\\s?beef|d e a d b e e f|0xdeadbeef/"
       ],
       "verdict": "INFO",
-      "ms": 2271,
-      "runs": 3,
-      "passes": 2,
-      "note": "informational: spelled-hex accuracy is not relied on (guard blocks hex by voice); 2/3 runs matched"
+      "ms": 2218,
+      "runs": 1,
+      "passes": 0,
+      "note": "informational: spelled-hex accuracy is not relied on (guard blocks hex by voice); 0/1 runs matched"
     },
     {
       "id": "hard-05",
       "cat": "hard",
       "said": "Gas price is thirty gwei and the nonce is forty two.",
-      "heard": "Gas price is 30 gwei and the nonce is 42",
+      "heard": "Gas price is 30 gwei and the nonce is 42.",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1831,
-      "runs": 3,
-      "passes": 3
+      "ms": 2083,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "hard-06",
       "cat": "hard",
       "said": "Transaction hash begins with zero x a b c one two three.",
-      "heard": "Transaction hash begins with zero x ABC 123",
+      "heard": "Transaction hash begins with 0xabc123",
       "wer": 0,
       "missing": [],
       "verdict": "INFO",
-      "ms": 1919,
-      "runs": 3,
-      "passes": 3,
-      "note": "informational: spelled-hex accuracy is not relied on (guard blocks hex by voice); 3/3 runs matched"
+      "ms": 1450,
+      "runs": 1,
+      "passes": 1,
+      "note": "informational: spelled-hex accuracy is not relied on (guard blocks hex by voice); 1/1 runs matched"
     },
     {
       "id": "hard-07",
       "cat": "hard",
       "said": "Send 0.01 ETH to 0x71C7656EC7ab88b098defB751B7401B5f6d8976F.",
-      "heard": "Send 0.01 ETH to 0x71c7656ec7abeb098dfb751b7401b5f6d8976f",
+      "heard": "Send 0.01 ETH to 0x71c7656ec7ab88e098df675fb7401b5f6d8976f",
       "wer": 0.2,
       "missing": [],
       "verdict": "PASS",
-      "ms": 3442,
+      "ms": 3500,
       "note": "guard blocked address-like text",
-      "runs": 3,
-      "passes": 3
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-01",
       "cat": "security",
       "said": "This contract contains a selfdestruct opcode.",
-      "heard": "This contract contains a self-destruct opcode",
+      "heard": "This contract contains a selfdestruct opcode",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2047,
-      "runs": 3,
-      "passes": 3
+      "ms": 1746,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-02",
       "cat": "security",
       "said": "The contract uses delegatecall to an unknown address.",
-      "heard": "The contract uses delegate call to an unknown address.",
+      "heard": "The contract uses delegatecall to an unknown address",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1766,
-      "runs": 3,
-      "passes": 3
+      "ms": 1813,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-03",
       "cat": "security",
       "said": "Minimal proxy detected. The real logic lives at another address.",
-      "heard": "Minimal proxy detected. The real logic lives at another address",
+      "heard": "Minimal proxy detected. The real logic lives at another address.",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1721,
-      "runs": 3,
-      "passes": 3
+      "ms": 1893,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-04",
@@ -279,33 +277,33 @@
       "wer": 0.08333333333333333,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1922,
-      "runs": 3,
-      "passes": 3
+      "ms": 1855,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-05",
       "cat": "security",
       "said": "Reentrancy risk found in the withdraw function.",
-      "heard": "Reentrancy risk found in the withdrawal function",
-      "wer": 0.14285714285714285,
+      "heard": "Reentrancy risk found in the withdraw function",
+      "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2377,
-      "runs": 3,
-      "passes": 3
+      "ms": 1756,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-06",
       "cat": "security",
       "said": "Honeypot token. Sells are blocked for everyone except the owner.",
-      "heard": "Honeypot token. Cells are blocked for everyone except the owner",
-      "wer": 0.1,
+      "heard": "Honeypot token. Sells are blocked for everyone except the owner",
+      "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2248,
-      "runs": 3,
-      "passes": 3
+      "ms": 1804,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-07",
@@ -315,9 +313,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1870,
-      "runs": 3,
-      "passes": 3
+      "ms": 1751,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-08",
@@ -327,9 +325,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1933,
-      "runs": 3,
-      "passes": 3
+      "ms": 1727,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-09",
@@ -339,9 +337,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1919,
-      "runs": 3,
-      "passes": 3
+      "ms": 1706,
+      "runs": 1,
+      "passes": 1
     },
     {
       "id": "sec-10",
@@ -351,9 +349,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1862,
-      "runs": 3,
-      "passes": 3
+      "ms": 1914,
+      "runs": 1,
+      "passes": 1
     }
   ],
   "edges": [

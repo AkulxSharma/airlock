@@ -2,53 +2,44 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { extractWakeCommand } from "../../voice/wake";
+import { createVad } from "./vad";
+import { encodeWav, resample } from "./wav";
 
 // Hands-free mode: listen for "Hey Airlock" / "Airlock" and run the command that follows.
-// It uses the browser's built-in speech recognition (Chrome, Edge, Safari), which keeps listening
-// without spending ElevenLabs credits. It is on by default (the browser asks for microphone permission,
-// and shows its own recording indicator), and it pauses while Airlock is speaking so it cannot hear
-// its own voice. Every command still goes through the same server path as hold-to-talk: the address
-// guard and the YES confirmation apply unchanged.
 //
-// It reports what it is doing (started, heard, errors) so a failure is visible instead of silent.
-interface RecAlt { transcript: string }
-interface RecResult { isFinal: boolean; 0: RecAlt }
-interface RecEvent { resultIndex: number; results: ArrayLike<RecResult> }
-interface Rec {
-  continuous: boolean; interimResults: boolean; lang: string;
-  start(): void; stop(): void;
-  onstart: (() => void) | null;
-  onresult: ((e: RecEvent) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-}
-type RecCtor = new () => Rec;
-
-const ctor = (): RecCtor | null => {
-  const w = window as unknown as { SpeechRecognition?: RecCtor; webkitSpeechRecognition?: RecCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-};
+// How it works: the microphone is read continuously in the browser. A voice-activity detector
+// (lib/vad.ts) finds when someone is talking, and only those clips are sent, as 16 kHz WAV, to
+// ElevenLabs Scribe through our own /api/transcribe route (the same engine as hold-to-talk, which
+// was far more accurate than the browser's built-in recognition in tests). The transcript is then
+// checked for the wake phrase. Clips without the phrase are dropped, never acted on.
+//
+// Protections: it is on by default (the browser asks for microphone permission and shows its own
+// recording indicator); it pauses while Airlock speaks or records, so it cannot hear itself; it sends
+// at most MAX_CLIPS_PER_MINUTE clips; and every command still goes through the same server path as
+// hold-to-talk, so the address guard and the YES confirmation apply unchanged.
 const AWAIT_MS = 8000; // after a bare "Hey Airlock", how long to wait for the command
+const MAX_CLIPS_PER_MINUTE = 12; // credit and noise protection
+const FRAME_SAMPLES = 4096;
+
+type AudioContextCtor = typeof AudioContext;
+const audioContextCtor = (): AudioContextCtor | null => {
+  const w = window as unknown as { AudioContext?: AudioContextCtor; webkitAudioContext?: AudioContextCtor };
+  return w.AudioContext ?? w.webkitAudioContext ?? null;
+};
+const canCapture = () => typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && audioContextCtor() !== null;
 
 export interface WakeControls {
   supported: boolean;
   enabled: boolean;
-  live: boolean; // the browser's recognition is running right now
+  live: boolean; // the microphone is being read right now
   awaiting: boolean; // heard "Hey Airlock", waiting for the command
-  heard: string; // the last phrase the browser heard, so a failure to trigger is visible
+  heard: string; // the last clip's transcript, so a failure to trigger is visible
   error: string | null;
   toggle: () => void;
 }
 
-const ERROR_TEXT: Record<string, string> = {
-  "not-allowed": "Microphone blocked. Allow it in the browser to use hands-free.",
-  "service-not-allowed": "This browser blocked speech recognition. Allow the microphone in its settings.",
-  network: "The browser's speech service could not be reached. Hands-free needs an internet connection.",
-  "audio-capture": "No microphone was found for hands-free.",
-};
-
 export function useWakeWord(onCommand: (text: string) => void, paused: boolean, onEvent?: (message: string) => void): WakeControls {
-  const supported = useSyncExternalStore(() => () => {}, () => ctor() !== null, () => false);
+  const supported = useSyncExternalStore(() => () => {}, canCapture, () => false);
   const [enabled, setEnabled] = useState(true); // on by default; the browser still asks for mic permission first
   const [live, setLive] = useState(false);
   const [awaiting, setAwaiting] = useState(false);
@@ -58,74 +49,124 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
   const pausedRef = useRef(paused);
   const commandRef = useRef(onCommand);
   const eventRef = useRef(onEvent);
+  const inFlight = useRef(false);
+  const sentAt = useRef<number[]>([]);
   useEffect(() => { pausedRef.current = paused; commandRef.current = onCommand; eventRef.current = onEvent; });
 
   useEffect(() => {
     if (!enabled) return;
-    const Ctor = ctor();
-    if (!Ctor) { eventRef.current?.("hands-free: this browser has no speech recognition"); return; }
-    const rec = new Ctor();
-    rec.continuous = true;
-    rec.interimResults = false;
-    rec.lang = "en-US";
-    let stopped = false;
-    let restart: ReturnType<typeof setTimeout> | undefined;
+    const Ctor = audioContextCtor();
+    if (!canCapture() || !Ctor) { eventRef.current?.("hands-free: this browser cannot read the microphone"); return; }
     const say = (m: string) => eventRef.current?.(m);
 
-    rec.onstart = () => { setLive(true); setError(null); say("hands-free: listening for “Hey Airlock”"); };
-    rec.onresult = (e) => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (!r.isFinal) continue;
-        const text = r[0].transcript.trim();
-        if (!text) continue;
-        setHeard(text);
-        if (pausedRef.current) { say(`hands-free heard (ignored, busy): “${text}”`); continue; }
+    let cancelled = false;
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    let source: MediaStreamAudioSourceNode | null = null;
+    let processor: ScriptProcessorNode | null = null;
+    let resume: (() => void) | null = null;
 
-        if (Date.now() < awaitUntil.current) { // the command after a bare "Hey Airlock"
-          awaitUntil.current = 0;
-          setAwaiting(false);
-          const cmd = extractWakeCommand(text).command || text;
-          say(`hands-free command: “${cmd}”`);
-          commandRef.current(cmd);
-          continue;
-        }
-        const wake = extractWakeCommand(text);
-        if (!wake.woke) { say(`hands-free heard (no wake phrase): “${text}”`); continue; }
-        if (wake.command) {
-          say(`hands-free command: “${wake.command}”`);
-          commandRef.current(wake.command);
-        } else {
-          say("hands-free: heard “Hey Airlock”, waiting for the command");
-          awaitUntil.current = Date.now() + AWAIT_MS;
-          setAwaiting(true);
-          setTimeout(() => { if (Date.now() >= awaitUntil.current) setAwaiting(false); }, AWAIT_MS + 100);
-        }
+    const handleText = (text: string) => {
+      if (!text) return;
+      setHeard(text);
+      if (pausedRef.current) { say(`hands-free heard (ignored, busy): “${text}”`); return; }
+
+      if (Date.now() < awaitUntil.current) { // the command after a bare "Hey Airlock"
+        awaitUntil.current = 0;
+        setAwaiting(false);
+        const cmd = extractWakeCommand(text).command || text;
+        say(`hands-free command: “${cmd}”`);
+        commandRef.current(cmd);
+        return;
+      }
+      const wake = extractWakeCommand(text);
+      if (!wake.woke) { say(`hands-free heard (no wake phrase, ignored): “${text}”`); return; }
+      if (wake.command) {
+        say(`hands-free command: “${wake.command}”`);
+        commandRef.current(wake.command);
+      } else {
+        say("hands-free: heard “Hey Airlock”, waiting for the command");
+        awaitUntil.current = Date.now() + AWAIT_MS;
+        setAwaiting(true);
+        setTimeout(() => { if (Date.now() >= awaitUntil.current) setAwaiting(false); }, AWAIT_MS + 100);
       }
     };
-    rec.onerror = (e) => {
-      if (e.error !== "no-speech" && e.error !== "aborted") say(`hands-free error: ${e.error}`);
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        stopped = true;
+
+    const handleClip = async (pcm: Float32Array, rate: number) => {
+      if (inFlight.current) { say("hands-free: still busy with the last clip, skipped this one"); return; }
+      const now = Date.now();
+      sentAt.current = sentAt.current.filter((t) => now - t < 60_000);
+      if (sentAt.current.length >= MAX_CLIPS_PER_MINUTE) { say(`hands-free: cap of ${MAX_CLIPS_PER_MINUTE} clips a minute reached, skipped this one`); return; }
+      sentAt.current.push(now);
+      inFlight.current = true;
+      try {
+        const wav = encodeWav(resample(pcm, rate));
+        const form = new FormData();
+        form.append("file", new Blob([wav as BlobPart], { type: "audio/wav" }), "speech.wav");
+        form.append("mimeType", "audio/wav");
+        const res = await fetch("/api/transcribe", { method: "POST", body: form });
+        const data = (await res.json()) as { text?: string; error?: string };
+        if (cancelled) return;
+        if (!res.ok || typeof data.text !== "string") { say(`hands-free: transcription failed (${data.error ?? res.status})`); return; }
+        handleText(data.text.trim());
+      } catch {
+        say("hands-free: could not reach the transcription service");
+      } finally {
+        inFlight.current = false;
+      }
+    };
+
+    const start = async () => {
+      try {
+        // The browser's own noise suppression and echo cancellation help a weak microphone.
+        stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      } catch (err) {
+        if (cancelled) return;
+        const name = err instanceof DOMException ? err.name : "";
+        setError(name === "NotFoundError" ? "No microphone was found for hands-free." : "Microphone blocked. Allow it in the browser to use hands-free.");
+        say(`hands-free error: ${name || "microphone unavailable"}`);
         setEnabled(false);
+        return;
       }
-      if (ERROR_TEXT[e.error]) setError(ERROR_TEXT[e.error]);
+      if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+
+      ctx = new Ctor();
+      const audio = ctx;
+      // Browsers may start audio suspended until the page is touched once.
+      resume = () => { if (audio.state === "suspended") void audio.resume(); };
+      resume();
+      window.addEventListener("pointerdown", resume);
+      window.addEventListener("keydown", resume);
+      const sync = () => { setLive(audio.state === "running"); };
+      audio.onstatechange = sync;
+
+      source = audio.createMediaStreamSource(stream);
+      processor = audio.createScriptProcessor(FRAME_SAMPLES, 1, 1);
+      const silent = audio.createGain();
+      silent.gain.value = 0; // the processor must be connected to run; this keeps the speakers quiet
+      const vad = createVad({ frameMs: (FRAME_SAMPLES / audio.sampleRate) * 1000 });
+      processor.onaudioprocess = (e) => {
+        if (pausedRef.current) { vad.reset(); return; } // drop audio while Airlock speaks, records or works
+        const clip = vad.feed(e.inputBuffer.getChannelData(0));
+        if (clip) void handleClip(clip, audio.sampleRate);
+      };
+      source.connect(processor);
+      processor.connect(silent);
+      silent.connect(audio.destination);
+      setError(null);
+      sync();
+      say("hands-free: listening for “Hey Airlock”");
     };
-    // The browser ends recognition after a pause in speech; start it again.
-    rec.onend = () => {
-      setLive(false);
-      if (!stopped) restart = setTimeout(() => { try { rec.start(); } catch { /* already running */ } }, 400);
-    };
-    try { rec.start(); } catch (err) { say(`hands-free could not start: ${err instanceof Error ? err.message : "unknown error"}`); }
+    void start();
 
     return () => {
-      stopped = true;
-      clearTimeout(restart);
-      rec.onend = null;
-      rec.onstart = null;
-      rec.onresult = null;
-      rec.onerror = null;
-      try { rec.stop(); } catch { /* not started */ }
+      cancelled = true;
+      if (resume) { window.removeEventListener("pointerdown", resume); window.removeEventListener("keydown", resume); }
+      if (processor) { processor.onaudioprocess = null; processor.disconnect(); }
+      source?.disconnect();
+      stream?.getTracks().forEach((t) => t.stop());
+      if (ctx) { ctx.onstatechange = null; void ctx.close().catch(() => {}); }
+      setLive(false);
       awaitUntil.current = 0;
     };
   }, [enabled]);

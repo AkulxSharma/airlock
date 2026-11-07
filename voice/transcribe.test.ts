@@ -20,8 +20,19 @@ describe("transcribe", () => {
     expect(calls[0].url).toContain("/v1/speech-to-text");
     expect((calls[0].init.headers as Record<string, string>)["xi-api-key"]).toBe(KEY);
     const form = calls[0].init.body as FormData;
-    expect(form.get("model_id")).toBe("scribe_v1");
+    expect(form.get("model_id")).toBe("scribe_v2");
+    expect(form.get("language_code")).toBeNull(); // only sent when a caller asks for one
+    expect(form.get("tag_audio_events")).toBe("false");
+    expect(form.getAll("keyterms")).toContain("Airlock");
+    expect(form.getAll("keyterms")).toContain("Hey Airlock");
     expect((form.get("file") as Blob).size).toBe(4);
+  });
+  it("lets the caller override the keyterms and pin the language", async () => {
+    const { impl, calls } = fakeFetch(200, { text: "ok" });
+    await transcribe(AUDIO, { apiKey: KEY, fetchImpl: impl, keyterms: ["Foo"], languageCode: "es" });
+    const form = calls[0].init.body as FormData;
+    expect(form.getAll("keyterms")).toEqual(["Foo"]);
+    expect(form.get("language_code")).toBe("es");
   });
   it("rejects empty audio before calling the network", async () => {
     const { impl, calls } = fakeFetch(200, { text: "x" });
