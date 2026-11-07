@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractText, isAllowed, maskHandle, messageText, normalizeHandle, parseAllowlist } from "../src/imessage/text.js";
+import { extractText, isAllowed, maskHandle, matchWake, messageText, normalizeHandle, parseAllowlist } from "../src/imessage/text.js";
 
 // Builds a blob shaped like Apple's typedstream: header, "NSString", marker bytes, '+', length, text.
 function blob(text: string, form: "short" | "u16" | "u32" = "short"): Uint8Array {
@@ -45,6 +45,11 @@ describe("messageText", () => {
     expect(messageText(null, blob("hello"))).toBe("hello");
     expect(messageText("   ", blob("hello"))).toBe("hello");
   });
+  it("an attachment marker alone is not text", () => {
+    expect(messageText("\uFFFC", null)).toBe("");
+    expect(messageText(null, blob("\uFFFC"))).toBe("");
+    expect(messageText("\uFFFC hello", null)).toBe("hello");
+  });
   it("is empty when there is nothing readable", () => {
     expect(messageText(null, null)).toBe("");
   });
@@ -80,5 +85,28 @@ describe("handles and the allowlist", () => {
     expect(maskHandle("+17165550100")).toBe("***0100");
     expect(maskHandle("someone@example.com")).toBe("s***@example.com");
     expect(maskHandle("12")).toBe("***");
+  });
+});
+
+describe("matchWake", () => {
+  it("returns what follows Airlock or Hey Airlock, in any case and spelling", () => {
+    expect(matchWake("Airlock send 0.01 to a.eth")).toBe("send 0.01 to a.eth");
+    expect(matchWake("hey airlock, send 0.01 to a.eth")).toBe("send 0.01 to a.eth");
+    expect(matchWake("HEY AIRLOCK send")).toBe("send");
+    expect(matchWake("air lock send")).toBe("send");
+    expect(matchWake("Hey Airlock")).toBe("");
+    expect(matchWake("  airlock!  ")).toBe("");
+  });
+  it("returns null when the name is not said", () => {
+    for (const t of ["send 0.01 to a.eth", "yes", "", "hello there", "airline lock", "unlocked"]) {
+      expect(matchWake(t)).toBeNull();
+    }
+  });
+  it("a message that only mentions an airlock.eth domain is not a wake word", () => {
+    expect(matchWake("send 0.01 to airlock.eth")).toBeNull();
+    expect(matchWake("my airlock.eth domain expired")).toBeNull();
+  });
+  it("but the name plus a domain still counts when it is said on its own too", () => {
+    expect(matchWake("airlock send 0.01 to airlock.eth")).toBe("send 0.01 to airlock.eth");
   });
 });

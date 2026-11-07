@@ -1,6 +1,7 @@
-import { isAllowed, maskHandle, type Allowlist } from "./text.js";
+import { parseCommand } from "../agent/parse.js";
+import { isAllowed, maskHandle, matchWake, type Allowlist } from "./text.js";
 
-export type InboundMessage = { rowid: number; handle: string; text: string };
+export type InboundMessage = { rowid: number; handle: string; text: string; audioPath?: string };
 
 // Everything the bridge touches is passed in, so tests need no Messages database,
 // no AppleScript and no server.
@@ -10,8 +11,12 @@ export type MessageSource = {
 };
 export type ReplySender = (handle: string, text: string) => Promise<void>;
 export type CursorStore = { load(): number | null; save(rowid: number): void };
-// Sends one text to the Airlock server and returns its reply.
-export type AirlockApi = (sessionId: string, text: string) => Promise<string>;
+// Sends one text to the Airlock server and returns its reply, plus whether it is now waiting
+// for the sender to confirm a transfer.
+export type AirlockReply = { reply: string; needsConfirm: boolean };
+export type AirlockApi = (sessionId: string, text: string, channel?: "imessage" | "voice") => Promise<AirlockReply>;
+// Turns a voice note file into text, or null if it can not be used. Never throws.
+export type VoiceTranscriber = (audioPath: string) => Promise<string | null>;
 
 export type BridgeDeps = {
   source: MessageSource;
@@ -22,6 +27,10 @@ export type BridgeDeps = {
   now?: () => number;
   log?: (line: string) => void;
   maxPerMinute?: number;
+  maxGlobalPerMinute?: number;
+  confirmWindowMs?: number;
+  transcribe?: VoiceTranscriber;
+  maxVoicePerMinute?: number;
 };
 
 const UNAVAILABLE = "Airlock is not available right now. Nothing was sent. Try again in a moment.";
@@ -30,8 +39,32 @@ export function createBridge(deps: BridgeDeps) {
   const now = deps.now ?? Date.now;
   const log = deps.log ?? (() => {});
   const maxPerMinute = deps.maxPerMinute ?? 8;
+  const maxGlobalPerMinute = deps.maxGlobalPerMinute ?? 20;
+  const confirmWindowMs = deps.confirmWindowMs ?? 60_000;
+  const awaiting = new Map<string, number>(); // handle -> when their open confirmation expires
+  const maxVoicePerMinute = deps.maxVoicePerMinute ?? 6;
+  const voiceStamps: number[] = [];
+  const globalStamps: number[] = [];
   const recent = new Map<string, number[]>(); // handle -> timestamps of handled messages
   const ownReplies: string[] = []; // our last replies, to ignore a bot that echoes them back
+
+  // Anyone may text the line, so one number or the whole line can not be flooded.
+  const globalLimited = (): boolean => {
+    const t = now();
+    while (globalStamps.length > 0 && t - globalStamps[0] >= 60_000) globalStamps.shift();
+    if (globalStamps.length >= maxGlobalPerMinute) return true;
+    globalStamps.push(t);
+    return false;
+  };
+
+  // Every voice note we transcribe uses the speech-to-text quota, so cap those across the line.
+  const voiceLimited = (): boolean => {
+    const t = now();
+    while (voiceStamps.length > 0 && t - voiceStamps[0] >= 60_000) voiceStamps.shift();
+    if (voiceStamps.length >= maxVoicePerMinute) return true;
+    voiceStamps.push(t);
+    return false;
+  };
 
   const rateLimited = (handle: string): boolean => {
     const t = now();
@@ -62,22 +95,57 @@ export function createBridge(deps: BridgeDeps) {
       cursor = msg.rowid;
       deps.cursor.save(cursor);
 
-      if (!msg.text) continue;
+      if (!msg.text && !msg.audioPath) continue;
       if (!isAllowed(deps.allowlist, msg.handle)) {
         log(`ignored a message from a sender not on the allowlist (${maskHandle(msg.handle)})`);
         continue;
       }
-      if (ownReplies.includes(msg.text)) continue;
-      if (rateLimited(msg.handle)) {
+
+      // A voice note is transcribed first (only for allowed senders, within a quota). The
+      // transcript is then treated exactly like typed text: it still needs the wake word,
+      // and the server applies the voice rules (an address spoken aloud is refused).
+      let spoken = false;
+      let said = msg.text;
+      if (!said && msg.audioPath) {
+        if (!deps.transcribe) continue;
+        if (voiceLimited()) {
+          log(`voice note skipped for ${maskHandle(msg.handle)}: voice quota reached`);
+          continue;
+        }
+        said = (await deps.transcribe(msg.audioPath)) ?? "";
+        spoken = true;
+        if (!said) continue;
+      }
+      if (ownReplies.includes(said)) continue;
+
+      // Starting anything needs the wake word. The one exception: a bare YES or NO from a
+      // sender whose confirmation is open, because that is the answer to our own question.
+      // Everything else is somebody's private chat and is dropped without a trace.
+      const wake = matchWake(said);
+      let text: string;
+      if (wake !== null) {
+        text = wake === "" ? "help" : wake;
+      } else {
+        const expires = awaiting.get(msg.handle);
+        const kind = parseCommand(said).kind;
+        if (expires !== undefined && now() < expires && (kind === "yes" || kind === "no")) text = said;
+        else continue;
+      }
+
+      if (rateLimited(msg.handle) || globalLimited()) {
         log(`rate limited ${maskHandle(msg.handle)}`);
         continue;
       }
 
       let reply: string;
       try {
-        reply = await deps.api(`imessage:${msg.handle}`, msg.text);
+        const r = await deps.api(`imessage:${msg.handle}`, text, spoken ? "voice" : "imessage");
+        reply = r.reply;
+        if (r.needsConfirm) awaiting.set(msg.handle, now() + confirmWindowMs);
+        else awaiting.delete(msg.handle);
       } catch {
         reply = UNAVAILABLE;
+        awaiting.delete(msg.handle);
       }
       try {
         await deps.send(msg.handle, reply);

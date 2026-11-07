@@ -65,11 +65,27 @@ describe("http api", () => {
   it("posts JSON with the imessage channel and returns the reply", async () => {
     const f = ok({ reply: "hello", stages: [], needsConfirm: false });
     const api = createHttpApi("http://127.0.0.1:8787", f as unknown as typeof fetch);
-    expect(await api("imessage:+1", "send 0.01 to a.eth")).toBe("hello");
+    expect(await api("imessage:+1", "send 0.01 to a.eth")).toEqual({ reply: "hello", needsConfirm: false });
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("http://127.0.0.1:8787/api/message");
     expect((init.headers as Record<string, string>)["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body as string)).toEqual({ sessionId: "imessage:+1", channel: "imessage", text: "send 0.01 to a.eth" });
+  });
+
+  it("sends the channel it is given, defaulting to imessage", async () => {
+    const f = ok({ reply: "hi", needsConfirm: false });
+    const api = createHttpApi("http://x", f as unknown as typeof fetch);
+    await api("s", "t", "voice");
+    await api("s", "t");
+    const sent = (f.mock.calls as unknown as Array<[string, RequestInit]>).map((c) => JSON.parse(c[1].body as string).channel);
+    expect(sent).toEqual(["voice", "imessage"]);
+  });
+
+  it("passes needsConfirm through, and treats anything but true as false", async () => {
+    const yes = createHttpApi("http://x", ok({ reply: "go?", needsConfirm: true }) as unknown as typeof fetch);
+    expect(await yes("s", "t")).toEqual({ reply: "go?", needsConfirm: true });
+    const odd = createHttpApi("http://x", ok({ reply: "go?", needsConfirm: "true" }) as unknown as typeof fetch);
+    expect((await odd("s", "t")).needsConfirm).toBe(false);
   });
 
   it("throws on a non-200 answer or an empty reply", async () => {
@@ -91,6 +107,8 @@ describe("messages database reader (throwaway database, never the real one)", ()
     const path = join(dir, "chat.db");
     const db = new DatabaseSync(path);
     db.exec(`
+      CREATE TABLE attachment (ROWID INTEGER PRIMARY KEY, filename TEXT, mime_type TEXT, uti TEXT);
+      CREATE TABLE message_attachment_join (message_id INTEGER, attachment_id INTEGER);
       CREATE TABLE handle (ROWID INTEGER PRIMARY KEY, id TEXT);
       CREATE TABLE message (ROWID INTEGER PRIMARY KEY, text TEXT, attributedBody BLOB, handle_id INTEGER,
         is_from_me INTEGER, cache_roomnames TEXT, associated_message_type INTEGER);
@@ -120,6 +138,32 @@ describe("messages database reader (throwaway database, never the real one)", ()
       ]);
       expect(src.since(5).map((r) => r.rowid)).toEqual([6]);
       expect(src.since(6)).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports a voice note's audio file, and ignores other attachments", async () => {
+    const { dir, path, db, ins } = await makeDb();
+    try {
+      ins.run("\uFFFC", null, 1, 0, null, 0);            // 1 voice note (the text is just the attachment marker)
+      ins.run("\uFFFC", null, 1, 0, null, 0);            // 2 a photo
+      ins.run("look", null, 2, 0, null, 0);              // 3 plain text
+      ins.run("\uFFFC", null, 1, 0, null, 0);            // 4 audio by uti only
+      db.exec(`
+        INSERT INTO attachment VALUES (1, '~/Library/Messages/Attachments/aa/bb/Audio Message.caf', 'audio/x-caf', 'com.apple.coreaudio-format');
+        INSERT INTO attachment VALUES (2, '~/Library/Messages/Attachments/cc/dd/IMG.heic', 'image/heic', 'public.heic');
+        INSERT INTO attachment VALUES (3, '~/Library/Messages/Attachments/ee/ff/clip.caf', NULL, 'com.apple.coreaudio-format');
+        INSERT INTO message_attachment_join VALUES (1, 1), (2, 2), (4, 3);`);
+      db.close();
+      const src = await openMessagesDb(path);
+      const rows = src.since(0);
+      expect(rows.map((r) => [r.rowid, r.text, r.audioPath])).toEqual([
+        [1, "", "~/Library/Messages/Attachments/aa/bb/Audio Message.caf"],
+        [2, "", undefined],
+        [3, "look", undefined],
+        [4, "", "~/Library/Messages/Attachments/ee/ff/clip.caf"],
+      ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
