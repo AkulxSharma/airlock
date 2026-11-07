@@ -57,7 +57,7 @@ console.log(
 const repliesOn = voiceOn && env.IMESSAGE_VOICE_REPLIES !== "off";
 console.log(
   repliesOn
-    ? `Spoken replies: on (to voice notes only, after the text reply; format ${env.IMESSAGE_VOICE_FORMAT === "mp3" ? "mp3" : "caf, the phone's voice-note format"})`
+    ? `Spoken replies: on (to voice notes only, after the text reply; format ${env.IMESSAGE_VOICE_FORMAT === "caf" ? "caf" : "mp3"})`
     : "Spoken replies: off",
 );
 const logLine = (line: string) => console.log(`${new Date().toISOString()} ${line}`);
@@ -70,7 +70,7 @@ const voiceReply = !repliesOn
         return createVoiceReplier({
           sendFile: createOsascriptFileSender(),
           strategies: SEND_FILE_SCRIPTS.length,
-          format: env.IMESSAGE_VOICE_FORMAT === "mp3" ? "mp3" : "caf",
+          format: env.IMESSAGE_VOICE_FORMAT === "caf" ? "caf" : "mp3",
           mark: checker.mark,
           verify: checker.verify,
           log: logLine,
