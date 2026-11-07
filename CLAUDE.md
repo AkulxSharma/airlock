@@ -24,6 +24,7 @@ This file records decisions agreed between Muhammad and Akul on 2026-11-07. Clau
 - Use a single `main` branch. Both of us commit and merge into it. No long-lived feature branches.
 - Commit small and often.
 - **Push rule (applies to every Claude session and both people):** after every finished change, run `git commit`, then `git pull` (merge any remote changes and resolve conflicts), then `git push origin main`. Always pull and merge before pushing, never push without pulling first, and never force-push. If the pull is not a fast-forward, merge (or rebase only your own new commits onto `origin/main`) and check the result before pushing.
+- **Auto-push:** Claude sessions in this repo push automatically after every change, without waiting to be asked and without asking for confirmation. Pushing to `main` of this repo is pre-approved by both owners. Do not leave finished work uncommitted or unpushed at the end of a turn.
 - Push after every change, not in a batch at the end, so the other person's Claude always sees the latest state and does not build the same thing twice.
 - Before starting a step, pull and read the progress list in `docs/START_HERE.md`. If the step is ticked or marked in progress, do not start it.
 
