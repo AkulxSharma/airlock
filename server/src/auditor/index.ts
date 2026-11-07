@@ -12,7 +12,13 @@ import {
 import { scoreFindings, verdictFor } from "./score.js";
 
 // Pure function: bytecode in, AuditResult out. No network calls.
-export function auditBytecode(hex: string, target: string, chainId: number): AuditResult {
+// `extraFindings` carries checks that need chain reads (for example the EIP-1967 slots).
+export function auditBytecode(
+  hex: string,
+  target: string,
+  chainId: number,
+  extraFindings: Finding[] = [],
+): AuditResult {
   const code = hexToBytes(hex);
   const ops = scanOpcodes(code);
   const minimalProxy = isMinimalProxy(hex);
