@@ -26,10 +26,20 @@ export const StageSchema = z.object({
   detail: z.string().optional(),
 });
 
+export const PendingSchema = z.object({
+  to: z.string(),
+  amountEth: z.string(),
+  expiresAt: z.number(),
+});
+
+// `audit` and `pending` are optional additions for the GUI (see docs/GUI_REQUIREMENTS.md
+// section 6). They never replace `reply`, so a client that ignores them keeps working.
 export const MessageResponseSchema = z.object({
   reply: z.string(),
   stages: z.array(StageSchema),
   needsConfirm: z.boolean(),
+  audit: AuditResultSchema.optional(),
+  pending: PendingSchema.optional(),
 });
 
 export type Finding = z.infer<typeof FindingSchema>;
