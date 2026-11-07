@@ -25,7 +25,7 @@ export function AppShell() {
   const voice = useVoice((t) => handleVoiceText.current(t));
   const air = useAirlock();
   // Hands-free: pause while Airlock is speaking, recording, or busy so it never hears itself.
-  const wake = useWakeWord((t) => handleVoiceText.current(t), voice.state !== "idle" || air.busy);
+  const wake = useWakeWord((t) => handleVoiceText.current(t), voice.state !== "idle" || air.busy, air.note);
 
   // Keep the latest handler in the ref after each render (refs must not be written during render).
   useEffect(() => {

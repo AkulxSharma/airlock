@@ -62,13 +62,14 @@ export function MicButton({ voice, size = "lg" }: { voice: VoiceControls; size?:
 
 export function VoicePanel({ voice, wake }: { voice: VoiceControls; wake: WakeControls }) {
   const active = voice.state === "listening" || voice.state === "speaking" || voice.state === "transcribing" || wake.awaiting;
-  const status = wake.awaiting ? "Listening..." : voice.state === "idle" && wake.enabled ? "Say “Hey Airlock”" : STATUS[voice.state];
-  const caption = wake.awaiting ? CAPTION.listening : voice.state === "idle" && wake.enabled ? "Say “Hey Airlock”" : CAPTION[voice.state];
+  const waiting = voice.state === "idle" && wake.enabled;
+  const status = wake.awaiting ? "Listening..." : waiting ? (wake.live ? "Say “Hey Airlock”" : "Starting hands-free...") : STATUS[voice.state];
+  const caption = wake.awaiting ? CAPTION.listening : waiting ? (wake.live ? "Say “Hey Airlock”" : "Hold to talk") : CAPTION[voice.state];
   return (
     <aside className="relative z-10 hidden w-[400px] flex-col border-l border-border bg-sidebar/80 backdrop-blur lg:flex">
       <div className="flex flex-1 flex-col items-center justify-center gap-10 px-8">
         <p className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
-          <span className={`h-2 w-2 rounded-full ${voice.state === "error" ? "bg-high" : active ? "bg-low" : "bg-muted-foreground/60"}`} />
+          <span className={`h-2 w-2 rounded-full ${voice.state === "error" ? "bg-high" : active || (waiting && wake.live) ? "bg-low" : "bg-muted-foreground/60"}`} />
           {status}
         </p>
 
@@ -84,6 +85,10 @@ export function VoicePanel({ voice, wake }: { voice: VoiceControls; wake: WakeCo
 
         <MicButton voice={voice} />
         <p className="max-w-[220px] text-center text-xs font-medium uppercase leading-relaxed tracking-[0.25em] text-muted-foreground">{caption}</p>
+
+        {wake.enabled && wake.heard && (
+          <p className="max-w-[280px] text-center text-[11px] text-muted-foreground">Heard: “{wake.heard}”</p>
+        )}
 
         {(voice.error || wake.error) && <p className="max-w-[280px] text-center text-sm text-high" role="alert">{voice.error ?? wake.error}</p>}
         {voice.lastHeard && (

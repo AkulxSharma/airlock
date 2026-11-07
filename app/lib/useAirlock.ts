@@ -129,6 +129,8 @@ export function useAirlock() {
   }, [pacer]);
 
   const clearLog = useCallback(() => setLog([]), []);
+  /** Let other parts of the page (for example hands-free listening) write to the live log. */
+  const note = useCallback((text: string) => addLog("system", text), [addLog]);
 
-  return { sessionId, messages, stages, log, verdict, pending, busy, online, streamUp, send, reset, clearLog };
+  return { sessionId, messages, stages, log, verdict, pending, busy, online, streamUp, send, reset, clearLog, note };
 }

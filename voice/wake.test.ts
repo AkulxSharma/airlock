@@ -15,6 +15,11 @@ describe("extractWakeCommand", () => {
     ["hey air-lock yes", "yes"],
     ["Hey Airlok send 0.01 to vitalik.eth", "send 0.01 to vitalik.eth"],
     ["okay so hey airlock send 0.01 to vitalik.eth", "send 0.01 to vitalik.eth"],
+    // looser mishearings are accepted only after a greeting
+    ["Hey air luck, send 0.01 to vitalik.eth", "send 0.01 to vitalik.eth"],
+    ["hey error lock yes", "yes"],
+    ["Hi Aerlock no", "no"],
+    ["ok heir lock send 0.01 to vitalik.eth", "send 0.01 to vitalik.eth"],
   ])("%s", (input, command) => {
     const r = extractWakeCommand(input);
     expect(r.woke).toBe(true);
@@ -28,7 +33,7 @@ describe("extractWakeCommand", () => {
   });
 
   it("does not wake on ordinary speech or lookalike words", () => {
-    for (const s of ["send 0.01 to vitalik.eth", "yes", "check the airlocks", "I love hockey", "hey there", "unlock it", "the error log"]) {
+    for (const s of ["send 0.01 to vitalik.eth", "yes", "check the airlocks", "I love hockey", "hey there", "unlock it", "the error log", "hey look at this", "hi are you there", "ok the door lock is broken", "my hair look"]) {
       expect(extractWakeCommand(s).woke).toBe(false);
     }
   });
