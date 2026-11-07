@@ -163,7 +163,7 @@ Check: a full transfer by typing, then by voice, works against the real server. 
 
 ## Step 12: Wrap-up (rank 13)
 
-End-to-end runs by voice, GUI text and iMessage. Write the demo script in `docs/DEMO.md`. Record. Devpost writeup with the disclosure from the README. Check the prize list in `TASKS.md`.
+End-to-end runs by voice, GUI text and iMessage. Write the demo script in `docs/DEMO.md`. Record. Devpost writeup with the disclosure from the README. Check the prize list in `TASKS.md`. **Make the 2-minute-maximum submission video (slide-style, like a ppt) before submitting; the outline is in `CLAUDE.md`.**
 
 ## Progress
 
@@ -182,7 +182,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [ ] Step 10: iMessage bridge (Akul: code and 38 tests done, see docs/IMESSAGE.md; live text check still pending, needs Full Disk Access on the demo Mac)
 - [x] Step 11a: Demo GUI + voice routes (Muhammad, 2026-11-07, `app/`, Otto-style layout, light by default, inverted dark mode)
 - [ ] Step 11b: Real GUI polish, landing view, demo-target buttons with real addresses
-- [ ] Step 12: Wrap-up
+- [ ] Step 12: Wrap-up (includes the 2-minute submission video)
 
 ## Open questions
 

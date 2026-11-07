@@ -36,6 +36,18 @@ This file records decisions agreed between Muhammad and Akul on 2026-11-07. Clau
 - **Speak replies with `toSpeakable()`** from `voice/speakable.ts`: it says only the start and end of an address, spells long numbers, and reads amounts digit by digit (0.005 can be heard as 0.05, which is 10 times off). The full address and exact amount always stay in the on-screen text.
 - **Always show the parsed amount and full destination on screen before YES**, whatever channel the command came from. The cap of 0.01 ETH is the second safety net for a misheard amount.
 
+## Reminder: the submission video (do not forget)
+
+When we upload the project to Devpost and submit, we must also make a **video of at most 2 minutes** that shows what we made, in the style of a short slide presentation (a "ppt"): a few clean slides with narration and screen recording. Check the exact length and format rules on the hackathon's Devpost page. Suggested outline, about 15 to 20 seconds per part:
+
+1. The problem: sending crypto by voice or text is risky, and an AI model should never be the one deciding whether money moves.
+2. What Airlock is: say it, Airlock checks it, then it moves. A rule in plain code refuses or asks for a YES.
+3. Live demo: a refused HIGH-risk contract, a confirmed LOW-risk transfer, and a voice command with "Hey Airlock" (the audit stages turning green one by one).
+4. How it works: the pipeline (voice or iMessage in, Gemini for intent, our own auditor, the gate, ElevenLabs voice out) and the safety rules (testnet only, per-transfer cap, "risk signal, not a guarantee").
+5. Prize angles and what is next.
+
+Record a backup take in case the live demo fails. Whoever finishes the backend and GUI first starts the slides.
+
 ## Hackathon details
 
 - Date and prize tracks are not settled in this repo yet. Muhammad will find out and add them here. Until then, do not assume any.
