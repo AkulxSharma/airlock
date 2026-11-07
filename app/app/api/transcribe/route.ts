@@ -1,7 +1,9 @@
+import { isSameOriginRequest } from "@/lib/sameOrigin";
 import { transcribe, MAX_AUDIO_BYTES } from "../../../../voice/transcribe";
 
 // Server-side only: holds the ElevenLabs key. Takes a recording, returns the text.
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req.headers)) return Response.json({ error: "forbidden" }, { status: 403 });
   let form: FormData;
   try {
     form = await req.formData();

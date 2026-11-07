@@ -41,7 +41,7 @@ Build these in order. Each one has a check.
 ## 3a. Hands-free wake phrase ("Hey Airlock" or "Airlock")
 
 - **Server and hold-to-talk:** a transcript that starts with "Hey Airlock", "Airlock", "Hi/Ok/Okay Airlock" (and spellings such as "air lock" or "Airlok") has that phrase removed before parsing, so "Hey Airlock, send 0.01 to vitalik.eth" means "send 0.01 to vitalik.eth". The code is `voice/wake.ts`, used by `normalizeTranscript()`. The address guard still runs on whatever follows.
-- **Hands-free toggle (GUI, off by default):** the toggle in the voice panel starts the browser's built-in speech recognition (Chrome, Edge, Safari). It ignores everything until it hears the wake phrase, then sends the command that follows through the normal voice path. If you say only "Hey Airlock", it waits up to 8 seconds for the command. It pauses while Airlock is speaking or recording. The browser may send audio to its own speech service, so the toggle says so.
+- **Hands-free (GUI, on by default, no toggle):** when the page opens, the browser's built-in speech recognition (Chrome, Edge, Safari) starts listening. The browser asks for microphone permission first and shows its own recording indicator, and it may send audio to its own speech service. Airlock ignores everything until it hears the wake phrase, then sends the command that follows through the normal voice path. If you say only "Hey Airlock", it waits up to 8 seconds for the command. It pauses while Airlock is speaking or recording. The voice panel shows "Say “Hey Airlock”" so the live mic is visible.
 - **Unchanged safety:** commands from hands-free mode still pass the address guard and still need YES within the expiry. Every command needs the wake phrase, including "Hey Airlock, yes".
 
 ## 4. Real GUI (after the demo GUI works)
@@ -69,3 +69,7 @@ Build these in order. Each one has a check.
 - GUI example and screenshots from Muhammad.
 - Kickoff time and prize rules (Muhammad is finding out).
 - Demo target addresses (Akul, `docs/DEMO.md`).
+
+## 8. GUI routes are local-only
+
+`/api/speak` and `/api/transcribe` spend ElevenLabs credits, so `app/lib/sameOrigin.ts` refuses any request that arrived by a non-loopback address (the LAN), came from another site (`Sec-Fetch-Site`, `Origin`), or has no Host. The dev server also binds to `127.0.0.1` only (`npm run dev` uses `-H 127.0.0.1`). Before this, anyone on the same Wi-Fi could call these routes.

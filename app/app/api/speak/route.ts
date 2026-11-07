@@ -1,9 +1,11 @@
+import { isSameOriginRequest } from "@/lib/sameOrigin";
 import { MAX_SPEAK_CHARS, speak } from "../../../../voice/speak";
 import { toSpeakable } from "../../../../voice/speakable";
 
 // Server-side only: holds the ElevenLabs key. Turns reply text into mp3 audio.
 // Addresses and long numbers are rewritten by toSpeakable() so voice never reads a full address.
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req.headers)) return Response.json({ error: "forbidden" }, { status: 403 });
   let body: { text?: unknown };
   try {
     body = await req.json();

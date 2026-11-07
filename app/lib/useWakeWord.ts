@@ -5,7 +5,7 @@ import { extractWakeCommand } from "../../voice/wake";
 
 // Hands-free mode: listen for "Hey Airlock" / "Airlock" and run the command that follows.
 // It uses the browser's built-in speech recognition (Chrome, Edge, Safari), which keeps listening
-// without spending ElevenLabs credits. It is off until the user turns it on, and it pauses while
+// without spending ElevenLabs credits. It is on by default (the browser asks for microphone permission, and shows its own recording indicator), and it pauses while
 // Airlock is speaking so it cannot hear its own voice. Every command still goes through the same
 // server path as hold-to-talk: the address guard and the YES confirmation apply unchanged.
 interface RecAlt { transcript: string }
@@ -36,7 +36,7 @@ export interface WakeControls {
 
 export function useWakeWord(onCommand: (text: string) => void, paused: boolean): WakeControls {
   const supported = useSyncExternalStore(() => () => {}, () => ctor() !== null, () => false);
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(true); // on by default; the browser still asks for mic permission first
   const [awaiting, setAwaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const awaitUntil = useRef(0);

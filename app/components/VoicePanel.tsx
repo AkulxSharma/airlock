@@ -85,23 +85,6 @@ export function VoicePanel({ voice, wake }: { voice: VoiceControls; wake: WakeCo
         <MicButton voice={voice} />
         <p className="max-w-[220px] text-center text-xs font-medium uppercase leading-relaxed tracking-[0.25em] text-muted-foreground">{caption}</p>
 
-        <div className="flex w-full max-w-[300px] flex-col items-center gap-2 text-center">
-          {wake.supported ? (
-            <button
-              type="button" role="switch" aria-checked={wake.enabled} onClick={wake.toggle}
-              className="flex items-center gap-3 rounded-full border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-            >
-              <span className={`relative h-5 w-9 rounded-full transition-colors ${wake.enabled ? "bg-low" : "bg-foreground/20"}`}>
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-all ${wake.enabled ? "left-[18px]" : "left-0.5"}`} />
-              </span>
-              Hands-free: say “Hey Airlock”
-            </button>
-          ) : (
-            <p className="text-xs text-muted-foreground">Hands-free needs Chrome, Edge or Safari. Hold the mic instead.</p>
-          )}
-          {wake.supported && <p className="text-[11px] leading-relaxed text-muted-foreground">Off by default. When on, your browser listens for the wake phrase and may send audio to its speech service.</p>}
-        </div>
-
         {(voice.error || wake.error) && <p className="max-w-[280px] text-center text-sm text-high" role="alert">{voice.error ?? wake.error}</p>}
         {voice.lastHeard && (
           <div className="w-full rounded-xl border border-border bg-card/80 p-4 text-sm">
