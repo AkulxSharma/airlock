@@ -26,7 +26,7 @@
   --radius-2xl: calc(var(--radius) + 8px);
 }
 
-/* Light theme: warm paper. Dark theme (the default): deep space. */
+/* Light theme: warm paper (the default). Dark theme: the same colours inverted. */
 :root {
   --radius: 0.625rem;
   --background: #f5f3ef;
@@ -45,14 +45,16 @@
 }
 
 .dark {
+  /* Dark mode is the light theme inverted: the page takes the light theme's text colour,
+     the text takes the light theme's page colour. No decoration. */
   --background: #1a1a1a;
-  --foreground: #f5f5f5;
-  --card: #242424;
-  --card-foreground: #f5f5f5;
+  --foreground: #f5f3ef;
+  --card: #111111;
+  --card-foreground: #f5f3ef;
   --muted: #2a2a2a;
-  --muted-foreground: #a0a0a0;
+  --muted-foreground: #a09d98;
   --accent: #2a2a2a;
-  --accent-foreground: #f5f5f5;
+  --accent-foreground: #f5f3ef;
   --border: #333333;
   --sidebar: #1a1a1a;
   --low: #4ade80;
@@ -92,15 +94,6 @@
   50% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
   100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
 }
-@keyframes twinkle {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.9; }
-}
-@keyframes drift {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(40px, -30px, 0) scale(1.08); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
 @keyframes bar {
   0%, 100% { transform: scaleY(0.45); }
   50% { transform: scaleY(1.7); }
@@ -120,13 +113,7 @@
 .animate-stage-done { animation: stageFlash 0.6s ease-out; }
 .animate-stage-error { animation: stageFlashError 0.6s ease-out; }
 
-/* Deep-space background: stars and two slow nebula glows, behind everything. */
-.space-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.space-bg .star { position: absolute; border-radius: 9999px; background: currentColor; animation: twinkle 4s ease-in-out infinite; }
-.space-bg .glow { position: absolute; border-radius: 9999px; filter: blur(90px); animation: drift 26s ease-in-out infinite; }
-:root:not(.dark) .space-bg { display: none; }
-
 @media (prefers-reduced-motion: reduce) {
-  .space-bg .star, .space-bg .glow, .animate-float { animation: none; }
+  .animate-float { animation: none; }
   .animate-fade-in-up { animation: none; opacity: 1; }
 }

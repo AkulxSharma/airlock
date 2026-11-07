@@ -7,7 +7,6 @@ import { useVoice } from "@/lib/useVoice";
 import { Console } from "./Console";
 import { EventLog } from "./EventLog";
 import { Sidebar, type View } from "./Sidebar";
-import { SpaceBackground } from "./SpaceBackground";
 import { VoicePanel } from "./VoicePanel";
 
 // Quick-start commands. Real demo addresses (draining contract, clean address, proxy) are added
@@ -35,7 +34,6 @@ export function AppShell() {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-background text-foreground transition-colors duration-200">
-      <SpaceBackground />
       <Sidebar view={view} onView={setView} online={air.online} />
 
       <main className="relative z-10 flex-1 overflow-y-auto">

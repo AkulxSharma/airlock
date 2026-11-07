@@ -40,7 +40,7 @@ Build these in order. Each one has a check.
 
 ## 4. Real GUI (after the demo GUI works)
 
-- Deep-space theme, inspired by Otto (a friend's project: Devpost `https://devpost.com/software/ntta`, GitHub `abrj7/otto`, built for NexHacks). Otto's frontend is Next.js 16, React 19, TypeScript, Tailwind CSS 4 and Lucide icons, with an editorial-style briefing screen, a collapsible sidebar, dark and light themes, and a mic button for voice. We use it as a **visual reference** and write our own code.
+- Light theme by default, with dark mode as the same colours inverted (no decoration), modelled on Otto (a friend's project: Devpost `https://devpost.com/software/ntta`, GitHub `abrj7/otto`, built for NexHacks). Otto's frontend is Next.js 16, React 19, TypeScript, Tailwind CSS 4 and Lucide icons, with an editorial-style briefing screen, a collapsible sidebar, dark and light themes, and a mic button for voice. We use it as a **visual reference** and write our own code.
 - A landing view, then the main screen. Verdict card, stage rows and event log restyled, with motion that fits the theme (the airlock idea: nothing passes until the check clears).
 - Quick-start buttons for the three demo targets: a draining contract, a clean address, a proxy (addresses come from `docs/DEMO.md` when Akul deploys them).
 - Responsive, readable on a projector, and keyboard friendly.

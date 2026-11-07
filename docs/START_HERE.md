@@ -180,7 +180,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [ ] Step 8: Gemini agent
 - [ ] Step 9: Source checks
 - [ ] Step 10: iMessage bridge
-- [x] Step 11a: Demo GUI + voice routes (Muhammad, 2026-11-07, `app/`, Otto-style layout, deep-space background)
+- [x] Step 11a: Demo GUI + voice routes (Muhammad, 2026-11-07, `app/`, Otto-style layout, light by default, inverted dark mode)
 - [ ] Step 11b: Real GUI polish, landing view, demo-target buttons with real addresses
 - [ ] Step 12: Wrap-up
 
