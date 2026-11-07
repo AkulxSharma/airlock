@@ -34,7 +34,7 @@ try {
 const ttlSeconds = Number(env.CONFIRM_TTL_SECONDS);
 const bus = createStageBus();
 const handle = createMessageHandler({
-  resolve: (input) => resolveTarget(input, ensClient),
+  resolve: (input) => resolveTarget(input, ensClient, demoAliases),
   audit: (address) => auditAddress(address, reader, auditTimeoutMs),
   store: createConfirmStore(),
   wallet,
