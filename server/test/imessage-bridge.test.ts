@@ -479,12 +479,12 @@ describe("debug transcripts (opt-in)", () => {
   };
 
   it("off by default: the words of an ignored note are never logged", async () => {
-    expect(await run(undefined, "hey eric lock send it")).not.toMatch(/eric lock/);
-    expect(await run(false, "hey eric lock send it")).not.toMatch(/eric lock/);
+    expect(await run(undefined, "hey there send it")).not.toMatch(/there send/);
+    expect(await run(false, "hey there send it")).not.toMatch(/there send/);
   });
 
   it("on: the transcript of an ignored note is printed so the misheard name can be seen", async () => {
-    expect(await run(true, "hey eric lock send it")).toMatch(/\[debug\] transcript was: "hey eric lock send it"/);
+    expect(await run(true, "hey there send it")).toMatch(/\[debug\] transcript was: "hey there send it"/);
   });
 
   it("on: a note that did say the wake word prints no transcript", async () => {
