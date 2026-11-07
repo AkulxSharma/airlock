@@ -6,6 +6,7 @@ export interface TranscribeOptions {
   apiKey?: string;
   modelId?: string;
   mimeType?: string; // what the browser recorded, e.g. audio/webm or audio/mpeg
+  languageCode?: string; // e.g. "en". Without it Scribe auto-detects, which is unreliable on a 2-second clip
   fetchImpl?: typeof fetch; // injected in tests
 }
 
@@ -20,6 +21,7 @@ export async function transcribe(audio: Uint8Array, opts: TranscribeOptions = {}
 
   const form = new FormData();
   form.append("model_id", opts.modelId ?? DEFAULT_STT_MODEL);
+  if (opts.languageCode) form.append("language_code", opts.languageCode);
   form.append("file", new Blob([audio as BlobPart], { type: opts.mimeType ?? "audio/webm" }), "speech");
 
   // No content-type header: fetch sets the multipart boundary itself.

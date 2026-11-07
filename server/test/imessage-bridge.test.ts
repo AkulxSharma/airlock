@@ -491,3 +491,32 @@ describe("debug transcripts (opt-in)", () => {
     expect(await run(true, "Hey Airlock help")).not.toMatch(/\[debug\]/);
   });
 });
+
+describe("misspelled name: voice notes are forgiving, typed texts are not", () => {
+  function run(msg: InboundMessage, transcript: string) {
+    const calls: string[] = [];
+    const bridge = createBridge({
+      source: { maxRowId: () => 0, since: (r) => (r < 2 ? [msg] : []) },
+      cursor: { load: () => 1, save: () => {} },
+      api: async (_s, t, c) => { calls.push(`${c}:${t}`); return { reply: "r", needsConfirm: false }; },
+      send: async () => {},
+      allowlist: parseAllowlist("*"),
+      transcribe: async () => transcript,
+    });
+    return { bridge, calls };
+  }
+  it("a voice note that heard 'Hey Erlak' is answered, as a voice message", async () => {
+    const t = run({ rowid: 2, handle: ME, text: "", audioPath: "/a/2.caf" }, "Hey Erlak, send zero point zero one eth to weth dot demo");
+    expect(await t.bridge.poll()).toBe(1);
+    expect(t.calls).toEqual(["voice:send zero point zero one eth to weth dot demo"]);
+  });
+  it("a voice note that heard only 'Hey Erlak' gets the help reply", async () => {
+    const t = run({ rowid: 2, handle: ME, text: "", audioPath: "/a/2.caf" }, "Hey Erlak.");
+    expect(await t.bridge.poll()).toBe(1);
+    expect(t.calls).toEqual(["voice:help"]);
+  });
+  it("a typed 'Hey Erlak' is not answered", async () => {
+    const t = run({ rowid: 2, handle: ME, text: "Hey Erlak send 0.01 to a.eth" }, "");
+    expect(await t.bridge.poll()).toBe(0);
+  });
+});

@@ -80,7 +80,7 @@ const bridge = createBridge({
   voiceReply,
   debugTranscripts: env.IMESSAGE_DEBUG_TRANSCRIPTS === "1",
   maxSpokenRepliesPerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
-  transcribe: voiceOn ? createVoiceTranscriber({ log: (line) => console.log(`${new Date().toISOString()} ${line}`) }) : undefined,
+  transcribe: voiceOn ? createVoiceTranscriber({ languageCode: env.IMESSAGE_VOICE_LANG || "en", log: (line) => console.log(`${new Date().toISOString()} ${line}`) }) : undefined,
 });
 
 console.log(`Airlock iMessage bridge running${dryRun ? " (dry run)" : ""}. Press Ctrl+C to stop.`);

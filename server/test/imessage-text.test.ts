@@ -110,3 +110,27 @@ describe("matchWake", () => {
     expect(matchWake("airlock send 0.01 to airlock.eth")).toBe("send 0.01 to airlock.eth");
   });
 });
+
+import { matchWakeSpoken } from "../src/imessage/text.js";
+
+describe("matchWakeSpoken (voice notes only)", () => {
+  it("still accepts everything the strict matcher accepts", () => {
+    expect(matchWakeSpoken("Hey Airlock, send 0.01 to a.eth")).toBe("send 0.01 to a.eth");
+    expect(matchWakeSpoken("airlock")).toBe("");
+  });
+  it("accepts near-miss spellings of the name right after a greeting", () => {
+    expect(matchWakeSpoken("Hey Erlak send 0.01 to a.eth")).toBe("send 0.01 to a.eth");
+    expect(matchWakeSpoken("Hey, Air Lock. Send 0.01 to a.eth")).toBe("Send 0.01 to a.eth");
+    expect(matchWakeSpoken("hi aerlok")).toBe("");
+    expect(matchWakeSpoken("OK earlock send it")).toBe("send it");
+    expect(matchWakeSpoken("Hey, hair lock, send 0.01")).toBe("send 0.01");
+  });
+  it("does not accept other words, or a near-miss with no greeting", () => {
+    for (const t of ["Hey Eric send 0.01", "Hello world", "hey there", "Hey Alexa send it", "erlak send 0.01", "happy birthday", "Hey, how are you"]) {
+      expect(matchWakeSpoken(t)).toBeNull();
+    }
+  });
+  it("the typed matcher stays strict", () => {
+    expect(matchWake("Hey Erlak send 0.01")).toBeNull();
+  });
+});

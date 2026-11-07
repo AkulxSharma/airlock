@@ -94,8 +94,14 @@ describe("voice transcriber", () => {
     const { t, transcribe } = make();
     expect(await t(note("ok.caf"))).toBe("Hey Airlock, send 0.01 to weth.demo");
     expect(transcribe).toHaveBeenCalledTimes(1);
-    expect(transcribe.mock.calls[0][1]).toEqual({ mimeType: "audio/wav" });
+    expect(transcribe.mock.calls[0][1]).toEqual({ mimeType: "audio/wav", languageCode: "en" });
     expect(transcribe.mock.calls[0][0].byteLength).toBeGreaterThan(44);
+  });
+
+  it("the language can be changed", async () => {
+    const { t, transcribe } = make({ languageCode: "hi" });
+    await t(note("lang.caf"));
+    expect(transcribe.mock.calls[0][1]).toEqual({ mimeType: "audio/wav", languageCode: "hi" });
   });
 
   it("skips a file outside the attachments folder without touching it", async () => {

@@ -25,7 +25,8 @@ type Exec = (
 
 export type VoiceDeps = {
   exec?: Exec;
-  transcribe?: (audio: Uint8Array, opts: { mimeType: string }) => Promise<string>;
+  transcribe?: (audio: Uint8Array, opts: { mimeType: string; languageCode?: string }) => Promise<string>;
+  languageCode?: string; // default "en": auto-detect misfires on very short clips
   attachmentsRoot?: string;
   maxSeconds?: number;
   log?: (line: string) => void;
@@ -68,6 +69,7 @@ export function wavSeconds(wav: Uint8Array): number {
 export function createVoiceTranscriber(deps: VoiceDeps = {}) {
   const log = deps.log ?? (() => {});
   const maxSeconds = deps.maxSeconds ?? MAX_SECONDS;
+  const languageCode = deps.languageCode ?? "en";
   const send = deps.transcribe ?? ((audio, opts) => elevenLabsTranscribe(audio, opts));
 
   return async function transcribeFile(rawPath: string): Promise<string | null> {
@@ -87,7 +89,7 @@ export function createVoiceTranscriber(deps: VoiceDeps = {}) {
         log(`voice note skipped: longer than ${maxSeconds} seconds`);
         return null;
       }
-      const text = (await send(wav, { mimeType: "audio/wav" })).trim();
+      const text = (await send(wav, { mimeType: "audio/wav", languageCode })).trim();
       return text === "" ? null : text;
     } catch {
       log("voice note skipped: could not convert or transcribe it");

@@ -90,3 +90,26 @@ export function matchWake(text: string): string | null {
     /\bair[\s-]?lock\.[a-z0-9]/i.test(text) && !/\bair[\s-]?lock(?![.\w-])/i.test(text);
   return domainOnly ? null : command;
 }
+
+// Speech-to-text sometimes spells the name oddly ("Erlak", "Air Lock", "Aerlok"). For a VOICE
+// note only, and only right after a greeting (hey, hi, hello, ok, okay, yo), one or two words
+// that sound like the name count as the name. "Sound like" means the same consonants in the
+// same order, r-l-k, so "Eric" or "hello world" do not match. Typed messages never use this.
+const GREETING = /^\s*(?:hey|hi|hello|ok|okay|yo)\b[\s,.!-]*/i;
+const skeleton = (s: string) =>
+  s.toLowerCase().replace(/[^a-z]/g, "").replace(/[aeiouyhw]/g, "").replace(/c/g, "k").replace(/(.)\1+/g, "$1");
+
+export function matchWakeSpoken(text: string): string | null {
+  const strict = matchWake(text);
+  if (strict !== null) return strict;
+  const g = GREETING.exec(text);
+  if (!g) return null;
+  const rest = text.slice(g[0].length);
+  const m = /^([A-Za-z']+)(?:([\s-]+)([A-Za-z']+))?/.exec(rest);
+  if (!m) return null;
+  const ends: number[] = [];
+  if (skeleton(m[1]) === "rlk") ends.push(m[1].length);
+  if (m[3] && skeleton(m[1] + m[3]) === "rlk") ends.push(m[1].length + m[2].length + m[3].length);
+  if (ends.length === 0) return null;
+  return rest.slice(ends[ends.length - 1]).replace(/^[\s,.:;!?-]+/, "").trim();
+}

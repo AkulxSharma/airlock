@@ -50,3 +50,14 @@ describe("transcribe", () => {
     await expect(transcribe(AUDIO, { apiKey: KEY, fetchImpl: fakeFetch(200, {}).impl })).rejects.toThrow("no text");
   });
 });
+
+describe("transcribe: language", () => {
+  it("sends language_code only when one is given", async () => {
+    const a = fakeFetch(200, { text: "x" });
+    await transcribe(AUDIO, { apiKey: KEY, fetchImpl: a.impl });
+    expect((a.calls[0].init.body as FormData).get("language_code")).toBeNull();
+    const b = fakeFetch(200, { text: "x" });
+    await transcribe(AUDIO, { apiKey: KEY, fetchImpl: b.impl, languageCode: "en" });
+    expect((b.calls[0].init.body as FormData).get("language_code")).toBe("en");
+  });
+});

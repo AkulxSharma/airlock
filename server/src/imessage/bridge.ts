@@ -1,5 +1,5 @@
 import { parseCommand } from "../agent/parse.js";
-import { isAllowed, maskHandle, matchWake, type Allowlist } from "./text.js";
+import { isAllowed, maskHandle, matchWake, matchWakeSpoken, type Allowlist } from "./text.js";
 
 export type InboundMessage = { rowid: number; handle: string; text: string; audioPath?: string };
 
@@ -143,7 +143,7 @@ export function createBridge(deps: BridgeDeps) {
       // Starting anything needs the wake word. The one exception: a bare YES or NO from a
       // sender whose confirmation is open, because that is the answer to our own question.
       // Everything else is somebody's private chat and is dropped without a trace.
-      const wake = matchWake(said);
+      const wake = spoken ? matchWakeSpoken(said) : matchWake(said);
       let text: string;
       if (wake !== null) {
         text = wake === "" ? "help" : wake;
