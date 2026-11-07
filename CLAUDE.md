@@ -28,6 +28,14 @@ This file records decisions agreed between Muhammad and Akul on 2026-11-07. Clau
 - Push after every change, not in a batch at the end, so the other person's Claude always sees the latest state and does not build the same thing twice.
 - Before starting a step, pull and read the progress list in `docs/START_HERE.md`. If the step is ticked or marked in progress, do not start it.
 
+## Voice safety rules (found in live tests, see `voice/reports/`)
+
+- **Never take a destination address from voice.** In live tests, speech-to-text turned a spoken address into a different but valid-looking address (1 of 3 runs). Better transcription cannot fix that.
+- **Enforcement (Akul, API step):** when `channel` is `voice`, run the transcript through `guardVoiceInput()` from `voice/guard.ts` before parsing. If it returns `ok: false`, refuse to use the text, reply with its `reason`, and ask for a pasted address or an ENS name. ENS names such as `vitalik.eth` are fine by voice.
+- **Normalize first:** run voice text through `normalizeTranscript()` from `voice/normalize.ts` before the command parser, so "zero point zero one ETH to vitalik dot eth" and "0.01 ETH to vitalik.eth" parse the same.
+- **Speak replies with `toSpeakable()`** from `voice/speakable.ts`: it says only the start and end of an address, spells long numbers, and reads amounts digit by digit (0.005 can be heard as 0.05, which is 10 times off). The full address and exact amount always stay in the on-screen text.
+- **Always show the parsed amount and full destination on screen before YES**, whatever channel the command came from. The cap of 0.01 ETH is the second safety net for a misheard amount.
+
 ## Hackathon details
 
 - Date and prize tracks are not settled in this repo yet. Muhammad will find out and add them here. Until then, do not assume any.
