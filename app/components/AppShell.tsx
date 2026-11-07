@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { speechFor } from "@/lib/parseReply";
 import { useAirlock } from "@/lib/useAirlock";
 import { useVoice } from "@/lib/useVoice";
 import { Console } from "./Console";
-import { EventLog } from "./EventLog";
+import { EventLog, LogHeader } from "./EventLog";
 import { Sidebar, type View } from "./Sidebar";
 import { VoicePanel } from "./VoicePanel";
 
@@ -24,11 +24,14 @@ export function AppShell() {
   const voice = useVoice((t) => handleVoiceText.current(t));
   const air = useAirlock();
 
-  handleVoiceText.current = async (t: string) => {
-    setView("console");
-    const parsed = await air.send(t, "voice");
-    if (parsed) void voice.say(speechFor(parsed));
-  };
+  // Keep the latest handler in the ref after each render (refs must not be written during render).
+  useEffect(() => {
+    handleVoiceText.current = async (t: string) => {
+      setView("console");
+      const parsed = await air.send(t, "voice");
+      if (parsed) void voice.say(speechFor(parsed));
+    };
+  });
 
   const sendTyped = async (text: string) => { setView("console"); await air.send(text, "gui"); };
 
@@ -49,12 +52,13 @@ export function AppShell() {
           {view === "console" && (
             <Console
               messages={air.messages} stages={air.stages} log={air.log} verdict={air.verdict} pending={air.pending}
-              busy={air.busy} voice={voice} onSend={sendTyped} onAnswer={(yes) => sendTyped(yes ? "yes" : "no")} onReset={air.reset}
+              busy={air.busy} voice={voice} onSend={sendTyped} onAnswer={(yes) => sendTyped(yes ? "yes" : "no")} onReset={air.reset} onClearLog={air.clearLog}
             />
           )}
           {view === "log" && (
             <div className="animate-fade-in-up space-y-4">
               <h2 className="font-serif text-4xl italic">Event log</h2>
+              <LogHeader title="All events" count={air.log.length} onClear={air.clearLog} />
               <EventLog log={air.log} tall />
             </div>
           )}

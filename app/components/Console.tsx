@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, LogEntry, Pending } from "@/lib/useAirlock";
 import type { ParsedReply } from "@/lib/parseReply";
 import type { Stage } from "@/lib/api";
-import { EventLog } from "./EventLog";
+import { EventLog, LogHeader } from "./EventLog";
 import { StageRows } from "./StageRows";
 import { VerdictCard } from "./VerdictCard";
 import { MicButton, type VoiceControls } from "./VoicePanel";
@@ -21,18 +21,17 @@ interface Props {
   onSend: (text: string) => void;
   onAnswer: (yes: boolean) => void;
   onReset: () => void;
+  onClearLog: () => void;
 }
 
 const Label = ({ children }: { children: React.ReactNode }) => (
   <h3 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{children}</h3>
 );
 
-export function Console({ messages, stages, log, verdict, pending, busy, voice, onSend, onAnswer, onReset }: Props) {
+export function Console({ messages, stages, log, verdict, pending, busy, voice, onSend, onAnswer, onReset, onClearLog }: Props) {
   const [text, setText] = useState("");
-  const [today, setToday] = useState(""); // set after mount so server and client markup match
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages.length]);
-  useEffect(() => setToday(new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).toUpperCase()), []);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +45,8 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
       <header className="animate-fade-in-up text-center">
         <p className="flex items-center justify-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
           <span className="flex items-center gap-2 text-foreground"><Sparkles className="h-3.5 w-3.5" /> Airlock console</span>
-          {today && <><span className="text-border">|</span><span>{today}</span></>}
+          <span className="text-border">|</span>
+          <span suppressHydrationWarning>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).toUpperCase()}</span>
         </p>
         <h2 className="mt-5 font-serif text-6xl tracking-tight">Check it before it moves</h2>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
@@ -95,7 +95,7 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
       </form>
 
       <section aria-label="Recent events" className="space-y-4">
-        <Label>Live log</Label>
+        <LogHeader title="Live log" count={log.length} onClear={onClearLog} />
         <EventLog log={log} />
       </section>
     </div>

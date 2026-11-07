@@ -45,6 +45,8 @@ export function useAirlock() {
     setLog((l) => [...l.slice(-199), { id: nextId(), at: Date.now(), kind, text }]);
   }, []);
 
+  // One-time read of the saved session id after mount: localStorage does not exist during server rendering.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setSessionId(newSessionId()), []);
 
   // Server health, re-checked every 5 seconds so the banner reflects reality.
@@ -119,5 +121,7 @@ export function useAirlock() {
     setMessages([]); setStages({}); setVerdict(null); setPending(null); setLog([]); setSessionId(id);
   }, []);
 
-  return { sessionId, messages, stages, log, verdict, pending, busy, online, streamUp, send, reset };
+  const clearLog = useCallback(() => setLog([]), []);
+
+  return { sessionId, messages, stages, log, verdict, pending, busy, online, streamUp, send, reset, clearLog };
 }

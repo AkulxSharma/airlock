@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, Crosshair, LayoutDashboard, Moon, ScrollText, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 export type View = "console" | "log" | "targets";
 const NAV: { id: View; name: string; icon: typeof LayoutDashboard }[] = [
@@ -10,16 +10,22 @@ const NAV: { id: View; name: string; icon: typeof LayoutDashboard }[] = [
   { id: "targets", name: "Demo targets", icon: Crosshair },
 ];
 
+// The theme lives on <html class="dark">. Subscribe to it so the label always matches the page.
+function subscribeTheme(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
+const useDark = () => useSyncExternalStore(subscribeTheme, () => document.documentElement.classList.contains("dark"), () => false);
+
 const cx = (...c: (string | false)[]) => c.filter(Boolean).join(" ");
 
 export function Sidebar({ view, onView, online }: { view: View; onView: (v: View) => void; online: boolean | null }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [dark, setDark] = useState(false);
-  useEffect(() => setDark(document.documentElement.classList.contains("dark")), []);
+  const dark = useDark();
 
   const toggleTheme = () => {
     const next = !dark;
-    setDark(next);
     document.documentElement.classList.toggle("dark", next);
     try { localStorage.setItem("theme", next ? "dark" : "light"); } catch { /* private window */ }
   };

@@ -1,9 +1,26 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { LogEntry } from "@/lib/useAirlock";
 
 const COLOR = { stage: "text-low", message: "text-foreground", system: "text-medium" } as const;
+
+/** Small header row for a log: the title and a Clear button (hidden when there is nothing to clear). */
+export function LogHeader({ title, count, onClear }: { title: string; count: number; onClear: () => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <h3 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{title}</h3>
+      <button
+        onClick={onClear}
+        disabled={count === 0}
+        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent"
+      >
+        <Trash2 className="h-3.5 w-3.5" /> Clear
+      </button>
+    </div>
+  );
+}
 
 export function EventLog({ log, tall = false }: { log: LogEntry[]; tall?: boolean }) {
   const end = useRef<HTMLDivElement>(null);
