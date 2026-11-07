@@ -153,6 +153,10 @@ export function createMessageHandler(deps: MessageDeps) {
         `This is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in ${Math.round(ttlMs / 1000)} seconds.`,
       ].join("\n"),
       true,
+      {
+        audit,
+        pending: { to: pending.to, amountEth: pending.amountEth, expiresAt: pending.expiresAt },
+      },
     );
   };
 }
