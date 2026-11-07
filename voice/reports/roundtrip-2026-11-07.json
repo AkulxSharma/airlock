@@ -8,7 +8,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1679,
+      "ms": 1936,
       "runs": 3,
       "passes": 3
     },
@@ -20,7 +20,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1149,
+      "ms": 1102,
       "runs": 3,
       "passes": 3
     },
@@ -32,7 +32,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2208,
+      "ms": 2386,
       "runs": 3,
       "passes": 3
     },
@@ -44,7 +44,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2098,
+      "ms": 2080,
       "runs": 3,
       "passes": 3
     },
@@ -52,11 +52,11 @@
       "id": "cmd-05",
       "cat": "command",
       "said": "Yes, confirm the transfer.",
-      "heard": "Yes, confirm the transfer",
+      "heard": "Yes, confirm the transfer.",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1459,
+      "ms": 1573,
       "runs": 3,
       "passes": 3
     },
@@ -68,7 +68,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1399,
+      "ms": 1394,
       "runs": 3,
       "passes": 3
     },
@@ -80,7 +80,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1371,
+      "ms": 1467,
       "runs": 3,
       "passes": 3
     },
@@ -92,7 +92,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1310,
+      "ms": 1748,
       "runs": 3,
       "passes": 3
     },
@@ -104,7 +104,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1493,
+      "ms": 1700,
       "runs": 3,
       "passes": 3
     },
@@ -116,7 +116,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1612,
+      "ms": 1807,
       "runs": 3,
       "passes": 3
     },
@@ -128,7 +128,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1905,
+      "ms": 1945,
       "runs": 3,
       "passes": 3
     },
@@ -136,13 +136,15 @@
       "id": "gate-04",
       "cat": "gate",
       "said": "The audit timed out. Transfer refused.",
-      "heard": "The audit timed out. Transfer refused",
-      "wer": 0,
-      "missing": [],
-      "verdict": "PASS",
-      "ms": 1710,
+      "heard": "The order timed out. Transfer refused",
+      "wer": 0.16666666666666666,
+      "missing": [
+        "/audit/"
+      ],
+      "verdict": "FAIL",
+      "ms": 1701,
       "runs": 3,
-      "passes": 3
+      "passes": 2
     },
     {
       "id": "hard-01",
@@ -152,7 +154,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1950,
+      "ms": 2249,
       "runs": 3,
       "passes": 3
     },
@@ -164,7 +166,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2089,
+      "ms": 2323,
       "runs": 3,
       "passes": 3
     },
@@ -176,7 +178,7 @@
       "wer": 0.18181818181818182,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2970,
+      "ms": 3145,
       "runs": 3,
       "passes": 3
     },
@@ -184,23 +186,26 @@
       "id": "hard-04",
       "cat": "hard",
       "said": "Contract address zero x d e a d b e e f.",
-      "heard": "Contract address zero x D E A D B E E F",
-      "wer": 0,
-      "missing": [],
-      "verdict": "PASS",
-      "ms": 2206,
+      "heard": "Contract address zero xd ead bef",
+      "wer": 0.3333333333333333,
+      "missing": [
+        "/dead\\s?beef|d e a d b e e f|0xdeadbeef/"
+      ],
+      "verdict": "INFO",
+      "ms": 2271,
       "runs": 3,
-      "passes": 3
+      "passes": 2,
+      "note": "informational: spelled-hex accuracy is not relied on (guard blocks hex by voice); 2/3 runs matched"
     },
     {
       "id": "hard-05",
       "cat": "hard",
       "said": "Gas price is thirty gwei and the nonce is forty two.",
-      "heard": "Gas price is 30 gwei and the nonce is 42.",
+      "heard": "Gas price is 30 gwei and the nonce is 42",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2160,
+      "ms": 1831,
       "runs": 3,
       "passes": 3
     },
@@ -208,23 +213,24 @@
       "id": "hard-06",
       "cat": "hard",
       "said": "Transaction hash begins with zero x a b c one two three.",
-      "heard": "Transaction hash begins with 0xABC123",
+      "heard": "Transaction hash begins with zero x ABC 123",
       "wer": 0,
       "missing": [],
-      "verdict": "PASS",
-      "ms": 1912,
+      "verdict": "INFO",
+      "ms": 1919,
       "runs": 3,
-      "passes": 3
+      "passes": 3,
+      "note": "informational: spelled-hex accuracy is not relied on (guard blocks hex by voice); 3/3 runs matched"
     },
     {
       "id": "hard-07",
       "cat": "hard",
       "said": "Send 0.01 ETH to 0x71C7656EC7ab88b098defB751B7401B5f6d8976F.",
-      "heard": "Send 0.01 ETH to 0x71c7656e7ab88b098dfbb751b7401b5f6d8976f",
+      "heard": "Send 0.01 ETH to 0x71c7656ec7abeb098dfb751b7401b5f6d8976f",
       "wer": 0.2,
       "missing": [],
       "verdict": "PASS",
-      "ms": 3184,
+      "ms": 3442,
       "note": "guard blocked address-like text",
       "runs": 3,
       "passes": 3
@@ -237,7 +243,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1780,
+      "ms": 2047,
       "runs": 3,
       "passes": 3
     },
@@ -245,11 +251,11 @@
       "id": "sec-02",
       "cat": "security",
       "said": "The contract uses delegatecall to an unknown address.",
-      "heard": "The contract uses delegate call to an unknown address",
+      "heard": "The contract uses delegate call to an unknown address.",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1865,
+      "ms": 1766,
       "runs": 3,
       "passes": 3
     },
@@ -261,7 +267,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1913,
+      "ms": 1721,
       "runs": 3,
       "passes": 3
     },
@@ -273,7 +279,7 @@
       "wer": 0.08333333333333333,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1956,
+      "ms": 1922,
       "runs": 3,
       "passes": 3
     },
@@ -281,11 +287,11 @@
       "id": "sec-05",
       "cat": "security",
       "said": "Reentrancy risk found in the withdraw function.",
-      "heard": "Reentrancy risk found in the withdraw function",
-      "wer": 0,
+      "heard": "Reentrancy risk found in the withdrawal function",
+      "wer": 0.14285714285714285,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1760,
+      "ms": 2377,
       "runs": 3,
       "passes": 3
     },
@@ -297,7 +303,7 @@
       "wer": 0.1,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1724,
+      "ms": 2248,
       "runs": 3,
       "passes": 3
     },
@@ -309,7 +315,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1695,
+      "ms": 1870,
       "runs": 3,
       "passes": 3
     },
@@ -321,7 +327,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1750,
+      "ms": 1933,
       "runs": 3,
       "passes": 3
     },
@@ -333,7 +339,7 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2665,
+      "ms": 1919,
       "runs": 3,
       "passes": 3
     },
@@ -341,11 +347,11 @@
       "id": "sec-10",
       "cat": "security",
       "said": "Verdict high. Risk score ninety two out of one hundred.",
-      "heard": "Verdict high risk score ninety-two out of one hundred",
+      "heard": "Verdict high risk score 92 out of 100",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2579,
+      "ms": 1862,
       "runs": 3,
       "passes": 3
     }
