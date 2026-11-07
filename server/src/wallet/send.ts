@@ -19,6 +19,18 @@ export type SendResult =
 // Plain decimal, up to 18 places. Rejects "1e3", "-1", "0x10", " 1", "abc", "".
 const AMOUNT_RE = /^\d+(\.\d{1,18})?$/;
 
+// Shared by the message handler (to refuse early, before asking for YES) and by the send itself.
+export function checkAmount(
+  amountEth: string,
+  maxTransferEth: string = DEFAULT_MAX_TRANSFER_ETH,
+): "ok" | "invalid-amount" | "over-cap" {
+  if (!AMOUNT_RE.test(amountEth)) return "invalid-amount";
+  const value = parseEther(amountEth);
+  if (value <= 0n) return "invalid-amount";
+  if (value > parseEther(maxTransferEth)) return "over-cap";
+  return "ok";
+}
+
 // Sends test ETH. It takes a ConsumedTransfer, which only the confirmation store can
 // produce, so it cannot be reached without a valid YES. It checks the chain, the address
 // and the cap again before signing, and it never throws.
