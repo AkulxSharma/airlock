@@ -1,0 +1,30 @@
+# Airlock: team decisions (read this first)
+
+This file records decisions agreed between Muhammad and Akul on 2026-11-07. Claude sessions working in this repo should treat it as context. Update it when a decision changes.
+
+## Who builds what
+
+- **Akul** owns the whole backend: contract auditor, risk gate, Gemini agent, iMessage bridge, testnet send, and the API (`POST /api/message`, `GET /api/stream`). This includes the mock versions of those two endpoints, so the GUI has something to talk to before the real server is done. See `docs/TASKS.md` for the full split.
+- **Muhammad** owns the GUI (Next.js in `app/`: chat, voice button, verdict card, live log), the ElevenLabs STT/TTS work in `voice/`, and demo polish and recording.
+- Muhammad will start the GUI after the backend is done. He has a GUI example to follow and will share it then. Do not build the GUI or guess at the look before that.
+- Do not build another person's area without asking first. It causes merge conflicts.
+
+## Keys
+
+- **ElevenLabs:** Muhammad holds the key and will set it up.
+- **Gemini:** nobody has a key yet. Akul needs to get one, since the Gemini agent is Akul's. Keys go in `.env` only and are never committed.
+
+## Branches
+
+- Use a single `main` branch. Both of us commit and merge into it. No long-lived feature branches.
+- Commit small and often, and pull before you push.
+
+## Hackathon details
+
+- Date and prize tracks are not settled in this repo yet. Muhammad will find out and add them here. Until then, do not assume any.
+
+## Locked contract (unchanged, from `docs/PLAN.md`)
+
+- Auditor JSON: `{target, chainId, verdict, riskScore, findings[]}`.
+- Endpoints: `POST /api/message` and `GET /api/stream`.
+- The LLM never decides whether money moves. Code does. Wording is "risk signal, not a guarantee", never "safe". Testnet only, with a per-transfer cap.
