@@ -2,6 +2,8 @@ import { createPublicClient, fallback, http } from "viem";
 import { sepolia } from "viem/chains";
 import type { AuditResult } from "../types.js";
 import { auditBytecode } from "./index.js";
+import { SOURCE_UNAVAILABLE, UNVERIFIED_SOURCE, analyzeSource, type SourceFetcher } from "./source.js";
+import type { Finding } from "../types.js";
 import {
   EIP1967_ADMIN_SLOT,
   EIP1967_IMPLEMENTATION_SLOT,
@@ -25,15 +27,26 @@ export async function auditAddress(
   address: string,
   reader: ChainReader,
   timeoutMs: number,
+  fetchSource?: SourceFetcher,
 ): Promise<LiveAuditOutcome> {
   const work = (async (): Promise<AuditResult> => {
-    const [code, implementation, admin] = await Promise.all([
+    // The source lookup runs alongside the chain reads. Its result is used only if the
+    // address turns out to have code, since a plain wallet has no source to check.
+    const [code, implementation, admin, lookup] = await Promise.all([
       reader.getCode(address),
       reader.getStorageAt(address, EIP1967_IMPLEMENTATION_SLOT),
       reader.getStorageAt(address, EIP1967_ADMIN_SLOT),
+      fetchSource ? fetchSource(address, SEPOLIA_CHAIN_ID) : Promise.resolve(null),
     ]);
+    const extra: Finding[] = [];
     const proxy = checkUpgradeableProxy([implementation, admin]);
-    return auditBytecode(code ?? "0x", address, SEPOLIA_CHAIN_ID, proxy ? [proxy] : []);
+    if (proxy) extra.push(proxy);
+    const hasCode = code !== undefined && code !== "0x";
+    if (hasCode && lookup) {
+      if (lookup.status === "verified") extra.push(...analyzeSource(lookup.sources));
+      else extra.push(lookup.status === "none" ? UNVERIFIED_SOURCE : SOURCE_UNAVAILABLE);
+    }
+    return auditBytecode(code ?? "0x", address, SEPOLIA_CHAIN_ID, extra);
   })();
   work.catch(() => {}); // a late failure after a timeout must not become an unhandled rejection
 

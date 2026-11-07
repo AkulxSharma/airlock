@@ -23,6 +23,14 @@ export const FINDING_IDS = [
   "minimal-proxy",
   "upgradeable-proxy",
   "tiny-code",
+  "unverified-source",
+  "source-unavailable",
+  "tx-origin",
+  "owner-sweep",
+  "owner-mint",
+  "adjustable-fee",
+  "blacklist-switch",
+  "pause-switch",
 ] as const;
 
 export function normalizedHex(hex: string): string {

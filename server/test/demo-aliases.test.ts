@@ -20,9 +20,9 @@ describe("demo-targets.json", () => {
     }
   });
 
-  it("expects HIGH for the drainer, LOW for the clean ones, MEDIUM for the proxies", () => {
+  it("expects HIGH for the drainer, LOW for the verified WETH, MEDIUM for the unverified or proxy ones", () => {
     expect(targets["drainer.demo"].expected).toBe("HIGH");
-    expect(targets["clean.demo"].expected).toBe("LOW");
+    expect(targets["clean.demo"].expected).toBe("MEDIUM"); // plain code, but no verified source
     expect(targets["weth.demo"].expected).toBe("LOW");
     expect(targets["proxy.demo"].expected).toBe("MEDIUM");
     expect(targets["clone.demo"].expected).toBe("MEDIUM");

@@ -178,7 +178,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [x] Step 6: API with rule-based parser (Akul, 2026-11-07)
 - [x] Step 7: Demo targets (Akul, 2026-11-07, docs/DEMO.md)
 - [x] Step 8: Gemini agent (Akul, 2026-11-07)
-- [ ] Step 9: Source checks
+- [x] Step 9: Source checks (Akul, 2026-11-07; Sourcify is used only to fetch source text, the analysis is our own code)
 - [ ] Step 10: iMessage bridge (Akul: code and 38 tests done, see docs/IMESSAGE.md; live text check still pending, needs Full Disk Access on the demo Mac)
 - [x] Step 11a: Demo GUI + voice routes (Muhammad, 2026-11-07, `app/`, Otto-style layout, light by default, inverted dark mode)
 - [ ] Step 11b: Real GUI polish, landing view, demo-target buttons with real addresses

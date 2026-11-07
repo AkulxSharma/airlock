@@ -143,7 +143,22 @@ export function createMessageHandler(deps: MessageDeps) {
       status: failed ? "error" : "done",
       detail: "error" in outcome ? outcome.error : "timeout" in outcome ? "timeout" : undefined,
     });
-    emit({ name: "source", status: "done", detail: "not checked yet" });
+    const ids = new Set("findings" in outcome ? outcome.findings.map((f) => f.id) : []);
+    emit(
+      failed
+        ? { name: "source", status: "error", detail: "skipped (audit failed)" }
+        : ids.has("source-unavailable")
+          ? { name: "source", status: "error", detail: "source lookup failed" }
+          : {
+              name: "source",
+              status: "done",
+              detail: ids.has("unverified-source")
+                ? "no verified source found"
+                : ids.has("no-code")
+                  ? "skipped (no contract code)"
+                  : "checked",
+            },
+    );
 
     const decision = decide(outcome);
     emit({ name: "gate", status: decision.action === "refuse" ? "error" : "done", detail: decision.action });

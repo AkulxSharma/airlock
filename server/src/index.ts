@@ -5,6 +5,7 @@ import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 import { createExplainer, createGeminiAgent, createGeminiClient, withCooldown } from "./agent/gemini.js";
 import { auditAddress, auditTimeoutFromEnv, readerFromEnv } from "./auditor/chain.js";
+import { createSourcifyFetcher } from "./auditor/source.js";
 import { createApp, parseAllowedOrigins } from "./api/app.js";
 import { createMessageHandler } from "./api/message.js";
 import { resolveTarget, type EnsClient } from "./api/resolve.js";
@@ -19,6 +20,7 @@ config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 const env = process.env;
 const reader = readerFromEnv(env);
 const auditTimeoutMs = auditTimeoutFromEnv(env);
+const fetchSource = createSourcifyFetcher();
 
 // ENS lives on Ethereum mainnet even though transfers go out on Sepolia.
 const ensClient = createPublicClient({
@@ -44,7 +46,7 @@ const ttlSeconds = Number(env.CONFIRM_TTL_SECONDS);
 const bus = createStageBus();
 const handle = createMessageHandler({
   resolve: (input) => resolveTarget(input, ensClient, demoAliases),
-  audit: (address) => auditAddress(address, reader, auditTimeoutMs),
+  audit: (address) => auditAddress(address, reader, auditTimeoutMs, fetchSource),
   store: createConfirmStore(),
   wallet,
   now: () => Date.now(),
