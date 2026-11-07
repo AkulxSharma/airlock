@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import { createVoiceReplier, createVoiceTranscriber, toSpoken } from "./audio.js";
-import { createFileCursor, createHttpApi, createOsascriptFileSender, createOsascriptSender, openDeliveryChecker, openMessagesDb } from "./adapters.js";
+import { SEND_FILE_SCRIPTS, createFileCursor, createHttpApi, createOsascriptFileSender, createOsascriptSender, openDeliveryChecker, openMessagesDb } from "./adapters.js";
 import { createBridge } from "./bridge.js";
 import { parseAllowlist } from "./text.js";
 
@@ -61,7 +61,34 @@ const voiceReply = !repliesOn
   ? undefined
   : dryRun
     ? async (_handle: string, text: string) => console.log(`[dry run] would also send a spoken reply: ${toSpoken(text)}`)
-    : createVoiceReplier({ sendFile: createOsascriptFileSender(), verify: await openDeliveryChecker(dbPath), log: logLine });
+    : await (async () => {
+        const checker = await openDeliveryChecker(dbPath);
+        return createVoiceReplier({
+          sendFile: createOsascriptFileSender(),
+          strategies: SEND_FILE_SCRIPTS.length,
+          mark: checker.mark,
+          verify: checker.verify,
+          log: logLine,
+        });
+      })();
+
+// One-off check of the audio path: npm run imessage -- --test-audio +1XXXXXXXXXX
+// Speaks a short test sentence with ElevenLabs and tries to send it, then exits.
+const testAt = process.argv.indexOf("--test-audio");
+if (testAt !== -1) {
+  const target = process.argv[testAt + 1];
+  if (!target || target.startsWith("--")) {
+    console.error("Usage: npm run imessage -- --test-audio <phone number or email to send the test to>");
+    process.exit(1);
+  }
+  if (!voiceReply || dryRun) {
+    console.error("Spoken replies are off (needs ELEVENLABS_API_KEY, IMESSAGE_VOICE and IMESSAGE_VOICE_REPLIES not off, and no --dry-run).");
+    process.exit(1);
+  }
+  console.log("Sending a spoken test message. Watch the phone.");
+  await voiceReply(target, "Airlock audio test. If you can hear this, spoken replies work.");
+  process.exit(0);
+}
 
 if (env.IMESSAGE_DEBUG_TRANSCRIPTS === "1") {
   console.warn("DEBUG: transcripts of ignored voice notes will be printed here. Turn this off when you are done.");

@@ -129,9 +129,13 @@ export type DeliveryResult = { status: "sent" } | { status: "error"; code: numbe
 
 export type VoiceReplyDeps = {
   // Asks Messages whether the file really went out. Without it the replier can only say it was handed over.
-  verify?: (fileName: string) => Promise<DeliveryResult>;
+  verify?: (fileName: string, since: number) => Promise<DeliveryResult>;
+  // The newest message number before sending, so verify only looks at messages made after it.
+  mark?: () => number;
+  // How many different ways there are to attach the file. They are tried in turn until one goes out.
+  strategies?: number;
   speak?: (text: string) => Promise<Uint8Array>;
-  sendFile: (handle: string, path: string) => Promise<void>;
+  sendFile: (handle: string, path: string, strategy: number) => Promise<void>;
   dir?: string;
   log?: (line: string) => void;
   schedule?: (fn: () => void, ms: number) => void;
@@ -154,6 +158,7 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
       setTimeout(fn, ms).unref();
     });
   const cleanupAfterMs = deps.cleanupAfterMs ?? 120_000;
+  let preferred = 0; // the method that last worked
 
   // Old files are removed on each use, in case the process stopped before a scheduled delete.
   async function sweep(): Promise<void> {
@@ -178,8 +183,27 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
       const audio = await speakFn(spoken);
       file = join(dir, `airlock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp3`);
       await writeFile(file, audio, { mode: 0o600 });
-      await deps.sendFile(handle, file);
-      const result = deps.verify ? await deps.verify(basename(file)) : null;
+      const count = Math.max(1, deps.strategies ?? 1);
+      let result: DeliveryResult | null = null;
+      let handedOver = false;
+      for (let i = 0; i < count; i++) {
+        const method = (preferred + i) % count;
+        const since = deps.mark ? deps.mark() : 0;
+        try {
+          await deps.sendFile(handle, file, method);
+        } catch {
+          log(`spoken reply: method ${method + 1} could not be started`);
+          continue;
+        }
+        handedOver = true;
+        result = deps.verify ? await deps.verify(basename(file), since) : null;
+        if (!deps.verify || result?.status === "sent") {
+          preferred = method; // remember what worked
+          break;
+        }
+        if (i < count - 1) log(`spoken reply: method ${method + 1} did not go out, trying another`);
+      }
+      if (!handedOver) throw new Error("no way of sending the file could be started");
       if (!result) log("sent a spoken reply");
       else if (result.status === "sent") log("spoken reply delivered");
       else if (result.status === "error") log(`spoken reply failed: Messages could not send it (error ${result.code})`);

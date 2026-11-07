@@ -66,17 +66,48 @@ export const SEND_SCRIPT = `on run {theText, theHandle}
   end tell
 end run`;
 
-// Same idea for an audio file: the path and the handle are arguments, never part of the script.
-export const SEND_FILE_SCRIPT = `on run {theFile, theHandle}
+// Several ways to attach a file through the Messages app. Which one works depends on the macOS
+// version, and a send that does nothing raises no error, so the replier tries them in turn and
+// checks the Messages database. As with text, the path and the handle are arguments, never part
+// of the script.
+export const SEND_FILE_SCRIPTS: ReadonlyArray<{ name: string; script: string }> = [
+  {
+    name: "buddy, as alias",
+    script: `on run {thePath, theHandle}
   tell application "Messages"
-    try
-      set svc to 1st service whose service type = iMessage
-      send (POSIX file theFile) to buddy theHandle of svc
-    on error
-      send (POSIX file theFile) to chat id ("iMessage;-;" & theHandle)
-    end try
+    set svc to 1st service whose service type = iMessage
+    set theBuddy to buddy theHandle of svc
+    send ((POSIX file thePath) as alias) to theBuddy
   end tell
-end run`;
+end run`,
+  },
+  {
+    name: "existing chat, any service",
+    script: `on run {thePath, theHandle}
+  tell application "Messages"
+    send ((POSIX file thePath) as alias) to chat id ("any;-;" & theHandle)
+  end tell
+end run`,
+  },
+  {
+    name: "existing chat, iMessage",
+    script: `on run {thePath, theHandle}
+  tell application "Messages"
+    send ((POSIX file thePath) as alias) to chat id ("iMessage;-;" & theHandle)
+  end tell
+end run`,
+  },
+  {
+    name: "buddy, plain file",
+    script: `on run {thePath, theHandle}
+  tell application "Messages"
+    set svc to 1st service whose service type = iMessage
+    send (POSIX file thePath) to buddy theHandle of svc
+  end tell
+end run`,
+  },
+];
+export const SEND_FILE_SCRIPT = SEND_FILE_SCRIPTS[0].script;
 
 type ExecFile = (
   file: string,
@@ -88,16 +119,17 @@ export function createOsascriptFileSender(
   exec: ExecFile = execFile as unknown as ExecFile,
   retries = 1,
   waitMs = 1_000,
-): (handle: string, path: string) => Promise<void> {
-  const once = (handle: string, path: string) =>
+): (handle: string, path: string, strategy?: number) => Promise<void> {
+  const once = (handle: string, path: string, strategy: number) =>
     new Promise<void>((resolve, reject) => {
-      exec("/usr/bin/osascript", ["-e", SEND_FILE_SCRIPT, path, handle], (err) => (err ? reject(err) : resolve()));
+      const script = SEND_FILE_SCRIPTS[strategy]?.script ?? SEND_FILE_SCRIPT;
+      exec("/usr/bin/osascript", ["-e", script, path, handle], (err) => (err ? reject(err) : resolve()));
     });
-  return async (handle, path) => {
+  return async (handle, path, strategy = 0) => {
     let last: unknown;
     for (let i = 0; i <= retries; i++) {
       try {
-        return await once(handle, path);
+        return await once(handle, path, strategy);
       } catch (err) {
         last = err;
         if (i < retries) await new Promise((r) => setTimeout(r, waitMs));
@@ -168,39 +200,52 @@ export function createHttpApi(baseUrl: string, fetchImpl: typeof fetch = fetch, 
 
 // --- checks whether a file we sent really went out -------------------------------------
 
+// The newest message when we start sending, so only messages made after it can count.
+const MAX_ROWID_SQL = "SELECT COALESCE(MAX(ROWID), 0) AS m FROM message";
+
+// Any outgoing audio attachment made after the mark, found by our file name or by being audio.
+// This does not depend on how Messages renames a sent file.
 const DELIVERY_SQL = `
   SELECT m.is_sent AS is_sent, m.error AS error
   FROM message m
   JOIN message_attachment_join j ON j.message_id = m.ROWID
   JOIN attachment a ON a.ROWID = j.attachment_id
-  WHERE m.is_from_me = 1 AND a.transfer_name = ?
+  WHERE m.is_from_me = 1 AND m.ROWID > ?
+    AND (a.transfer_name = ? OR a.filename LIKE ? OR a.mime_type LIKE 'audio/%')
   ORDER BY m.ROWID DESC
   LIMIT 1`;
 
-// Looks for our outgoing attachment by file name and reports whether Messages sent it or gave
-// an error. Messages writes the row a moment after the send, so it polls for a few seconds.
+export type DeliveryChecker = {
+  mark(): number;
+  verify(fileName: string, since: number): Promise<DeliveryResult>;
+};
+
 export async function openDeliveryChecker(
   dbPath: string,
   opts: { attempts?: number; waitMs?: number } = {},
-): Promise<(fileName: string) => Promise<DeliveryResult>> {
+): Promise<DeliveryChecker> {
   const { DatabaseSync } = await import("node:sqlite");
   const db = new DatabaseSync(dbPath, { readOnly: true });
+  const maxStmt = db.prepare(MAX_ROWID_SQL);
   const stmt = db.prepare(DELIVERY_SQL);
-  const attempts = opts.attempts ?? 8;
+  const attempts = opts.attempts ?? 4;
   const waitMs = opts.waitMs ?? 1_000;
-  return async (fileName) => {
-    for (let i = 0; i < attempts; i++) {
-      try {
-        const row = stmt.get(fileName) as { is_sent: number; error: number } | undefined;
-        if (row) {
-          if (Number(row.error) !== 0) return { status: "error", code: Number(row.error) };
-          if (Number(row.is_sent) === 1) return { status: "sent" };
+  return {
+    mark: () => Number((maxStmt.get() as { m: number }).m),
+    async verify(fileName, since) {
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const row = stmt.get(since, fileName, `%${fileName}`) as { is_sent: number; error: number } | undefined;
+          if (row) {
+            if (Number(row.error) !== 0) return { status: "error", code: Number(row.error) };
+            if (Number(row.is_sent) === 1) return { status: "sent" };
+          }
+        } catch {
+          return { status: "unknown" };
         }
-      } catch {
-        return { status: "unknown" };
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, waitMs));
       }
-      if (i < attempts - 1) await new Promise((r) => setTimeout(r, waitMs));
-    }
-    return { status: "unknown" };
+      return { status: "unknown" };
+    },
   };
 }
