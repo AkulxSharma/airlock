@@ -170,7 +170,7 @@ describe("finding ids", () => {
       auditBytecode("0x" + "5b".repeat(40) + "f2", T, 1), // callcode
     ];
     const seen = new Set(results.flatMap((r) => r.findings.map((x) => x.id)));
-    expect(seen.size).toBe(FINDING_IDS.length);
+    expect(seen.size).toBe(7); // the seven bytecode ids; source ids are covered in source.test.ts
     for (const id of seen) expect(FINDING_IDS).toContain(id);
   });
 

@@ -8,11 +8,11 @@ Type or paste these names instead of addresses. They end in `.demo` so they can 
 
 | Name | What it is | Expected result | Why |
 |---|---|---|---|
-| `drainer.demo` | Any call runs SELFDESTRUCT to the caller | HIGH, refused | SELFDESTRUCT found |
-| `proxy.demo` | EIP-1967-style proxy that delegates every call to the Sepolia WETH contract | MEDIUM, asks to confirm | DELEGATECALL plus implementation slot set |
-| `clone.demo` | EIP-1167 minimal proxy pointing at the Sepolia WETH contract | MEDIUM, asks to confirm | Minimal proxy, real logic lives elsewhere |
-| `clean.demo` | Accepts ETH and does nothing else | LOW, asks to confirm | Nothing flagged |
-| `weth.demo` | The public Sepolia WETH9 contract | LOW, asks to confirm | Nothing flagged |
+| `drainer.demo` | Any call runs SELFDESTRUCT to the caller | HIGH, refused | SELFDESTRUCT found (also no verified source) |
+| `proxy.demo` | EIP-1967-style proxy that delegates every call to the Sepolia WETH contract | MEDIUM, asks to confirm | DELEGATECALL, implementation slot set, no verified source |
+| `clone.demo` | EIP-1167 minimal proxy pointing at the Sepolia WETH contract | MEDIUM, asks to confirm | Minimal proxy, real logic lives elsewhere, no verified source |
+| `clean.demo` | Accepts ETH and does nothing else | MEDIUM, asks to confirm | Its bytecode is clean, but it has no verified source (`unverified-source`) |
+| `weth.demo` | The public Sepolia WETH9 contract, verified on Sourcify | LOW, asks to confirm | Bytecode and source checks flag nothing |
 
 Addresses (checksummed):
 
@@ -24,7 +24,11 @@ Addresses (checksummed):
 
 A LOW or MEDIUM result is a risk signal, not a guarantee. Airlock never says an address is safe.
 
+`clean.demo` is MEDIUM on purpose: since the source check was added, any contract with no verified source gets an `unverified-source` finding. The LOW example is `weth.demo`, which is verified on Sourcify. A plain wallet address (no contract code) is also LOW.
+
 ## What was verified live (2026-11-07)
+
+- With the source check on, every demo name still audits as expected against the real Sepolia chain and the real Sourcify registry (see the table).
 
 - The auditor's verdict for each name matched the expected column above, on the real Sepolia chain.
 - The hand-written proxy works: a `balanceOf` call through it returned a normal 32-byte answer instead of reverting.
@@ -39,7 +43,7 @@ Keep the whole run under three minutes. Each scene has the exact thing to say or
 1. **Opening.** One sentence: AI agents are starting to move money, and Airlock is the gate between "the agent decided to send" and "the money left."
 2. **A refused transfer (HIGH).** Type or say "send 0.001 to drainer dot demo". The stages tick through address, bytecode, source and gate. The card turns HIGH, shows the SELFDESTRUCT finding, and Airlock refuses. Then answer "yes" anyway: Airlock says nothing is waiting, so nothing was sent. Point out that the AI did not decide this. Code did.
 3. **A proxy case (MEDIUM).** "send 0.001 to proxy dot demo". The card shows MEDIUM with two findings: DELEGATECALL and an upgradeable implementation. Airlock shows the full address and amount and asks for confirmation. Say "no" to cancel. Point out that the logic behind a proxy can be swapped after you check it.
-4. **A confirmed transfer (LOW).** "send 0.0001 to clean dot demo", then "yes" within 60 seconds. The transfer goes out and Airlock replies with an Etherscan link. Open the link.
+4. **A confirmed transfer (LOW).** "send 0.0001 to weth dot demo", then "yes" within 60 seconds. The transfer goes out and Airlock replies with an Etherscan link. Open the link.
 5. **Voice.** Say "send zero point zero zero one ETH to vitalik dot eth" and show that the transcript, the full address and the amount are on screen before confirming. Then read an address aloud and show that Airlock refuses to take an address by voice.
 6. **Close.** Chains are hard to break; the contracts and tooling around them are not. Airlock checks first.
 

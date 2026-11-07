@@ -5,27 +5,27 @@
     "drainer.demo": {
       "address": "0x49005681BD5c710A134313ef1205dBA4cf2eA6EE",
       "expected": "HIGH",
-      "why": "SELFDESTRUCT"
+      "why": "SELFDESTRUCT (plus no verified source)"
     },
     "clean.demo": {
       "address": "0xa45FCc3c5c097348B9582C1B3d57dFF0f861E81f",
-      "expected": "LOW",
-      "why": "nothing flagged"
+      "expected": "MEDIUM",
+      "why": "plain code, but no verified source (unverified-source)"
     },
     "proxy.demo": {
       "address": "0xcd6811b6257c22378c95c0a8567F369dF94aaCCB",
       "expected": "MEDIUM",
-      "why": "DELEGATECALL and upgradeable proxy (EIP-1967 slot set)"
+      "why": "DELEGATECALL, upgradeable proxy (EIP-1967 slot set), no verified source"
     },
     "clone.demo": {
       "address": "0x0D2e7F8a229C1BcFa3D980d6FA95143B57DC70C4",
       "expected": "MEDIUM",
-      "why": "minimal proxy (EIP-1167)"
+      "why": "minimal proxy (EIP-1167), no verified source"
     },
     "weth.demo": {
       "address": "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9",
       "expected": "LOW",
-      "why": "real Sepolia WETH9, nothing flagged"
+      "why": "real Sepolia WETH9, verified on Sourcify, nothing flagged"
     }
   }
 }
