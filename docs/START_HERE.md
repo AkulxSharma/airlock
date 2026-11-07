@@ -170,7 +170,7 @@ End-to-end runs by voice, GUI text and iMessage. Write the demo script in `docs/
 Update this list when a step finishes. Format: step, who, date, commit.
 
 - [x] Step 0: Foundations (Muhammad, 2026-11-07)
-- [ ] Step 1: Auditor, bytecode
+- [x] Step 1: Auditor, bytecode (Akul, 2026-11-07, b79b28d)
 - [ ] Step 2: Risk gate
 - [ ] Step 3: Address resolve
 - [ ] Step 4: Chain client and live audit
