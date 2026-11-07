@@ -5,30 +5,36 @@
       "cat": "command",
       "said": "Send zero point zero one ETH to vitalik dot eth.",
       "heard": "Send 0.01 ETH to vitalik.eth",
-      "wer": 0.7,
+      "wer": 0,
       "missing": [],
-      "verdict": "WARN",
-      "ms": 1408
+      "verdict": "PASS",
+      "ms": 1679,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "cmd-02",
       "cat": "command",
-      "said": "Send 0.01 ETH to vitalik.eth.",
+      "said": "Send zero point zero one ETH to vitalik.eth.",
       "heard": "Send 0.01 ETH to vitalik.eth",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1016
+      "ms": 1149,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "cmd-03",
       "cat": "command",
-      "said": "Transfer 0.005 test ETH to my savings wallet.",
+      "said": "Transfer zero point zero zero five test ETH to my savings wallet.",
       "heard": "Transfer 0.005 test ETH to my savings wallet",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1539
+      "ms": 2208,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "cmd-04",
@@ -38,17 +44,21 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1415
+      "ms": 2098,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "cmd-05",
       "cat": "command",
       "said": "Yes, confirm the transfer.",
-      "heard": "Yes, confirm the transfer.",
+      "heard": "Yes, confirm the transfer",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1433
+      "ms": 1459,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "cmd-06",
@@ -58,17 +68,21 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1500
+      "ms": 1399,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "cmd-07",
       "cat": "command",
       "said": "Yes.",
-      "heard": "Yes.",
+      "heard": "Yes",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1198
+      "ms": 1371,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "cmd-08",
@@ -78,7 +92,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1248
+      "ms": 1310,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "gate-01",
@@ -88,27 +104,33 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1644
+      "ms": 1493,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "gate-02",
       "cat": "gate",
       "said": "Confirmation expires in sixty seconds.",
       "heard": "Confirmation expires in 60 seconds",
-      "wer": 0.2,
+      "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1571
+      "ms": 1612,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "gate-03",
       "cat": "gate",
-      "said": "This transfer is above the cap of 0.01 ETH and was refused.",
+      "said": "This transfer is above the cap of zero point zero one ETH and was refused.",
       "heard": "This transfer is above the cap of 0.01 ETH and was refused",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1442
+      "ms": 1905,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "gate-04",
@@ -118,19 +140,21 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1573
+      "ms": 1710,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "hard-01",
       "cat": "hard",
-      "said": "Chain ID 11155111 is the Sepolia test network.",
-      "heard": "Chain ID 1155111 is the Sepolia test network",
-      "wer": 0.125,
-      "missing": [
-        "/11155111|11,155,111/"
-      ],
-      "verdict": "FAIL",
-      "ms": 2167
+      "said": "Chain ID 1 1 1 5 5 1 1 1 is the Sepolia test network.",
+      "heard": "Chain ID 11155111 is the Sepolia test network",
+      "wer": 0,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 1950,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "hard-02",
@@ -140,69 +164,94 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2079
+      "ms": 2089,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "hard-03",
       "cat": "hard",
-      "said": "Send 0.01 ETH to 0x71C7656EC7ab88b098defB751B7401B5f6d8976F.",
-      "heard": "Send 0.01 ETH to 071C7656EC7B88B098FB751B7401B5F6D8976F",
-      "wer": 0.2,
-      "missing": [
-        "/0x71c7656ec7ab88b098defb751b7401b5f6d8976f/"
-      ],
-      "verdict": "FAIL",
-      "ms": 2837
+      "said": "Send zero point zero one ETH to the address starting zero x 7 1 C 7, ending 9 7 6 F.",
+      "heard": "Send 0.01 ETH to the address starting 0x71c7 ending 976f",
+      "wer": 0.18181818181818182,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 2970,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "hard-04",
       "cat": "hard",
       "said": "Contract address zero x d e a d b e e f.",
-      "heard": "Contract address zero XDEADBEEF",
-      "wer": 0.75,
+      "heard": "Contract address zero x D E A D B E E F",
+      "wer": 0,
       "missing": [],
-      "verdict": "WARN",
-      "ms": 2995
+      "verdict": "PASS",
+      "ms": 2206,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "hard-05",
       "cat": "hard",
       "said": "Gas price is thirty gwei and the nonce is forty two.",
-      "heard": "Gas price is 30 Gwei and the nonce is 42",
-      "wer": 0.2727272727272727,
+      "heard": "Gas price is 30 gwei and the nonce is 42.",
+      "wer": 0,
       "missing": [],
-      "verdict": "WARN",
-      "ms": 2253
+      "verdict": "PASS",
+      "ms": 2160,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "hard-06",
       "cat": "hard",
       "said": "Transaction hash begins with zero x a b c one two three.",
-      "heard": "Transaction hash begins with zero XABC123.",
-      "wer": 0.5833333333333334,
+      "heard": "Transaction hash begins with 0xABC123",
+      "wer": 0,
       "missing": [],
-      "verdict": "WARN",
-      "ms": 2291
+      "verdict": "PASS",
+      "ms": 1912,
+      "runs": 3,
+      "passes": 3
+    },
+    {
+      "id": "hard-07",
+      "cat": "hard",
+      "said": "Send 0.01 ETH to 0x71C7656EC7ab88b098defB751B7401B5f6d8976F.",
+      "heard": "Send 0.01 ETH to 0x71c7656e7ab88b098dfbb751b7401b5f6d8976f",
+      "wer": 0.2,
+      "missing": [],
+      "verdict": "PASS",
+      "ms": 3184,
+      "note": "guard blocked address-like text",
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-01",
       "cat": "security",
       "said": "This contract contains a selfdestruct opcode.",
       "heard": "This contract contains a self-destruct opcode",
-      "wer": 0.3333333333333333,
+      "wer": 0,
       "missing": [],
-      "verdict": "WARN",
-      "ms": 1732
+      "verdict": "PASS",
+      "ms": 1780,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-02",
       "cat": "security",
       "said": "The contract uses delegatecall to an unknown address.",
-      "heard": "The contract uses delegate call to an unknown address.",
-      "wer": 0.25,
+      "heard": "The contract uses delegate call to an unknown address",
+      "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1668
+      "ms": 1865,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-03",
@@ -212,7 +261,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1697
+      "ms": 1913,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-04",
@@ -222,7 +273,9 @@
       "wer": 0.08333333333333333,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1798
+      "ms": 1956,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-05",
@@ -232,7 +285,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2095
+      "ms": 1760,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-06",
@@ -242,17 +297,21 @@
       "wer": 0.1,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2376
+      "ms": 1724,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-07",
       "cat": "security",
       "said": "Phishing address flagged. Transfer refused.",
-      "heard": "Phishing address flagged, transfer refused",
+      "heard": "Phishing address flagged. Transfer refused.",
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 2018
+      "ms": 1695,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-08",
@@ -262,7 +321,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1583
+      "ms": 1750,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-09",
@@ -272,7 +333,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1563
+      "ms": 2665,
+      "runs": 3,
+      "passes": 3
     },
     {
       "id": "sec-10",
@@ -282,7 +345,9 @@
       "wer": 0,
       "missing": [],
       "verdict": "PASS",
-      "ms": 1660
+      "ms": 2579,
+      "runs": 3,
+      "passes": 3
     }
   ],
   "edges": [

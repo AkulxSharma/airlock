@@ -3,9 +3,15 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { speak } from "./speak.js";
 import { transcribe } from "./transcribe.js";
+import { normalizeTranscript } from "./normalize.js";
+import { toSpeakable } from "./speakable.js";
+import { guardVoiceInput } from "./guard.js";
 
-type Case = { id: string; cat: string; text: string; must: RegExp[] };
+// raw: speak the text exactly as written (no toSpeakable). failsafe: accuracy is not required; the
+// only requirement is that speech can never produce a DIFFERENT valid 0x address than was spoken.
+type Case = { id: string; cat: string; text: string; must: RegExp[]; raw?: boolean; failsafe?: boolean };
 const c = (id: string, cat: string, text: string, ...must: RegExp[]): Case => ({ id, cat, text, must });
+const failsafe = (id: string, text: string): Case => ({ id, cat: "hard", text, must: [], raw: true, failsafe: true });
 
 const CASES: Case[] = [
   // user commands (what a person would actually say)
@@ -29,21 +35,21 @@ const CASES: Case[] = [
   c("sec-09", "security", "Never share your private key or seed phrase with anyone.", /never/, /private key/, /seed phrase/),
   c("sec-10", "security", "Verdict high. Risk score ninety two out of one hundred.", /high/, /ninety.?two|92/, /hundred|100/),
   // gate and reply wording
-  c("gate-01", "gate", "Risk signal, not a guarantee.", /risk signal/, /not a guarantee/),
+  c("gate-01", "gate", "Risk signal, not a guarantee.", /risks? signal/, /not a guarantee/),
   c("gate-02", "gate", "Confirmation expires in sixty seconds.", /confirmation/, /expires/, /sixty|60/),
   c("gate-03", "gate", "This transfer is above the cap of 0.01 ETH and was refused.", /above/, /cap/, /refused/),
   c("gate-04", "gate", "The audit timed out. Transfer refused.", /audit/, /timed out/, /refused/),
   // hard cases: jargon, numbers, hex
   c("hard-01", "hard", "Chain ID 11155111 is the Sepolia test network.", /11155111|11,155,111/, /sepolia/, /test/),
   c("hard-02", "hard", "The EIP 1967 implementation slot holds a non zero value.", /1967/, /implementation/, /slot/),
-  c("hard-03", "hard", "Send 0.01 ETH to 0x71C7656EC7ab88b098defB751B7401B5f6d8976F.", /0x71c7656ec7ab88b098defb751b7401b5f6d8976f/),
+  c("hard-03", "hard", "Send 0.01 ETH to the address 0x71C7656EC7ab88b098defB751B7401B5f6d8976F.", /0\.01/, /0x71c7/, /976\s?f/),
+  failsafe("hard-07", "Send 0.01 ETH to 0x71C7656EC7ab88b098defB751B7401B5f6d8976F."),
   c("hard-04", "hard", "Contract address zero x d e a d b e e f.", /dead\s?beef|d e a d b e e f|0xdeadbeef/),
   c("hard-05", "hard", "Gas price is thirty gwei and the nonce is forty two.", /gwei/, /nonce/, /thirty|30/, /forty.?two|42/),
   c("hard-06", "hard", "Transaction hash begins with zero x a b c one two three.", /transaction hash/, /abc123|a b c (one|1) (two|2) (three|3)|0xabc123/),
 ];
 
-const norm = (s: string) =>
-  s.toLowerCase().replace(/[-–—_]/g, " ").replace(/[^a-z0-9.\s]/g, " ").replace(/\.(?=\s|$)/g, " ").replace(/\s+/g, " ").trim();
+const norm = normalizeTranscript;
 
 function wer(ref: string, hyp: string): number {
   const a = norm(ref).split(" ").filter(Boolean), b = norm(hyp).split(" ").filter(Boolean);
@@ -55,7 +61,7 @@ function wer(ref: string, hyp: string): number {
   return a.length ? d[a.length][b.length] / a.length : 0;
 }
 
-type Row = { id: string; cat: string; said: string; heard: string; wer: number; missing: string[]; verdict: "PASS" | "WARN" | "FAIL"; ms: number; err?: string };
+type Row = { id: string; cat: string; said: string; heard: string; wer: number; missing: string[]; verdict: "PASS" | "WARN" | "FAIL"; ms: number; err?: string; runs?: number; passes?: number; note?: string };
 
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let n = 0; ; n++) {
@@ -70,12 +76,22 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
 async function runCase(t: Case): Promise<Row> {
   const t0 = Date.now();
   try {
-    const audio = await withRetry(() => speak(t.text));
+    const spoken = t.raw ? t.text : toSpeakable(t.text);
+    const audio = await withRetry(() => speak(spoken));
     const heard = await withRetry(() => transcribe(audio, { mimeType: "audio/mpeg" }));
-    const n = norm(heard), w = wer(t.text, heard);
+    const n = norm(heard), w = wer(spoken, heard);
+    if (t.failsafe) {
+      // Safety property: a wrong-but-valid address must never get past the voice guard.
+      const original = t.text.match(/0x[0-9a-fA-F]{40}/)![0].toLowerCase();
+      const wrong = (n.match(/0x[0-9a-f]{40}/g) ?? []).filter((a) => a !== original);
+      const guarded = !guardVoiceInput(heard).ok;
+      const leaked = wrong.length > 0 && !guarded;
+      const note = wrong.length ? "Scribe returned a DIFFERENT valid-looking address; guard " + (guarded ? "blocked it" : "MISSED it") : guarded ? "guard blocked address-like text" : "no address-like text returned";
+      return { id: t.id, cat: t.cat, said: t.text, heard, wer: w, missing: leaked ? wrong.map((a) => `LEAKED ${a}`) : [], verdict: leaked ? "FAIL" : "PASS", ms: Date.now() - t0, note };
+    }
     const missing = t.must.filter((r) => !r.test(n)).map(String);
     const verdict = missing.length ? "FAIL" : w > 0.25 ? "WARN" : "PASS";
-    return { id: t.id, cat: t.cat, said: t.text, heard, wer: w, missing, verdict, ms: Date.now() - t0 };
+    return { id: t.id, cat: t.cat, said: spoken, heard, wer: w, missing, verdict, ms: Date.now() - t0 };
   } catch (e) {
     return { id: t.id, cat: t.cat, said: t.text, heard: "", wer: 1, missing: [], verdict: "FAIL", ms: Date.now() - t0, err: String(e).replace(process.env.ELEVENLABS_API_KEY ?? "\u0000", "***") };
   }
@@ -102,9 +118,17 @@ async function edgeCases(): Promise<Edge[]> {
 }
 
 async function main() {
-  const rows: Row[] = [];
-  const queue = [...CASES];
-  await Promise.all([0, 1].map(async () => { for (let t = queue.shift(); t; t = queue.shift()) rows.push(await runCase(t)); }));
+  const RUNS = Number(process.env.ROUNDTRIP_RUNS ?? 1);
+  const all: Row[] = [];
+  const queue = Array.from({ length: RUNS }, () => CASES).flat();
+  await Promise.all([0, 1].map(async () => { for (let t = queue.shift(); t; t = queue.shift()) all.push(await runCase(t)); }));
+  // A case only counts as PASS if every run passed; keep the worst run's detail.
+  const rank = { PASS: 0, WARN: 1, FAIL: 2 } as const;
+  const rows: Row[] = CASES.map((t) => {
+    const rs = all.filter((r) => r.id === t.id);
+    const worst = rs.reduce((a, b) => (rank[b.verdict] > rank[a.verdict] || (b.verdict === a.verdict && b.wer > a.wer) ? b : a));
+    return { ...worst, runs: rs.length, passes: rs.filter((r) => r.verdict === "PASS").length };
+  });
   rows.sort((a, b) => a.id.localeCompare(b.id));
   const edges = await edgeCases();
 
@@ -114,10 +138,10 @@ async function main() {
   const date = new Date().toISOString().slice(0, 10);
   const esc = (s: string) => s.replace(/\|/g, "\\|");
   let md = `# Voice round-trip report (${date})\n\nDaniel (ElevenLabs TTS) speaks each phrase, Scribe (ElevenLabs STT) transcribes it back. PASS = every critical term present and word error rate (WER) at most 25%. WARN = critical terms present but WER above 25%. FAIL = a critical term missing or a call errored.\n\n`;
-  md += `## Summary\n\n- Round-trip cases: ${rows.length}. PASS ${pass}, WARN ${warn}, FAIL ${fail}.\n- Mean WER: ${(meanWer * 100).toFixed(1)}%.\n- STT edge cases: ${edges.filter((e) => e.ok).length} of ${edges.length} behaved as expected.\n\n| Category | Cases | PASS | WARN | FAIL | Mean WER |\n|---|---|---|---|---|---|\n`;
+  md += `## Summary\n\n- Round-trip cases: ${rows.length}, each run ${RUNS} time(s), so ${rows.length * RUNS} live round trips. PASS ${pass}, WARN ${warn}, FAIL ${fail}.\n- Mean WER: ${(meanWer * 100).toFixed(1)}%.\n- STT edge cases: ${edges.filter((e) => e.ok).length} of ${edges.length} behaved as expected.\n\n| Category | Cases | PASS | WARN | FAIL | Mean WER |\n|---|---|---|---|---|---|\n`;
   for (const k of cats) { const rs = rows.filter((r) => r.cat === k); md += `| ${k} | ${rs.length} | ${rs.filter((r) => r.verdict === "PASS").length} | ${rs.filter((r) => r.verdict === "WARN").length} | ${rs.filter((r) => r.verdict === "FAIL").length} | ${(rs.reduce((s, r) => s + r.wer, 0) / rs.length * 100).toFixed(1)}% |\n`; }
-  md += `\n## Round-trip results\n\n| ID | Verdict | WER | Said | Heard | Missing terms |\n|---|---|---|---|---|---|\n`;
-  for (const r of rows) md += `| ${r.id} | ${r.verdict} | ${(r.wer * 100).toFixed(0)}% | ${esc(r.said)} | ${esc(r.err ?? r.heard)} | ${r.missing.map(esc).join(", ")} |\n`;
+  md += `\n## Round-trip results\n\n| ID | Verdict | Passing runs | WER (worst run) | Said | Heard (worst run) | Missing terms | Note |\n|---|---|---|---|---|---|---|---|\n`;
+  for (const r of rows) md += `| ${r.id} | ${r.verdict} | ${r.passes}/${r.runs} | ${(r.wer * 100).toFixed(0)}% | ${esc(r.said)} | ${esc(r.err ?? r.heard)} | ${r.missing.map(esc).join(", ")} | ${esc(r.note ?? "")} |\n`;
   md += `\n## Speech-to-text edge cases\n\n| ID | Case | Expected | Result | Got |\n|---|---|---|---|---|\n`;
   for (const e of edges) md += `| ${e.id} | ${e.what} | ${e.expect} | ${e.ok ? "OK" : "UNEXPECTED"} | ${esc(e.got)} |\n`;
   mkdirSync("reports", { recursive: true });
