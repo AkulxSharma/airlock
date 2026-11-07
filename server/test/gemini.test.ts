@@ -182,3 +182,64 @@ describe("finding ids", () => {
     expect(readFileSync(new URL("../src/auditor/checks.ts", import.meta.url), "utf8")).toContain("FINDING_IDS");
   });
 });
+
+import { withCooldown } from "../src/agent/gemini.js";
+
+describe("explainer cache", () => {
+  it("the same audit is explained once, then served from the cache", async () => {
+    const t = fake({ text: "The contract can erase itself and send out its funds.", calls: [] });
+    const explain = createExplainer(t.client);
+    const ctx = { verdict: "HIGH", riskScore: 40, decision: "refuse" as const, findings: [f("selfdestruct")] };
+    const a = await explain(ctx);
+    const b = await explain({ ...ctx });
+    expect(a).toBe(b);
+    expect(t.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it("a different audit is not served another audit's explanation", async () => {
+    const t = fake({ text: "A short note.", calls: [] });
+    const explain = createExplainer(t.client);
+    await explain({ verdict: "HIGH", riskScore: 40, decision: "refuse", findings: [f("selfdestruct")] });
+    await explain({ verdict: "MEDIUM", riskScore: 20, decision: "confirm", findings: [f("minimal-proxy", "medium")] });
+    expect(t.generate).toHaveBeenCalledTimes(2);
+  });
+
+  it("a rejected or failed answer is never cached", async () => {
+    const bad = fake({ text: "Totally safe.", calls: [] });
+    const explain = createExplainer(bad.client);
+    const ctx = { verdict: "LOW", riskScore: 0, decision: "confirm" as const, findings: [] };
+    expect(await explain(ctx)).toBeNull();
+    expect(await explain(ctx)).toBeNull();
+    expect(bad.generate).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("withCooldown", () => {
+  it("skips the model for the cooldown after a failure, then tries again", async () => {
+    let t = 1000;
+    let fail = true;
+    const generate = vi.fn(async () => {
+      if (fail) throw new Error("429");
+      return { text: "ok", calls: [] };
+    });
+    const client = withCooldown({ generate }, 20_000, () => t);
+    const req = { system: "s", user: "u", withTransferTool: false };
+    await expect(client.generate(req)).rejects.toThrow("429");
+    await expect(client.generate(req)).rejects.toThrow("cooling down");
+    expect(generate).toHaveBeenCalledTimes(1);
+    t += 20_001;
+    fail = false;
+    await expect(client.generate(req)).resolves.toMatchObject({ text: "ok" });
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+
+  it("an agent behind a cooling-down model still answers (help) and never throws", async () => {
+    const generate = vi.fn(async () => {
+      throw new Error("429");
+    });
+    const agent = createGeminiAgent(withCooldown({ generate }));
+    expect(await agent.handle("could you send 0.01 to vitalik.eth please")).toEqual({ kind: "help" });
+    expect(await agent.handle("could you send 0.01 to vitalik.eth please")).toEqual({ kind: "help" });
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+});

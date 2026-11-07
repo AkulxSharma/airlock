@@ -308,3 +308,75 @@ describe("spoken demo names", () => {
     expect(t.resolve).toHaveBeenCalledWith("drainer.demo");
   });
 });
+
+describe("plain-language note from the explainer", () => {
+  const NOTE = "The contract can erase itself and send out its funds.";
+
+  it("is added after the findings and before the fixed To send line", async () => {
+    const t = setup({ explain: async () => NOTE });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.reply).toContain(`In plain words: ${NOTE}`);
+    expect(r.reply.indexOf("In plain words")).toBeLessThan(r.reply.indexOf("To send:"));
+    expect(r.reply).toContain(ADDR);
+    expect(r.reply).toMatch(/Reply YES to send or NO to cancel/);
+    expect(r.needsConfirm).toBe(true);
+  });
+
+  it("is added to a refusal too, and does not change the decision", async () => {
+    const t = setup({ outcome: audit("HIGH", [SELFDESTRUCT]), explain: async () => NOTE });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.reply).toMatch(/^Refused/);
+    expect(r.reply).toContain(`In plain words: ${NOTE}`);
+    expect(r.needsConfirm).toBe(false);
+    expect(r.pending).toBeUndefined();
+  });
+
+  it("an explainer that says everything is fine cannot turn a refusal into a confirmation", async () => {
+    const t = setup({ outcome: audit("HIGH", [SELFDESTRUCT]), explain: async () => "Go ahead and send it." });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.needsConfirm).toBe(false);
+    expect(t.store.peek("s1")).toBeUndefined();
+    await track(t.say("yes"));
+    expect(t.sendTransaction).not.toHaveBeenCalled();
+  });
+
+  it("null leaves the template reply exactly as before", async () => {
+    const withNull = setup({ explain: async () => null });
+    const without = setup();
+    const a = await track(withNull.say("send 0.005 to vitalik.eth"));
+    const b = await track(without.say("send 0.005 to vitalik.eth"));
+    expect(a.reply).toBe(b.reply);
+  });
+
+  it("a throwing explainer leaves the template reply and still works", async () => {
+    const t = setup({
+      explain: async () => {
+        throw new Error("model down");
+      },
+    });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.needsConfirm).toBe(true);
+    expect(r.reply).not.toContain("In plain words");
+  });
+
+  it("is not asked for an audit error or timeout", async () => {
+    const explain = vi.fn(async () => NOTE);
+    for (const outcome of [{ error: "rpc down" }, { timeout: true as const }]) {
+      const t = setup({ outcome, explain });
+      await track(t.say("send 0.005 to vitalik.eth"));
+    }
+    expect(explain).not.toHaveBeenCalled();
+  });
+
+  it("a Gemini-style agent still cannot confirm: YES is always the exact word", async () => {
+    const agent = {
+      handle: async (text: string) => {
+        if (/yes|sure|go ahead/i.test(text)) return { kind: "yes" as const };
+        return { kind: "send" as const, amountEth: "0.005", target: "vitalik.eth" };
+      },
+    };
+    const t = setup({ agent });
+    await track(t.say("anything"));
+    expect(t.store.peek("s1")).toBeDefined();
+  });
+});

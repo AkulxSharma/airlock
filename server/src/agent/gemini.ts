@@ -47,7 +47,8 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 export function createGeminiClient(apiKey: string, timeoutMs = 8_000, model = MODEL): GeminiClient {
-  const ai = new GoogleGenAI({ apiKey });
+  // v1beta: the default v1 rejects function calling and system instructions.
+  const ai = new GoogleGenAI({ apiKey, apiVersion: "v1beta" });
   return {
     async generate({ system, user, withTransferTool }) {
       const res = await withTimeout(
@@ -69,13 +70,30 @@ export function createGeminiClient(apiKey: string, timeoutMs = 8_000, model = MO
         }),
         timeoutMs,
       );
-      return {
-        text: res.text ?? "",
-        calls: (res.functionCalls ?? []).map((c) => ({
-          name: c.name ?? "",
-          args: (c.args ?? {}) as Record<string, unknown>,
-        })),
-      };
+      const calls = (res.functionCalls ?? []).map((c) => ({
+        name: c.name ?? "",
+        args: (c.args ?? {}) as Record<string, unknown>,
+      }));
+      // Reading .text when a function call came back makes the SDK print a warning.
+      return { text: calls.length > 0 ? "" : (res.text ?? ""), calls };
+    },
+  };
+}
+
+// After a failed call (for example the free tier's 5-requests-per-minute limit), skip the
+// model for a short while instead of retrying on every message. Callers already fall back
+// to the rule parser and the template reply, so this only saves time and quota.
+export function withCooldown(client: GeminiClient, cooldownMs = 20_000, now: () => number = Date.now): GeminiClient {
+  let blockedUntil = 0;
+  return {
+    async generate(req) {
+      if (now() < blockedUntil) throw new Error("gemini cooling down");
+      try {
+        return await client.generate(req);
+      } catch (err) {
+        blockedUntil = now() + cooldownMs;
+        throw err;
+      }
     },
   };
 }
@@ -139,7 +157,13 @@ export type ExplainContext = {
 };
 
 export function createExplainer(client: GeminiClient) {
+  // The same audit gives the same explanation, so repeat checks (and demo re-runs) cost no
+  // model call. Only validated text is cached; a failure is never cached.
+  const cache = new Map<string, string>();
   return async function explain(ctx: ExplainContext): Promise<string | null> {
+    const key = JSON.stringify([ctx.verdict, ctx.riskScore, ctx.decision, ctx.findings.map((f) => f.id).sort()]);
+    const hit = cache.get(key);
+    if (hit) return hit;
     try {
       // The model sees only this JSON: no user text, no address, no amount.
       const user = JSON.stringify({
@@ -149,7 +173,9 @@ export function createExplainer(client: GeminiClient) {
         findings: ctx.findings.map((f) => ({ id: f.id, severity: f.severity, message: f.message })),
       });
       const r = await client.generate({ system: EXPLAIN_SYSTEM, user, withTransferTool: false });
-      return validateExplanation(r.text, ctx.findings);
+      const valid = validateExplanation(r.text, ctx.findings);
+      if (valid) cache.set(key, valid);
+      return valid;
     } catch {
       return null;
     }

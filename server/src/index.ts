@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { config } from "dotenv";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
+import { createExplainer, createGeminiAgent, createGeminiClient, withCooldown } from "./agent/gemini.js";
 import { auditAddress, auditTimeoutFromEnv, readerFromEnv } from "./auditor/chain.js";
 import { createApp, parseAllowedOrigins } from "./api/app.js";
 import { createMessageHandler } from "./api/message.js";
@@ -33,6 +34,12 @@ try {
 }
 
 const demoAliases = loadDemoAliases();
+
+// With a Gemini key: loose phrasing and plain-language notes. Without one, or if a call
+// fails, the rule-based parser and the fixed replies still work.
+const geminiKey = env.GEMINI_API_KEY?.trim();
+const gemini = geminiKey ? withCooldown(createGeminiClient(geminiKey)) : null;
+console.log(gemini ? "Gemini: on (gemini-2.5-flash)" : "Gemini: off (no GEMINI_API_KEY), using the rule-based parser");
 const ttlSeconds = Number(env.CONFIRM_TTL_SECONDS);
 const bus = createStageBus();
 const handle = createMessageHandler({
@@ -44,6 +51,8 @@ const handle = createMessageHandler({
   maxTransferEth: maxTransferFromEnv(env),
   ttlMs: Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds * 1000 : DEFAULT_TTL_MS,
   publish: bus.publish,
+  agent: gemini ? createGeminiAgent(gemini) : undefined,
+  explain: gemini ? createExplainer(gemini) : undefined,
 });
 
 const app = createApp({ handle, bus, allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS) });

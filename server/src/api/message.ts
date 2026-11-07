@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { guardVoiceInput } from "../../../voice/guard.js";
 import { normalizeTranscript } from "../../../voice/normalize.js";
+import type { ExplainContext } from "../agent/gemini.js";
 import { ruleBasedAgent, type Agent } from "../agent/parse.js";
 import type { LiveAuditOutcome } from "../auditor/chain.js";
 import { DEFAULT_TTL_MS, type ConfirmStore } from "../gate/confirm.js";
 import { decide } from "../gate/decide.js";
-import type { Finding, MessageRequest, MessageResponse, Stage } from "../types.js";
+import type { AuditResult, Finding, MessageRequest, MessageResponse, Stage } from "../types.js";
 import { checkAmount, sendTestnet, type WalletLike } from "../wallet/send.js";
 import type { ResolveResult } from "./resolve.js";
 
@@ -20,6 +21,9 @@ export type MessageDeps = {
   publish(sessionId: string, stage: Stage): void;
   newId?(): string;
   agent?: Agent;
+  // Optional plain-language note about the findings (Gemini). It is added after the
+  // fixed, code-written lines and never replaces them. Null means "show the template only".
+  explain?(ctx: ExplainContext): Promise<string | null>;
 };
 
 const HELP =
@@ -42,6 +46,21 @@ export function createMessageHandler(deps: MessageDeps) {
   const agent = deps.agent ?? ruleBasedAgent;
   const ttlMs = deps.ttlMs ?? DEFAULT_TTL_MS;
   const newId = deps.newId ?? randomUUID;
+
+  const explainNote = async (a: AuditResult, decision: "refuse" | "confirm"): Promise<string> => {
+    if (!deps.explain) return "";
+    try {
+      const n = await deps.explain({
+        verdict: a.verdict,
+        riskScore: a.riskScore,
+        decision,
+        findings: a.findings,
+      });
+      return n ? `\nIn plain words: ${n}` : "";
+    } catch {
+      return "";
+    }
+  };
 
   return async function handle(req: MessageRequest): Promise<MessageResponse> {
     const final = new Map<Stage["name"], Stage>();
@@ -131,8 +150,9 @@ export function createMessageHandler(deps: MessageDeps) {
 
     if (decision.action === "refuse") {
       const findings = "findings" in outcome ? `\n${findingLines(outcome.findings)}` : "";
+      const note = "verdict" in outcome ? await explainNote(outcome, "refuse") : "";
       return done(
-        `Refused. ${decision.reason}${findings}`,
+        `Refused. ${decision.reason}${findings}${note}`,
         false,
         "verdict" in outcome ? { audit: outcome } : {},
       );
@@ -146,10 +166,11 @@ export function createMessageHandler(deps: MessageDeps) {
       deps.now(),
       ttlMs,
     );
+    const note = await explainNote(audit, "confirm");
     return done(
       [
         `Risk signal: ${audit.verdict} (score ${audit.riskScore}).`,
-        findingLines(audit.findings),
+        findingLines(audit.findings) + note,
         `To send: ${intent.amountEth} test ETH to ${resolved.address}.`,
         `This is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in ${Math.round(ttlMs / 1000)} seconds.`,
       ].join("\n"),

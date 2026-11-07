@@ -177,7 +177,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [x] Step 5: Testnet send with cap (Akul, 2026-11-07)
 - [x] Step 6: API with rule-based parser (Akul, 2026-11-07)
 - [x] Step 7: Demo targets (Akul, 2026-11-07, docs/DEMO.md)
-- [ ] Step 8: Gemini agent
+- [x] Step 8: Gemini agent (Akul, 2026-11-07)
 - [ ] Step 9: Source checks
 - [ ] Step 10: iMessage bridge
 - [x] Step 11a: Demo GUI + voice routes (Muhammad, 2026-11-07, `app/`, Otto-style layout, light by default, inverted dark mode)
