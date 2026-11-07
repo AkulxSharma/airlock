@@ -11,7 +11,7 @@ This file records decisions agreed between Muhammad and Akul on 2026-11-07. Clau
 
 - **Akul** owns the whole backend: contract auditor, risk gate, Gemini agent, iMessage bridge, testnet send, and the API (`POST /api/message`, `GET /api/stream`). This includes the mock versions of those two endpoints, so the GUI has something to talk to before the real server is done. See `docs/TASKS.md` for the full split.
 - **Muhammad** owns the GUI (Next.js in `app/`: chat, voice button, verdict card, live log), the ElevenLabs STT/TTS work in `voice/`, and demo polish and recording.
-- The demo GUI exists in `app/` (Next.js 16, Tailwind 4; Otto-style layout with a deep-space background; routes `/api/speak` and `/api/transcribe` call `voice/`). It belongs to Muhammad: do not edit `app/` without asking. Run it with `npm run dev` in `app/` and open exactly `http://localhost:3000` (the server's CORS allows only that origin). The real GUI polish comes after the backend is done.
+- The demo GUI exists in `app/` (Next.js 16, Tailwind 4; Otto-style layout with a deep-space background; routes `/api/speak` and `/api/transcribe` call `voice/`). It belongs to Muhammad: do not edit `app/` without asking. Run it with `npm run dev` in `app/` and open `http://localhost:3000`. If something else already owns port 3000 (on Muhammad's Mac a Docker/Colima container does, bound to 127.0.0.1:3000, so the browser shows the wrong app), run `npm run dev -- -p 3100` instead and add `http://localhost:3100,http://127.0.0.1:3100` to `ALLOWED_ORIGINS` in the local `.env`, because the server's CORS only allows listed origins. The real GUI polish comes after the backend is done.
 - Do not build another person's area without asking first. It causes merge conflicts.
 
 ## Keys
