@@ -2,6 +2,11 @@
 
 This file records decisions agreed between Muhammad and Akul on 2026-11-07. Claude sessions working in this repo should treat it as context. Update it when a decision changes.
 
+## Where to start
+
+- `docs/BUILD_PLAN.md`: ranked task list with the reasons for the order (backend first, GUI after).
+- `docs/START_HERE.md`: exact step-by-step build instructions and a progress checklist. Resume from the first unchecked step, and tick steps off as they finish.
+
 ## Who builds what
 
 - **Akul** owns the whole backend: contract auditor, risk gate, Gemini agent, iMessage bridge, testnet send, and the API (`POST /api/message`, `GET /api/stream`). This includes the mock versions of those two endpoints, so the GUI has something to talk to before the real server is done. See `docs/TASKS.md` for the full split.
