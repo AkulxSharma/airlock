@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { AirlockApi, AirlockReply, CursorStore, InboundMessage, MessageSource, ReplySender } from "./bridge.js";
+import type { DeliveryResult } from "./audio.js";
 import { messageText } from "./text.js";
 
 // --- reads inbound texts from the Messages database, read-only ---------------------------
@@ -162,5 +163,44 @@ export function createHttpApi(baseUrl: string, fetchImpl: typeof fetch = fetch, 
     const body = (await res.json()) as { reply?: unknown; needsConfirm?: unknown };
     if (typeof body.reply !== "string" || body.reply === "") throw new Error("empty reply");
     return { reply: body.reply, needsConfirm: body.needsConfirm === true } satisfies AirlockReply;
+  };
+}
+
+// --- checks whether a file we sent really went out -------------------------------------
+
+const DELIVERY_SQL = `
+  SELECT m.is_sent AS is_sent, m.error AS error
+  FROM message m
+  JOIN message_attachment_join j ON j.message_id = m.ROWID
+  JOIN attachment a ON a.ROWID = j.attachment_id
+  WHERE m.is_from_me = 1 AND a.transfer_name = ?
+  ORDER BY m.ROWID DESC
+  LIMIT 1`;
+
+// Looks for our outgoing attachment by file name and reports whether Messages sent it or gave
+// an error. Messages writes the row a moment after the send, so it polls for a few seconds.
+export async function openDeliveryChecker(
+  dbPath: string,
+  opts: { attempts?: number; waitMs?: number } = {},
+): Promise<(fileName: string) => Promise<DeliveryResult>> {
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(dbPath, { readOnly: true });
+  const stmt = db.prepare(DELIVERY_SQL);
+  const attempts = opts.attempts ?? 8;
+  const waitMs = opts.waitMs ?? 1_000;
+  return async (fileName) => {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const row = stmt.get(fileName) as { is_sent: number; error: number } | undefined;
+        if (row) {
+          if (Number(row.error) !== 0) return { status: "error", code: Number(row.error) };
+          if (Number(row.is_sent) === 1) return { status: "sent" };
+        }
+      } catch {
+        return { status: "unknown" };
+      }
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, waitMs));
+    }
+    return { status: "unknown" };
   };
 }

@@ -176,3 +176,108 @@ describe("toSpoken keeps voice replies short", () => {
     expect(toSpoken(full)).not.toContain(FULL);
   });
 });
+
+import { openDeliveryChecker } from "../src/imessage/adapters.js";
+
+const dirs2: string[] = [];
+afterAll(() => dirs2.forEach((d) => rmSync(d, { recursive: true, force: true })));
+
+describe("voice replier: delivery check", () => {
+  const run = async (verify: (n: string) => Promise<{ status: "sent" } | { status: "error"; code: number } | { status: "unknown" }>) => {
+    const dir = mkdtempSync(join(tmpdir(), "airlock-verify-"));
+    dirs2.push(dir);
+    const logs: string[] = [];
+    const asked: string[] = [];
+    const reply = createVoiceReplier({
+      dir,
+      speak: async () => new Uint8Array([1, 2, 3]),
+      sendFile: async () => {},
+      verify: async (n) => { asked.push(n); return verify(n); },
+      log: (l) => logs.push(l),
+      schedule: () => {},
+    });
+    await reply("h", "Refused. Risk signal is HIGH, so Airlock will not send.");
+    return { logs, asked };
+  };
+
+  it("logs 'delivered' only when Messages says the audio was sent", async () => {
+    const t = await run(async () => ({ status: "sent" }));
+    expect(t.logs).toEqual(["spoken reply delivered"]);
+    expect(t.asked[0]).toMatch(/^airlock-\d+-\w+\.mp3$/); // it asks about exactly the file it sent
+  });
+
+  it("logs a failure with Messages' error code when the send was rejected", async () => {
+    const t = await run(async () => ({ status: "error", code: 22 }));
+    expect(t.logs).toEqual(["spoken reply failed: Messages could not send it (error 22)"]);
+  });
+
+  it("says plainly when delivery could not be confirmed", async () => {
+    const t = await run(async () => ({ status: "unknown" }));
+    expect(t.logs[0]).toMatch(/delivery could not be confirmed/);
+    expect(t.logs[0]).not.toMatch(/delivered$/);
+  });
+
+  it("a checker that throws never breaks the reply", async () => {
+    const t = await run(async () => { throw new Error("db locked"); });
+    expect(t.logs).toEqual(["spoken reply failed; the text reply was already sent"]);
+  });
+});
+
+describe("delivery checker (throwaway Messages database)", () => {
+  async function makeDb() {
+    const { DatabaseSync } = await import("node:sqlite");
+    const dir = mkdtempSync(join(tmpdir(), "airlock-deliv-"));
+    dirs2.push(dir);
+    const path = join(dir, "chat.db");
+    const db = new DatabaseSync(path);
+    db.exec(`
+      CREATE TABLE attachment (ROWID INTEGER PRIMARY KEY, transfer_name TEXT);
+      CREATE TABLE message_attachment_join (message_id INTEGER, attachment_id INTEGER);
+      CREATE TABLE message (ROWID INTEGER PRIMARY KEY, is_from_me INTEGER, is_sent INTEGER, error INTEGER);`);
+    const add = (id: number, name: string, fromMe: number, sent: number, error: number) => {
+      db.prepare("INSERT INTO message VALUES (?, ?, ?, ?)").run(id, fromMe, sent, error);
+      db.prepare("INSERT INTO attachment VALUES (?, ?)").run(id, name);
+      db.prepare("INSERT INTO message_attachment_join VALUES (?, ?)").run(id, id);
+    };
+    return { path, db, add };
+  }
+  const quick = { attempts: 2, waitMs: 5 };
+
+  it("reports sent for an outgoing attachment that Messages sent without error", async () => {
+    const { path, db, add } = await makeDb();
+    add(1, "airlock-1-a.mp3", 1, 1, 0);
+    db.close();
+    expect(await (await openDeliveryChecker(path, quick))("airlock-1-a.mp3")).toEqual({ status: "sent" });
+  });
+
+  it("reports the error code when Messages could not send it", async () => {
+    const { path, db, add } = await makeDb();
+    add(1, "airlock-1-a.mp3", 1, 0, 22);
+    db.close();
+    expect(await (await openDeliveryChecker(path, quick))("airlock-1-a.mp3")).toEqual({ status: "error", code: 22 });
+  });
+
+  it("is unknown when the file never shows up, or has not been sent yet", async () => {
+    const { path, db, add } = await makeDb();
+    add(1, "airlock-2-pending.mp3", 1, 0, 0);
+    db.close();
+    const check = await openDeliveryChecker(path, quick);
+    expect(await check("airlock-9-missing.mp3")).toEqual({ status: "unknown" });
+    expect(await check("airlock-2-pending.mp3")).toEqual({ status: "unknown" });
+  });
+
+  it("ignores an attachment with the same name that someone else sent to us", async () => {
+    const { path, db, add } = await makeDb();
+    add(1, "airlock-1-a.mp3", 0, 1, 0);
+    db.close();
+    expect(await (await openDeliveryChecker(path, quick))("airlock-1-a.mp3")).toEqual({ status: "unknown" });
+  });
+
+  it("uses the newest matching row", async () => {
+    const { path, db, add } = await makeDb();
+    add(1, "airlock-1-a.mp3", 1, 0, 22);
+    add(2, "airlock-1-a.mp3", 1, 1, 0);
+    db.close();
+    expect(await (await openDeliveryChecker(path, quick))("airlock-1-a.mp3")).toEqual({ status: "sent" });
+  });
+});

@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { join, resolve, sep } from "node:path";
+import { basename, join, resolve, sep } from "node:path";
 import { speak as elevenLabsSpeak, MAX_SPEAK_CHARS } from "../../../voice/speak.js";
 import { toSpeakable } from "../../../voice/speakable.js";
 import { transcribe as elevenLabsTranscribe } from "../../../voice/transcribe.js";
@@ -124,7 +124,12 @@ export function toSpoken(reply: string): string {
   return text.length > MAX_SPEAK_CHARS ? text.slice(0, MAX_SPEAK_CHARS - 1).trimEnd() + "." : text;
 }
 
+// What the Messages database says about an audio file we sent.
+export type DeliveryResult = { status: "sent" } | { status: "error"; code: number } | { status: "unknown" };
+
 export type VoiceReplyDeps = {
+  // Asks Messages whether the file really went out. Without it the replier can only say it was handed over.
+  verify?: (fileName: string) => Promise<DeliveryResult>;
   speak?: (text: string) => Promise<Uint8Array>;
   sendFile: (handle: string, path: string) => Promise<void>;
   dir?: string;
@@ -133,7 +138,9 @@ export type VoiceReplyDeps = {
   cleanupAfterMs?: number;
 };
 
-const DEFAULT_REPLY_DIR = () => join(homedir(), "Library", "Caches", "airlock-imessage");
+// Messages could not read the file from ~/Library/Caches (the send was accepted, then nothing arrived).
+// ~/Pictures is a place the Messages app can read.
+const DEFAULT_REPLY_DIR = () => join(homedir(), "Pictures", "airlock-imessage");
 
 // Speaks a reply with ElevenLabs and sends it as an audio message. Best effort: the text reply
 // has already gone out, so every failure here is logged and swallowed.
@@ -172,7 +179,11 @@ export function createVoiceReplier(deps: VoiceReplyDeps) {
       file = join(dir, `airlock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp3`);
       await writeFile(file, audio, { mode: 0o600 });
       await deps.sendFile(handle, file);
-      log("sent a spoken reply");
+      const result = deps.verify ? await deps.verify(basename(file)) : null;
+      if (!result) log("sent a spoken reply");
+      else if (result.status === "sent") log("spoken reply delivered");
+      else if (result.status === "error") log(`spoken reply failed: Messages could not send it (error ${result.code})`);
+      else log("spoken reply handed to Messages, but delivery could not be confirmed");
     } catch {
       log("spoken reply failed; the text reply was already sent");
     } finally {

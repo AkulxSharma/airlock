@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import { createVoiceReplier, createVoiceTranscriber, toSpoken } from "./audio.js";
-import { createFileCursor, createHttpApi, createOsascriptFileSender, createOsascriptSender, openMessagesDb } from "./adapters.js";
+import { createFileCursor, createHttpApi, createOsascriptFileSender, createOsascriptSender, openDeliveryChecker, openMessagesDb } from "./adapters.js";
 import { createBridge } from "./bridge.js";
 import { parseAllowlist } from "./text.js";
 
@@ -61,7 +61,7 @@ const voiceReply = !repliesOn
   ? undefined
   : dryRun
     ? async (_handle: string, text: string) => console.log(`[dry run] would also send a spoken reply: ${toSpoken(text)}`)
-    : createVoiceReplier({ sendFile: createOsascriptFileSender(), log: logLine });
+    : createVoiceReplier({ sendFile: createOsascriptFileSender(), verify: await openDeliveryChecker(dbPath), log: logLine });
 
 if (env.IMESSAGE_DEBUG_TRANSCRIPTS === "1") {
   console.warn("DEBUG: transcripts of ignored voice notes will be printed here. Turn this off when you are done.");
