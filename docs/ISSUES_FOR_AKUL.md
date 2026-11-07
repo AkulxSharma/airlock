@@ -1,12 +1,14 @@
 # Open issues for Akul and Akul's Claude
 
+**Status 2026-11-07: all 8 are handled in commit `295d02a`** (each section below says what changed).
+
 Found on 2026-11-07 by Muhammad's Claude while reading all of the backend logic (`server/src/`). Everything in the backend works and its tests pass; these are weak spots, ranked, each with where it is, why it matters, how to fix it, and when it is done. You own the backend, so these are yours. Tick a box and add the commit hash when one is fixed. Pull and merge before every push.
 
 Reading order for the rule that matters most: `server/src/gate/decide.ts` and `server/src/gate/confirm.ts` are solid. Nothing below lets money move without a YES.
 
 ## 1. Gemini's "literal text" check is a substring match (fix first)
 
-- [ ] Fixed
+- [x] Fixed (`295d02a`). `containsAmount` and `containsTarget` in `server/src/agent/gemini.ts` match whole tokens: `0.01` is rejected inside `0.015` and `10.01`, `vitalik.eth` inside `vitalik.eth.evil.example` or `notvitalik.eth`, an address must match in full (any letter case). Tests in `server/test/gemini.test.ts`.
 
 **Where:** `server/src/agent/gemini.ts`, in `createGeminiAgent`, the lines that do `lower.includes(amountEth.toLowerCase())` and `lower.includes(target.toLowerCase())`.
 
@@ -18,7 +20,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 2. The gate does not check the chain or the target
 
-- [ ] Fixed
+- [x] Fixed (`295d02a`). `decide(input, { target })` in `server/src/gate/decide.ts` refuses any chain other than 11155111 and, when the resolved address is passed, any audit whose target differs (case-insensitive). The message handler passes the resolved address. Tests in `server/test/gate.test.ts` and `server/test/message.test.ts`.
 
 **Where:** `server/src/gate/decide.ts`.
 
@@ -30,7 +32,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 3. YES is handled in an order that hides the real reason
 
-- [ ] Fixed
+- [x] Fixed (`295d02a`). YES now peeks first, reports an expired request before anything else (and clears it), then checks for a wallet. With no wallet and still inside the window, the request is kept and the reply says sending is not set up. Tests in `server/test/message.test.ts`.
 
 **Where:** `server/src/api/message.ts`, the `intent.kind === "yes"` branch.
 
@@ -42,7 +44,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 4. Add a real "skipped" stage status
 
-- [ ] Fixed
+- [x] Fixed on the server (`295d02a`). `StageSchema` has `"skipped"`; the source stage is `skipped` for a plain wallet and when the audit failed (a failed source lookup is still `error`). **For Muhammad:** the live API now sends `status: "skipped"`. Your `stageTone` already shows these correctly through its detail-text fallback, so nothing breaks; you can switch it to read `status === "skipped"` and update the `Stage` type in `app/lib/api.ts` when you like.
 
 **Where:** `server/src/types.ts` (`StageSchema`) and the `emit` calls in `server/src/api/message.ts`.
 
@@ -54,7 +56,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 5. Sessions and rate limits matter the moment this is not local-only
 
-- [ ] Decided (fix, or write down that it stays local-only)
+- [x] Decided (`295d02a`): it stays local-only. The README now says so, and lists what to add before hosting it publicly (server-issued session ids, a cap on open streams per session, a per-session request limit).
 
 **Where:** `server/src/api/app.ts`, `server/src/gate/confirm.ts`.
 
@@ -64,7 +66,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 6. Source analysis is regex heuristics
 
-- [ ] Documented
+- [x] Documented (`295d02a`). `server/test/source.test.ts` has tests that pin down seven known misses (assembly sweep, a modifier not named `only...`, `tx.origin` copied into a variable, a helper function, an unusual fee-setter name, non-Solidity source), and the README says bytecode checks are the backbone. Still to do for the submission: say the same in the Devpost writeup.
 
 **Where:** `server/src/auditor/source.ts`.
 
@@ -74,7 +76,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 7. ENS names resolve on mainnet but are audited and sent on Sepolia
 
-- [ ] Documented
+- [x] Fixed and documented (`295d02a`). A reply for a `.eth` name now carries a line saying the name was looked up on mainnet but audited and sent on Sepolia (not read aloud in spoken replies). The README says it too, and points to the `.demo` names for the demo.
 
 **Where:** `server/src/api/resolve.ts` and `server/src/index.ts` (ENS client uses mainnet, the audit and the wallet use Sepolia).
 
@@ -84,7 +86,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 8. Small process item: new packages break the other machine
 
-- [ ] Fixed
+- [x] Fixed (`295d02a`). A root `package.json` has `npm run setup`, which installs `server/`, `voice/` and `app/`; `CLAUDE.md` and the README tell everyone to run it after a pull.
 
 **Problem:** when you added `@google/genai`, Muhammad's server crashed on startup with `ERR_MODULE_NOT_FOUND` until he ran `npm install` in `server/`.
 
