@@ -1,5 +1,20 @@
 # Airlock: team decisions (read this first)
 
+> ## ⚠️ OPEN ISSUES FOR AKUL'S CLAUDE: READ THIS FIRST
+>
+> Muhammad's Claude reviewed the whole backend and found 8 weak spots. Nothing lets money move without a YES, but these should be fixed or consciously decided before the demo and submission. Full details, file locations, fixes and "done when" checks are in **[docs/ISSUES_FOR_AKUL.md](docs/ISSUES_FOR_AKUL.md)**. Fix in this order:
+>
+> 1. Gemini's "literal text" check is a substring match, so `0.01` passes inside `0.015` (`server/src/agent/gemini.ts`).
+> 2. The gate does not check the chain id or the audited target (`server/src/gate/decide.ts`).
+> 3. YES checks for a wallet before it checks expiry, which hides the real reason (`server/src/api/message.ts`).
+> 4. Add a real `skipped` stage status so the GUI does not have to read detail text (`server/src/types.ts`).
+> 5. Sessions and rate limits only matter if the server is hosted publicly (decide, or write down that it stays local).
+> 6. Source analysis is regex heuristics (document the limits).
+> 7. ENS resolves on mainnet but is audited on Sepolia (document it).
+> 8. After a pull that changes `package.json`, other machines must run `npm install`.
+>
+> Tick each box in that file with the commit hash when it is done, and pull and merge before every push.
+
 This file records decisions agreed between Muhammad and Akul on 2026-11-07. Claude sessions working in this repo should treat it as context. Update it when a decision changes.
 
 ## Where to start
