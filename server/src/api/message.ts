@@ -3,6 +3,7 @@ import { guardVoiceInput } from "../../../voice/guard.js";
 import { normalizeTranscript } from "../../../voice/normalize.js";
 import type { ExplainContext } from "../agent/gemini.js";
 import { ruleBasedAgent, type Agent } from "../agent/parse.js";
+import { HELP_REPLY, smallTalkReply, type SmallTalk } from "../agent/smalltalk.js";
 import type { LiveAuditOutcome } from "../auditor/chain.js";
 import { DEFAULT_TTL_MS, type ConfirmStore } from "../gate/confirm.js";
 import { decide } from "../gate/decide.js";
@@ -24,6 +25,9 @@ export type MessageDeps = {
   // Optional plain-language note about the findings (Gemini). It is added after the
   // fixed, code-written lines and never replaces them. Null means "show the template only".
   explain?(ctx: ExplainContext): Promise<string | null>;
+  // Canned replies for greetings, "how are you", "what does it do", thanks and goodbye. They run before the
+  // model is asked anything, so they cost no tokens. Defaults to the replies in agent/smalltalk.json.
+  smallTalk?: SmallTalk;
 };
 
 const HELP =
@@ -32,6 +36,10 @@ const HELP =
 // For texting and voice, people also need to know to say the name, or the line stays silent.
 const HELP_TEXTING =
   "I'm Airlock. I check a crypto address before any funds move (testnet only). Text me: Airlock send 0.001 to weth.demo. I'll audit it, then ask you to confirm with YES or NO.";
+
+// The example a small-talk reply invites people to try, by channel.
+const TRY_GUI = "send 0.01 to vitalik.eth";
+const TRY_TEXTING = "Airlock send 0.01 to vitalik.eth";
 
 const SEND_FAILURE: Record<string, string> = {
   "invalid-address": "The send was stopped: the address is not valid.",
@@ -91,6 +99,15 @@ export function createMessageHandler(deps: MessageDeps) {
       // The shared normalizer knows "dot eth"; demo names (.demo) are handled here.
       text = normalizeTranscript(text).replace(/\s+dot\s+demo\b/gi, ".demo");
     }
+
+    // Greetings and simple questions get a polite canned reply with no model call (see agent/smalltalk.ts).
+    const waiting = deps.store.peek(req.sessionId);
+    const talk = (deps.smallTalk ?? smallTalkReply)(
+      text,
+      req.channel === "gui" ? TRY_GUI : TRY_TEXTING,
+      waiting !== undefined && waiting.expiresAt > deps.now(),
+    );
+    if (talk) return done(talk === HELP_REPLY ? (req.channel === "gui" ? HELP : HELP_TEXTING) : talk);
 
     const intent = await agent.handle(text);
 

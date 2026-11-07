@@ -52,6 +52,10 @@ When we upload the project to Devpost and submit, we must also make a **video of
 
 Record a backup take in case the live demo fails. Whoever finishes the backend and GUI first starts the slides.
 
+## Small talk is cached (no tokens)
+
+Greetings and simple questions ("hi", "how are you", "what does it do", "is it safe", "thanks", "bye") get a polite canned reply from `server/src/agent/smalltalk.json`, matched by `server/src/agent/smalltalk.ts`. It runs in `server/src/api/message.ts` **before** the agent (Gemini) is asked anything, so it costs no tokens, and every reply invites the person to try a transfer. Real commands (send, yes, no, anything with an amount or an address) are never touched. "help" and a bare "Hey Airlock" still return the standard help text. While a transfer is waiting, "ok" is answered with "That isn't a YES, so nothing has been sent", and other small talk gets a reminder to say YES or NO. To add small talk, edit the JSON (the file explains its own format); the tests in `server/test/smalltalk.test.ts` check that no reply says safe, secure or trusted.
+
 ## Hackathon details
 
 - Date and prize tracks are not settled in this repo yet. Muhammad will find out and add them here. Until then, do not assume any.

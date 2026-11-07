@@ -1,0 +1,316 @@
+{
+  "_about": "Canned replies for small talk: greetings, how are you, what does it do, thanks, goodbye. They cost no model tokens and no waiting. Every reply is polite, honest, and invites the person to try a transfer. {try} is replaced by an example command for the channel. Never write the words safe, secure or trusted in a reply (Airlock gives a risk signal, not a guarantee). To add small talk, add an intent here: triggers are matched on lower-case text with punctuation removed. Order matters: the first intent that matches wins, so specific questions come before plain greetings. A reply of \"@help\" means: use the channel's standard help text from api/message.ts (the GUI and texting versions differ).",
+  "pendingNote": " (A transfer is still waiting for you: say YES to send or NO to cancel.)",
+  "intents": [
+    {
+      "id": "who-are-you",
+      "match": "contains",
+      "triggers": [
+        "who are you",
+        "what is your name",
+        "what s your name",
+        "your name",
+        "who made you",
+        "who built you",
+        "who created you",
+        "who is airlock"
+      ],
+      "replies": [
+        "I'm Airlock, a voice and text assistant that checks a crypto address before any funds move. I was built for UB Hacking 2026 by Akul Sharma and Muhammad Abdullah. Want to see me work? Try: “{try}”",
+        "My name is Airlock. I'm a checkpoint for crypto transfers: you tell me where to send test ETH, I check the destination, and only then does anything move. Give it a go: “{try}”"
+      ]
+    },
+    {
+      "id": "safety-question",
+      "match": "contains",
+      "triggers": [
+        "is it safe",
+        "is this safe",
+        "is airlock safe",
+        "is that safe",
+        "can i trust",
+        "is it secure",
+        "is this secure",
+        "is this legit",
+        "is it legit",
+        "is it a scam",
+        "is this a scam",
+        "is it real",
+        "can you guarantee",
+        "do you guarantee",
+        "how accurate",
+        "how reliable",
+        "how good are you"
+      ],
+      "replies": [
+        "Fair question. I can't promise any address is risk-free, and nobody honestly can. What I give you is a risk signal from my own checks, with the reasons shown, and nothing moves without your YES. It runs on a test network, so no real money is involved. Want to see one? “{try}”",
+        "I'm careful about promises: I give a risk signal, not a guarantee. I look at the destination's code, explain what I found, and I refuse the transfer outright if it looks dangerous. It's all on a test network, so trying costs nothing. “{try}”"
+      ]
+    },
+    {
+      "id": "real-money",
+      "match": "contains",
+      "triggers": [
+        "real money",
+        "real funds",
+        "real crypto",
+        "real eth",
+        "actual money",
+        "mainnet",
+        "main net",
+        "bitcoin",
+        "solana",
+        "usdc",
+        "usdt",
+        "dogecoin",
+        "other coins",
+        "other chains"
+      ],
+      "replies": [
+        "Airlock only works on the Sepolia test network with free test ETH, and each transfer has a small cap, so no real money is ever at risk. That makes it a no-risk way to see how the check works. Try: “{try}”"
+      ]
+    },
+    {
+      "id": "cost",
+      "match": "contains",
+      "triggers": [
+        "is it free",
+        "how much does it cost",
+        "how much is it",
+        "pricing",
+        "what does it cost",
+        "do i have to pay"
+      ],
+      "replies": [
+        "It's free to try, and it runs on a test network with test ETH. Go ahead and give it a go: “{try}”"
+      ]
+    },
+    {
+      "id": "what-is-it",
+      "match": "contains",
+      "triggers": [
+        "what does it do",
+        "what does this do",
+        "what do you do",
+        "what is airlock",
+        "what s airlock",
+        "whats airlock",
+        "what is this",
+        "what s this",
+        "whats this",
+        "what are you",
+        "what can you do",
+        "what can i do",
+        "how does it work",
+        "how does this work",
+        "how do you work",
+        "what is it for",
+        "what is the point",
+        "what s the point",
+        "what is this for",
+        "why would i use",
+        "why should i use",
+        "why use",
+        "tell me about airlock",
+        "tell me about yourself",
+        "tell me about this",
+        "explain airlock",
+        "explain yourself",
+        "explain this"
+      ],
+      "replies": [
+        "Airlock is a risk check for crypto transfers. You tell me who to send test ETH to, I audit the address and contract with my own checks, show you a risk signal with the reasons, and only send after you say YES. It runs on the Sepolia test network with a small cap, so there's nothing to lose by trying. Try: “{try}”",
+        "Think of me as a checkpoint before your money moves. I look at the destination's code, give you a clear LOW, MEDIUM or HIGH risk signal, and I refuse the transfer if it looks dangerous. You can use your voice or text, and it all happens on a test network. Try it: “{try}”",
+        "I'm Airlock: you ask, I check, and only then does anything move. A plain rule in code, never an AI guess, decides whether a transfer is refused or needs your YES. Curious? Try: “{try}”"
+      ]
+    },
+    {
+      "id": "how-to-use",
+      "match": "contains",
+      "triggers": [
+        "how do i use",
+        "how do i start",
+        "how to use",
+        "how can i use",
+        "get started",
+        "where do i start",
+        "show me how",
+        "give me an example",
+        "show me an example",
+        "show me what you do"
+      ],
+      "replies": [
+        "It's easy. 1) Tell me an amount and a name or address, like “{try}”. 2) I check it and show you the risk signal. 3) Say YES to send or NO to cancel. Go ahead and give it a try!"
+      ]
+    },
+    {
+      "id": "how-are-you",
+      "match": "contains",
+      "triggers": [
+        "how are you",
+        "how r u",
+        "how are u",
+        "how s it going",
+        "how is it going",
+        "how are things",
+        "how do you do",
+        "how have you been",
+        "what s up",
+        "whats up",
+        "sup",
+        "you good",
+        "how you doing",
+        "how are you doing",
+        "how is your day",
+        "hows it going"
+      ],
+      "replies": [
+        "I'm doing great, thanks for asking! I'm ready to check a transfer whenever you are. Want to try one? “{try}”",
+        "Doing well, and happy you stopped by! The best way to see what I do is to try a transfer on the test network: “{try}”"
+      ]
+    },
+    {
+      "id": "thanks",
+      "match": "exact",
+      "triggers": [
+        "thanks",
+        "thank you",
+        "thank you so much",
+        "thanks a lot",
+        "thx",
+        "ty",
+        "cheers",
+        "much appreciated",
+        "appreciate it",
+        "good job",
+        "well done",
+        "love it",
+        "awesome",
+        "great",
+        "nice",
+        "cool",
+        "perfect",
+        "wow",
+        "amazing"
+      ],
+      "replies": [
+        "You're very welcome! If you'd like to check another transfer, just tell me where to send: “{try}”",
+        "Happy to help! Whenever you're ready for another check, try: “{try}”"
+      ]
+    },
+    {
+      "id": "goodbye",
+      "match": "exact",
+      "triggers": [
+        "bye",
+        "goodbye",
+        "good bye",
+        "see you",
+        "see ya",
+        "later",
+        "good night",
+        "goodnight",
+        "cya",
+        "take care",
+        "gotta go"
+      ],
+      "replies": [
+        "Goodbye! Come back any time you want a transfer checked before it goes out.",
+        "Take care! I'll be here whenever you want a transfer screened."
+      ]
+    },
+    {
+      "id": "help",
+      "match": "exact",
+      "triggers": [
+        "help",
+        "help me",
+        "i need help",
+        "what should i say",
+        "what do i say",
+        "options",
+        "menu",
+        "commands",
+        "what can i ask",
+        "what can i say",
+        "instructions"
+      ],
+      "replies": [
+        "@help"
+      ]
+    },
+    {
+      "id": "acknowledge",
+      "match": "exact",
+      "triggers": [
+        "ok",
+        "okay",
+        "k",
+        "sure",
+        "alright",
+        "fine",
+        "got it",
+        "i see",
+        "hmm",
+        "hm",
+        "right",
+        "yeah ok"
+      ],
+      "replies": [
+        "Sounds good! Whenever you're ready, tell me where to send test ETH: “{try}”"
+      ],
+      "repliesPending": [
+        "That isn't a YES, so nothing has been sent. Say YES to send, or NO to cancel."
+      ]
+    },
+    {
+      "id": "greeting",
+      "match": "exact",
+      "triggers": [
+        "hi",
+        "hii",
+        "hiii",
+        "hello",
+        "hey",
+        "heya",
+        "hiya",
+        "hi there",
+        "hello there",
+        "hey there",
+        "hey hey",
+        "yo",
+        "hola",
+        "howdy",
+        "greetings",
+        "good morning",
+        "good afternoon",
+        "good evening",
+        "morning",
+        "afternoon",
+        "evening",
+        "namaste",
+        "salam",
+        "salaam",
+        "assalamu alaikum",
+        "assalamualaikum",
+        "wassup",
+        "welcome"
+      ],
+      "replies": [
+        "Hi there! I'm Airlock. I check a crypto address before any test funds move, then ask you to confirm. Want to see it work? Try: “{try}”",
+        "Hello, nice to meet you! I'm Airlock, a risk check for crypto transfers. It takes a few seconds, and nothing is sent without your YES. Give it a go: “{try}”",
+        "Hey! Welcome to Airlock. Tell me where to send a little test ETH and I'll check the address first. Try: “{try}”"
+      ]
+    },
+    {
+      "id": "empty",
+      "match": "exact",
+      "triggers": [
+        ""
+      ],
+      "replies": [
+        "@help"
+      ]
+    }
+  ]
+}
