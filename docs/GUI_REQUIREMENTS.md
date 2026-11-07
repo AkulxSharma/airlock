@@ -38,6 +38,12 @@ Build these in order. Each one has a check.
    - Amounts are spoken digit by digit (done by `toSpeakable()`).
    - Check: say "send zero point zero one ETH to vitalik dot eth", see the transcript, see the verdict card, hear the reply, then click YES.
 
+## 3a. Hands-free wake phrase ("Hey Airlock" or "Airlock")
+
+- **Server and hold-to-talk:** a transcript that starts with "Hey Airlock", "Airlock", "Hi/Ok/Okay Airlock" (and spellings such as "air lock" or "Airlok") has that phrase removed before parsing, so "Hey Airlock, send 0.01 to vitalik.eth" means "send 0.01 to vitalik.eth". The code is `voice/wake.ts`, used by `normalizeTranscript()`. The address guard still runs on whatever follows.
+- **Hands-free toggle (GUI, off by default):** the toggle in the voice panel starts the browser's built-in speech recognition (Chrome, Edge, Safari). It ignores everything until it hears the wake phrase, then sends the command that follows through the normal voice path. If you say only "Hey Airlock", it waits up to 8 seconds for the command. It pauses while Airlock is speaking or recording. The browser may send audio to its own speech service, so the toggle says so.
+- **Unchanged safety:** commands from hands-free mode still pass the address guard and still need YES within the expiry. Every command needs the wake phrase, including "Hey Airlock, yes".
+
 ## 4. Real GUI (after the demo GUI works)
 
 - Light theme by default, with dark mode as the same colours inverted (no decoration), modelled on Otto (a friend's project: Devpost `https://devpost.com/software/ntta`, GitHub `abrj7/otto`, built for NexHacks). Otto's frontend is Next.js 16, React 19, TypeScript, Tailwind CSS 4 and Lucide icons, with an editorial-style briefing screen, a collapsible sidebar, dark and light themes, and a mic button for voice. We use it as a **visual reference** and write our own code.

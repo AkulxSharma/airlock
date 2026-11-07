@@ -2,6 +2,7 @@
 
 import { Mic, Volume2, VolumeX } from "lucide-react";
 import type { VoiceState } from "@/lib/useVoice";
+import type { WakeControls } from "@/lib/useWakeWord";
 
 const CAPTION: Record<VoiceState, string> = {
   idle: "Hold to talk",
@@ -59,14 +60,16 @@ export function MicButton({ voice, size = "lg" }: { voice: VoiceControls; size?:
   );
 }
 
-export function VoicePanel({ voice }: { voice: VoiceControls }) {
-  const active = voice.state === "listening" || voice.state === "speaking" || voice.state === "transcribing";
+export function VoicePanel({ voice, wake }: { voice: VoiceControls; wake: WakeControls }) {
+  const active = voice.state === "listening" || voice.state === "speaking" || voice.state === "transcribing" || wake.awaiting;
+  const status = wake.awaiting ? "Listening..." : voice.state === "idle" && wake.enabled ? "Say “Hey Airlock”" : STATUS[voice.state];
+  const caption = wake.awaiting ? CAPTION.listening : voice.state === "idle" && wake.enabled ? "Say “Hey Airlock”" : CAPTION[voice.state];
   return (
     <aside className="relative z-10 hidden w-[400px] flex-col border-l border-border bg-sidebar/80 backdrop-blur lg:flex">
       <div className="flex flex-1 flex-col items-center justify-center gap-10 px-8">
         <p className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
           <span className={`h-2 w-2 rounded-full ${voice.state === "error" ? "bg-high" : active ? "bg-low" : "bg-muted-foreground/60"}`} />
-          {STATUS[voice.state]}
+          {status}
         </p>
 
         <div className="flex h-14 items-center justify-center gap-4" aria-hidden>
@@ -80,9 +83,26 @@ export function VoicePanel({ voice }: { voice: VoiceControls }) {
         </div>
 
         <MicButton voice={voice} />
-        <p className="max-w-[220px] text-center text-xs font-medium uppercase leading-relaxed tracking-[0.25em] text-muted-foreground">{CAPTION[voice.state]}</p>
+        <p className="max-w-[220px] text-center text-xs font-medium uppercase leading-relaxed tracking-[0.25em] text-muted-foreground">{caption}</p>
 
-        {voice.error && <p className="max-w-[280px] text-center text-sm text-high" role="alert">{voice.error}</p>}
+        <div className="flex w-full max-w-[300px] flex-col items-center gap-2 text-center">
+          {wake.supported ? (
+            <button
+              type="button" role="switch" aria-checked={wake.enabled} onClick={wake.toggle}
+              className="flex items-center gap-3 rounded-full border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+            >
+              <span className={`relative h-5 w-9 rounded-full transition-colors ${wake.enabled ? "bg-low" : "bg-foreground/20"}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-all ${wake.enabled ? "left-[18px]" : "left-0.5"}`} />
+              </span>
+              Hands-free: say “Hey Airlock”
+            </button>
+          ) : (
+            <p className="text-xs text-muted-foreground">Hands-free needs Chrome, Edge or Safari. Hold the mic instead.</p>
+          )}
+          {wake.supported && <p className="text-[11px] leading-relaxed text-muted-foreground">Off by default. When on, your browser listens for the wake phrase and may send audio to its speech service.</p>}
+        </div>
+
+        {(voice.error || wake.error) && <p className="max-w-[280px] text-center text-sm text-high" role="alert">{voice.error ?? wake.error}</p>}
         {voice.lastHeard && (
           <div className="w-full rounded-xl border border-border bg-card/80 p-4 text-sm">
             <p className="mb-1 text-[11px] uppercase tracking-widest text-muted-foreground">Last heard</p>

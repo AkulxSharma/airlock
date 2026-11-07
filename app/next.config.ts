@@ -10,6 +10,9 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  // Next 16 blocks its dev scripts for any host it does not know. Opening the GUI at 127.0.0.1
+  // (instead of localhost) would otherwise leave the page unresponsive in development.
+  allowedDevOrigins: ["127.0.0.1"],
   // The dev-only "N" badge sat on the sidebar footer; bottom-right is where Otto has it.
   devIndicators: { position: "bottom-right" },
   // The voice helpers live in ../voice, so Turbopack must be allowed to read the repo root.

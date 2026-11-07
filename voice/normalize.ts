@@ -1,6 +1,8 @@
 // Canonicalize speech-to-text output so "zero point zero one" and "0.01", "self-destruct" and
 // "selfdestruct", "vitalik dot eth" and "vitalik.eth" compare equal. The command parser should
 // run on normalizeTranscript(text) so spoken and typed input behave the same.
+import { stripWakeWord } from "./wake.js";
+
 const ONES: Record<string, number> = {
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
@@ -72,7 +74,8 @@ function joinHexAfter0x(tokens: string[]): string[] {
 }
 
 export function normalizeTranscript(input: string): string {
-  let s = input.toLowerCase().replace(/[-–—_]/g, " ");
+  // "Hey Airlock, send ..." and "Airlock, send ..." mean the same as "send ...".
+  let s = stripWakeWord(input).toLowerCase().replace(/[-–—_]/g, " ");
   s = s.replace(/[.,;:!?]+(?=\s|$)/g, ""); // trailing punctuation, keeps 0.01 and 11,155,111
   s = s.replace(/\bzero\s?x(?=\s|[0-9a-f])/g, "0x");
   s = s.replace(/\s+dot\s+eth\b/g, ".eth");

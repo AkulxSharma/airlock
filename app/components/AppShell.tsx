@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { speechFor } from "@/lib/parseReply";
 import { useAirlock } from "@/lib/useAirlock";
 import { useVoice } from "@/lib/useVoice";
+import { useWakeWord } from "@/lib/useWakeWord";
 import { Console } from "./Console";
 import { EventLog, LogHeader } from "./EventLog";
 import { Sidebar, type View } from "./Sidebar";
@@ -23,6 +24,8 @@ export function AppShell() {
   const handleVoiceText = useRef<(t: string) => void>(() => {});
   const voice = useVoice((t) => handleVoiceText.current(t));
   const air = useAirlock();
+  // Hands-free: pause while Airlock is speaking, recording, or busy so it never hears itself.
+  const wake = useWakeWord((t) => handleVoiceText.current(t), voice.state !== "idle" || air.busy);
 
   // Keep the latest handler in the ref after each render (refs must not be written during render).
   useEffect(() => {
@@ -79,7 +82,7 @@ export function AppShell() {
         </div>
       </main>
 
-      <VoicePanel voice={voice} />
+      <VoicePanel voice={voice} wake={wake} />
     </div>
   );
 }
