@@ -9,8 +9,13 @@ export type PendingTransfer = {
   expiresAt: number;
 };
 
+// A transfer that has passed through `consume`. The wallet only accepts this type, so
+// no code path can send funds without going through the confirmation store first.
+declare const consumedBrand: unique symbol;
+export type ConsumedTransfer = PendingTransfer & { readonly [consumedBrand]: true };
+
 export type ConsumeResult =
-  | { ok: true; transfer: PendingTransfer }
+  | { ok: true; transfer: ConsumedTransfer }
   | { ok: false; reason: "none" | "expired" | "wrong-id" };
 
 export const DEFAULT_TTL_MS = 60_000;
@@ -46,7 +51,7 @@ export function createConfirmStore(): ConfirmStore {
       }
       if (current.id !== id) return { ok: false, reason: "wrong-id" };
       pending.delete(sessionId); // single use
-      return { ok: true, transfer: current };
+      return { ok: true, transfer: current as ConsumedTransfer };
     },
 
     cancel(sessionId) {
