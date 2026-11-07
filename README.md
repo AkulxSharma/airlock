@@ -32,7 +32,7 @@ Airlock is a voice and iMessage agent that checks a crypto transaction before it
 - The idea: it comes from Pyra (NexHacks 2026) and Warden (Night Hack, 2026-10-30), both by Akul. No code from either is reused here.
 - The planning docs in `docs/` were written before kickoff. All application code is written at the event.
 - Libraries, public models and APIs (Gemini, ElevenLabs, open-source packages) are used as normal dependencies.
-- The GUI's look is inspired by Otto, a friend's project. Any code taken from it will be listed here.
+- The GUI's look is inspired by Otto, a friend's project (Devpost: devpost.com/software/ntta, GitHub: abrj7/otto). We matched its visual design: the layout (collapsible left sidebar, centered main column, 400px voice panel on the right), the four fonts (Geist, Geist Mono, Playfair Display, Cormorant Garamond, all from Google Fonts), the dark and light colour palette, the corner radius, the entrance animation timing, and the four pulsing voice orbs. All GUI code in `app/` was written from scratch in this repository and no Otto source file was copied. The deep-space starfield background, the verdict card, the audit stage rows, the event log, the YES/NO confirm flow and the voice routes are our own additions. Otto has no license file, so we credit it here and copied none of its code.
 
 ## Status
 
