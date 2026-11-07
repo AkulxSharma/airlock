@@ -27,7 +27,7 @@ export function Sidebar({ view, onView, online }: { view: View; onView: (v: View
   return (
     <aside className={cx("relative z-10 flex h-full flex-col border-r border-border bg-sidebar/80 backdrop-blur transition-all duration-300 ease-in-out", collapsed ? "w-16" : "w-64")}>
       <div className={cx("flex items-center border-b border-border p-4", collapsed ? "justify-center" : "justify-between")}>
-        {!collapsed && <h1 className="text-xl font-semibold tracking-tight">airlock</h1>}
+        {!collapsed && <h1 className="text-xl font-semibold tracking-tight">Airlock</h1>}
         <button onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="rounded-md p-1 transition-colors hover:bg-accent">
           <ChevronLeft className={cx("h-4 w-4 text-muted-foreground transition-transform duration-300", collapsed && "rotate-180")} />
         </button>
