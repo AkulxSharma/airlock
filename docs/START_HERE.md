@@ -171,7 +171,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 
 - [x] Step 0: Foundations (Muhammad, 2026-11-07)
 - [x] Step 1: Auditor, bytecode (Akul, 2026-11-07, b79b28d)
-- [ ] Step 2: Risk gate
+- [x] Step 2: Risk gate (Akul, 2026-11-07)
 - [ ] Step 3: Address resolve
 - [ ] Step 4: Chain client and live audit
 - [ ] Step 5: Testnet send with cap
