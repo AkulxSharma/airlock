@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, checkHealth, sendMessage, streamUrl, type Stage } from "./api";
-import { parseReply, type ParsedReply } from "./parseReply";
+import { parseResponse, resolveExpiry, type ParsedReply } from "./parseReply";
 import { createStagePacer } from "./stagePacer";
 
 export interface ChatMessage {
@@ -96,7 +96,7 @@ export function useAirlock() {
     addLog("message", `you (${channel}): ${clean}`);
     try {
       const res = await sendMessage({ sessionId, channel, text: clean });
-      const parsed = parseReply(res.reply, res.needsConfirm);
+      const parsed = parseResponse(res);
       // The response carries each stage's final state. Queue them in order after anything the stream
       // already sent (repeats are dropped), then wait for the cards to finish playing before showing
       // the verdict, so the order on screen is: stages one by one, then the answer.
@@ -105,8 +105,9 @@ export function useAirlock() {
       setMessages((m) => [...m, { id: nextId(), from: "airlock", text: res.reply, parsed }]);
       addLog("message", `airlock: ${parsed.headline}`);
       if (parsed.kind === "confirm" || parsed.kind === "refused" || parsed.kind === "sent") setVerdict(parsed);
-      if (parsed.kind === "confirm" && parsed.expiresInSeconds) {
-        setPending({ expiresAt: Date.now() + parsed.expiresInSeconds * 1000, to: parsed.to, amountEth: parsed.amountEth });
+      if (parsed.kind === "confirm") {
+        const expiresAt = resolveExpiry(parsed.expiresAt, parsed.expiresInSeconds, Date.now());
+        if (expiresAt) setPending({ expiresAt, to: parsed.to, amountEth: parsed.amountEth });
       }
       return parsed;
     } catch (e) {

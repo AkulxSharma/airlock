@@ -94,4 +94,4 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 - `.env.example` pointed at `rpc.sepolia.org`, which is dead; it now uses publicnode with a 1rpc fallback.
 - The Next.js GUI had public voice routes; they are now local-only (`app/lib/sameOrigin.ts`).
-- You added `audit` and `pending` to the `/api/message` response. The GUI does not use them yet (it still parses the reply text); Muhammad will switch it over. Keep those two fields stable, and message Muhammad before changing their shape.
+- You added `audit` and `pending` to the `/api/message` response. The GUI now reads them first (`app/lib/parseReply.ts`, `parseResponse`) and only falls back to parsing the reply text when they are missing, so keep those two fields stable and message Muhammad before changing their shape. The countdown uses `pending.expiresAt`.

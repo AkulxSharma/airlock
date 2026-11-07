@@ -58,7 +58,9 @@ Build these in order. Each one has a check.
 - Screen recording, with a backup recording in case the live demo fails.
 - Devpost screenshots of the verdict card and live stages.
 
-## 6. Things to ask Akul (backend is his)
+## 6. Things asked of Akul (backend is his)
+
+Status: items 1 and 2 are done on the server and the GUI now uses them (`parseResponse` in `app/lib/parseReply.ts`); item 3 (CORS) is done.
 
 1. **Structured audit data in the reply.** Add an optional `audit` object to the `/api/message` response (`{ target, chainId, verdict, riskScore, findings[] }`, the locked auditor shape), so the verdict card does not have to parse text. Optional, because the GUI can parse the text in the meantime.
 2. **Pending transfer details.** Include `pending: { to, amountEth, expiresAt }` in the response when `needsConfirm` is true, so the GUI can show the countdown exactly.

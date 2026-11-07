@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseReply, speechFor } from "./parseReply";
+import type { MessageResponse } from "./api";
+import { parseReply, parseResponse, resolveExpiry, speechFor } from "./parseReply";
 
 const ADDR = "0x71C7656EC7ab88b098defB751B7401B5f6d8976F";
 const CONFIRM = [
@@ -82,5 +83,60 @@ describe("speechFor", () => {
   });
   it("speaks only the first line for other replies", () => {
     expect(speechFor(parseReply("Refused. The audit timed out.\n- [high] x", false))).toBe("Refused. The audit timed out.");
+  });
+});
+
+describe("parseResponse (structured fields first)", () => {
+  const audit = {
+    target: ADDR, chainId: 11155111, verdict: "MEDIUM" as const, riskScore: 25,
+    findings: [{ id: "delegatecall", severity: "medium" as const, message: "Uses DELEGATECALL." }],
+  };
+  const pending = { to: ADDR, amountEth: "0.01", expiresAt: 1_700_000_060_000 };
+  const base: MessageResponse = { reply: "", stages: [], needsConfirm: true, audit, pending };
+
+  it("reads verdict, score, findings, amount, address and exact expiry from the fields, not the text", () => {
+    // The text is reworded on purpose: the old text parser would find nothing in it.
+    const p = parseResponse({ ...base, reply: "Heads up! Looks medium-ish. Say yes to continue." });
+    expect(p.kind).toBe("confirm");
+    expect(p.verdict).toBe("MEDIUM");
+    expect(p.score).toBe(25);
+    expect(p.findings).toEqual([{ severity: "medium", message: "Uses DELEGATECALL." }]);
+    expect(p.to).toBe(ADDR);
+    expect(p.amountEth).toBe("0.01");
+    expect(p.expiresAt).toBe(1_700_000_060_000);
+  });
+
+  it("treats audit without needsConfirm as a refusal even when the wording changed", () => {
+    const high = { ...audit, verdict: "HIGH" as const, riskScore: 90 };
+    const p = parseResponse({ reply: "No. That is too risky.", stages: [], needsConfirm: false, audit: high });
+    expect(p.kind).toBe("refused");
+    expect(p.verdict).toBe("HIGH");
+  });
+
+  it("falls back to the text when the server sends no structured fields", () => {
+    const p = parseResponse({ reply: CONFIRM, stages: [], needsConfirm: true });
+    expect(p.kind).toBe("confirm");
+    expect(p.verdict).toBe("MEDIUM");
+    expect(p.expiresInSeconds).toBe(60);
+    expect(p.expiresAt).toBeUndefined();
+  });
+
+  it("keeps a sent reply and a cancel as before when there are no fields", () => {
+    expect(parseResponse({ reply: "Cancelled. Nothing was sent.", stages: [], needsConfirm: false }).kind).toBe("cancelled");
+  });
+});
+
+describe("resolveExpiry", () => {
+  const now = 1_700_000_000_000;
+  it("uses the server's exact time when it is plausible", () => {
+    expect(resolveExpiry(now + 58_000, 60, now)).toBe(now + 58_000);
+  });
+  it("ignores a server time that is far off our clock and uses the text instead", () => {
+    expect(resolveExpiry(now + 3 * 3_600_000, 60, now)).toBe(now + 60_000);
+    expect(resolveExpiry(now - 3_600_000, 60, now)).toBe(now + 60_000);
+  });
+  it("uses the text when there is no exact time, and gives nothing when there is neither", () => {
+    expect(resolveExpiry(undefined, 60, now)).toBe(now + 60_000);
+    expect(resolveExpiry(undefined, undefined, now)).toBeUndefined();
   });
 });
