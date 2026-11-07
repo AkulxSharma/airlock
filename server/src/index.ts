@@ -8,6 +8,7 @@ import { createApp, parseAllowedOrigins } from "./api/app.js";
 import { createMessageHandler } from "./api/message.js";
 import { resolveTarget, type EnsClient } from "./api/resolve.js";
 import { createStageBus } from "./api/stream.js";
+import { loadDemoAliases } from "./demo/aliases.js";
 import { DEFAULT_TTL_MS, createConfirmStore } from "./gate/confirm.js";
 import { createSepoliaWallet, maxTransferFromEnv, type WalletLike } from "./wallet/send.js";
 
@@ -31,10 +32,11 @@ try {
   console.warn(`Sending is disabled: ${err instanceof Error ? err.message : err}`);
 }
 
+const demoAliases = loadDemoAliases();
 const ttlSeconds = Number(env.CONFIRM_TTL_SECONDS);
 const bus = createStageBus();
 const handle = createMessageHandler({
-  resolve: (input) => resolveTarget(input, ensClient),
+  resolve: (input) => resolveTarget(input, ensClient, demoAliases),
   audit: (address) => auditAddress(address, reader, auditTimeoutMs),
   store: createConfirmStore(),
   wallet,

@@ -176,7 +176,7 @@ Update this list when a step finishes. Format: step, who, date, commit.
 - [x] Step 4: Chain client and live audit (Akul, 2026-11-07)
 - [x] Step 5: Testnet send with cap (Akul, 2026-11-07)
 - [x] Step 6: API with rule-based parser (Akul, 2026-11-07)
-- [ ] Step 7: Demo targets
+- [x] Step 7: Demo targets (Akul, 2026-11-07, docs/DEMO.md)
 - [ ] Step 8: Gemini agent
 - [ ] Step 9: Source checks
 - [ ] Step 10: iMessage bridge

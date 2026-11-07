@@ -49,10 +49,15 @@ export function createMessageHandler(deps: MessageDeps) {
       final.set(stage.name, stage);
       deps.publish(req.sessionId, stage);
     };
-    const done = (reply: string, needsConfirm = false): MessageResponse => ({
+    const done = (
+      reply: string,
+      needsConfirm = false,
+      extra: Pick<MessageResponse, "audit" | "pending"> = {},
+    ): MessageResponse => ({
       reply,
       stages: [...final.values()],
       needsConfirm,
+      ...extra,
     });
 
     let text = req.text;
@@ -60,7 +65,8 @@ export function createMessageHandler(deps: MessageDeps) {
       // A heard address can be a different, valid-looking address. Never use one by voice.
       const guard = guardVoiceInput(text);
       if (!guard.ok) return done(guard.reason);
-      text = normalizeTranscript(text);
+      // The shared normalizer knows "dot eth"; demo names (.demo) are handled here.
+      text = normalizeTranscript(text).replace(/\s+dot\s+demo\b/gi, ".demo");
     }
 
     const intent = await agent.handle(text);
@@ -125,12 +131,16 @@ export function createMessageHandler(deps: MessageDeps) {
 
     if (decision.action === "refuse") {
       const findings = "findings" in outcome ? `\n${findingLines(outcome.findings)}` : "";
-      return done(`Refused. ${decision.reason}${findings}`);
+      return done(
+        `Refused. ${decision.reason}${findings}`,
+        false,
+        "verdict" in outcome ? { audit: outcome } : {},
+      );
     }
 
     // decide() only confirms a well-formed result, so the findings are present here.
     const audit = outcome as Extract<LiveAuditOutcome, { verdict: string }>;
-    deps.store.create(
+    const pending = deps.store.create(
       req.sessionId,
       { id: newId(), to: resolved.address, amountEth: intent.amountEth },
       deps.now(),
@@ -144,6 +154,10 @@ export function createMessageHandler(deps: MessageDeps) {
         `This is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in ${Math.round(ttlMs / 1000)} seconds.`,
       ].join("\n"),
       true,
+      {
+        audit,
+        pending: { to: pending.to, amountEth: pending.amountEth, expiresAt: pending.expiresAt },
+      },
     );
   };
 }
