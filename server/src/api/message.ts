@@ -130,12 +130,16 @@ export function createMessageHandler(deps: MessageDeps) {
 
     if (decision.action === "refuse") {
       const findings = "findings" in outcome ? `\n${findingLines(outcome.findings)}` : "";
-      return done(`Refused. ${decision.reason}${findings}`);
+      return done(
+        `Refused. ${decision.reason}${findings}`,
+        false,
+        "verdict" in outcome ? { audit: outcome } : {},
+      );
     }
 
     // decide() only confirms a well-formed result, so the findings are present here.
     const audit = outcome as Extract<LiveAuditOutcome, { verdict: string }>;
-    deps.store.create(
+    const pending = deps.store.create(
       req.sessionId,
       { id: newId(), to: resolved.address, amountEth: intent.amountEth },
       deps.now(),
