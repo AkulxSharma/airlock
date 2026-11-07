@@ -255,6 +255,8 @@ describe("wording", () => {
   it("a second session pending transfer to another address is independent", async () => {
     const t = setup({
       resolve: async (input: string) => ({ address: (input === "bob.eth" ? ADDR2 : ADDR) as `0x${string}` }),
+      // The audit is for whichever address was resolved, as the real auditor's is.
+      audit: async (address: string) => ({ ...audit("LOW"), target: address }),
     });
     await track(t.say("send 0.001 to alice.eth", "a"));
     await track(t.say("send 0.002 to bob.eth", "b"));
@@ -378,5 +380,106 @@ describe("plain-language note from the explainer", () => {
     const t = setup({ agent });
     await track(t.say("anything"));
     expect(t.store.peek("s1")).toBeDefined();
+  });
+});
+
+describe("YES handling order (expiry is reported first)", () => {
+  it("YES after expiry with no wallet says it expired, and clears the request", async () => {
+    const t = setup({ wallet: null });
+    await track(t.say("send 0.005 to vitalik.eth"));
+    t.clock.t += 61_000;
+    const r = await track(t.say("yes"));
+    expect(r.reply).toMatch(/expired/i);
+    expect(r.reply).not.toMatch(/not set up/i);
+    expect(t.store.peek("s1")).toBeUndefined();
+  });
+
+  it("YES inside the window with no wallet says it is not set up, and keeps the request", async () => {
+    const t = setup({ wallet: null });
+    await track(t.say("send 0.005 to vitalik.eth"));
+    t.clock.t += 10_000;
+    const r = await track(t.say("yes"));
+    expect(r.reply).toMatch(/not set up/i);
+    expect(t.store.peek("s1")).toBeDefined();
+  });
+
+  it("YES exactly at the expiry moment counts as expired", async () => {
+    const t = setup();
+    await track(t.say("send 0.005 to vitalik.eth"));
+    t.clock.t += 60_000;
+    const r = await track(t.say("yes"));
+    expect(r.reply).toMatch(/expired/i);
+    expect(t.sendTransaction).not.toHaveBeenCalled();
+  });
+
+  it("YES after expiry with a wallet still sends nothing", async () => {
+    const t = setup();
+    await track(t.say("send 0.005 to vitalik.eth"));
+    t.clock.t += 120_000;
+    await track(t.say("yes"));
+    expect(t.sendTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("the gate is given the resolved address and the chain", () => {
+  it("an audit for a different address than the one resolved is refused", async () => {
+    const t = setup({ outcome: { ...audit("LOW"), target: ADDR2 } });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.reply).toMatch(/^Refused/);
+    expect(r.reply).toMatch(/different address/);
+    expect(r.needsConfirm).toBe(false);
+    expect(t.store.peek("s1")).toBeUndefined();
+  });
+
+  it("an audit for another chain is refused", async () => {
+    const t = setup({ outcome: { ...audit("LOW"), chainId: 1 } });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.reply).toMatch(/Sepolia/);
+    expect(r.needsConfirm).toBe(false);
+  });
+});
+
+describe("skipped stage status", () => {
+  const stageOf = async (outcome: LiveAuditOutcome, name: Stage["name"]) => {
+    const t = setup({ outcome });
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    return r.stages.find((s) => s.name === name);
+  };
+
+  it("a plain wallet has its source step skipped, with the skipped status", async () => {
+    const out = { ...audit("LOW", [{ id: "no-code", severity: "low" as const, message: "m" }]) };
+    expect(await stageOf(out, "source")).toMatchObject({ status: "skipped", detail: "skipped (no contract code)" });
+  });
+
+  it("a failed audit skips the source step", async () => {
+    expect(await stageOf({ error: "rpc down" }, "source")).toMatchObject({ status: "skipped" });
+    expect(await stageOf({ timeout: true }, "source")).toMatchObject({ status: "skipped" });
+  });
+
+  it("a checked source step is done, and a failed lookup is an error, not skipped", async () => {
+    expect(await stageOf(audit("LOW"), "source")).toMatchObject({ status: "done", detail: "checked" });
+    const unavailable = audit("MEDIUM", [{ id: "source-unavailable", severity: "medium" as const, message: "m" }]);
+    expect(await stageOf(unavailable, "source")).toMatchObject({ status: "error" });
+  });
+});
+
+describe("ENS note", () => {
+  it("a .eth name carries a note that it was looked up on mainnet but audited on Sepolia", async () => {
+    const t = setup();
+    const r = await track(t.say("send 0.005 to vitalik.eth"));
+    expect(r.reply).toMatch(/Note: this name was looked up on Ethereum mainnet/);
+    expect(r.reply).toMatch(/Sepolia/);
+    expect(r.reply.indexOf("Note:")).toBeLessThan(r.reply.indexOf("To send:"));
+  });
+
+  it("the note is on a refusal too", async () => {
+    const t = setup({ outcome: audit("HIGH", [SELFDESTRUCT]) });
+    expect((await track(t.say("send 0.005 to vitalik.eth"))).reply).toMatch(/Note: this name was looked up/);
+  });
+
+  it("an address or a .demo name has no such note", async () => {
+    const t = setup();
+    expect((await track(t.say(`send 0.005 to ${ADDR}`))).reply).not.toMatch(/Note:/);
+    expect((await track(t.say("send 0.005 to drainer.demo", "s2"))).reply).not.toMatch(/Note:/);
   });
 });

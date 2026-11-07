@@ -132,3 +132,49 @@ describe("confirm store", () => {
     expect(createConfirmStore().consume("s1", "t1", T0)).toEqual({ ok: false, reason: "none" });
   });
 });
+
+describe("decide: chain and target", () => {
+  const T = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+  const forTarget = (over: Partial<AuditResult> = {}): AuditResult => ({ ...audit("LOW"), target: T, ...over });
+
+  it("refuses a result for any chain other than Sepolia", () => {
+    for (const chainId of [1, 10, 137, 8453, 0, 11155112]) {
+      const d = decide(forTarget({ chainId }));
+      expect(d.action).toBe("refuse");
+      expect(d.reason).toMatch(/Sepolia/);
+    }
+  });
+
+  it("refuses when the audit is for a different address than the one requested", () => {
+    const d = decide(forTarget(), { target: "0x1111111111111111111111111111111111111111" });
+    expect(d.action).toBe("refuse");
+    expect(d.reason).toMatch(/different address/);
+  });
+
+  it("accepts the requested address in any letter case", () => {
+    expect(decide(forTarget(), { target: T }).action).toBe("confirm");
+    expect(decide(forTarget(), { target: T.toLowerCase() }).action).toBe("confirm");
+    expect(decide(forTarget({ target: T.toLowerCase() }), { target: T.toUpperCase().replace("0X", "0x") }).action).toBe("confirm");
+  });
+
+  it("without an expected target only the chain is checked", () => {
+    expect(decide(forTarget()).action).toBe("confirm");
+  });
+
+  it("a wrong chain or target refuses even when the verdict is LOW, and HIGH still refuses", () => {
+    expect(decide(forTarget({ verdict: "LOW", riskScore: 0, chainId: 1 }), { target: T }).action).toBe("refuse");
+    expect(decide(forTarget({ verdict: "HIGH", riskScore: 80 }), { target: T }).action).toBe("refuse");
+  });
+
+  it("errors, timeouts and malformed input still refuse when a target is given", () => {
+    expect(decide({ error: "x" }, { target: T }).action).toBe("refuse");
+    expect(decide({ timeout: true }, { target: T }).action).toBe("refuse");
+    expect(decide(null, { target: T }).action).toBe("refuse");
+  });
+
+  it("no reason uses safe, secure or trusted", () => {
+    for (const d of [decide(forTarget({ chainId: 1 })), decide(forTarget(), { target: "0x1111111111111111111111111111111111111111" })]) {
+      expect(d.reason).not.toMatch(/\b(safe|secure|trusted)\b/i);
+    }
+  });
+});

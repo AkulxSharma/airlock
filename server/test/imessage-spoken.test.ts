@@ -152,3 +152,12 @@ describe("osascript file sender", () => {
     expect(exec).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("toSpoken and the ENS note", () => {
+  it("does not read the note aloud", () => {
+    const withNote = `Risk signal: LOW (score 5).\nNo findings.\nNote: this name was looked up on Ethereum mainnet, but Airlock audits and sends on the Sepolia test network, where the code at this address can be different.\nTo send: 0.005 test ETH to ${FULL}.\nThis is a risk signal, not a guarantee. Reply YES to send or NO to cancel.`;
+    const s = toSpoken(withNote);
+    expect(s).not.toMatch(/mainnet|Note:/);
+    expect(s).toContain("Reply YES to send or NO to cancel");
+  });
+});

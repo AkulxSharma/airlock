@@ -98,6 +98,17 @@ export function withCooldown(client: GeminiClient, cooldownMs = 20_000, now: () 
   };
 }
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Whole-token matches, so a value only counts if the user really wrote it as its own token.
+// An amount of 0.01 is not found inside 0.015 or 10.01; a name is not found inside a longer one.
+export function containsAmount(text: string, amount: string): boolean {
+  return new RegExp(`(?<![\\w.])${escapeRe(amount)}(?!\\d|\\.\\d)`, "i").test(text);
+}
+export function containsTarget(text: string, target: string): boolean {
+  return new RegExp(`(?<![\\w.-])${escapeRe(target)}(?!\\.?[\\w-])`, "i").test(text);
+}
+
 export function createGeminiAgent(client: GeminiClient): Agent {
   return {
     async handle(text: string): Promise<Intent> {
@@ -116,8 +127,7 @@ export function createGeminiAgent(client: GeminiClient): Agent {
         if (!amountEth || !target) return { kind: "help" };
 
         // The model may only restate what the user literally wrote.
-        const lower = text.toLowerCase();
-        if (!lower.includes(amountEth.toLowerCase()) || !lower.includes(target.toLowerCase())) {
+        if (!containsAmount(text, amountEth) || !containsTarget(text, target)) {
           return { kind: "help" };
         }
         return { kind: "send", amountEth, target };

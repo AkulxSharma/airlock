@@ -1,0 +1,9 @@
+{
+  "name": "airlock",
+  "private": true,
+  "description": "Root helper scripts. The real packages are in server/, voice/ and app/.",
+  "scripts": {
+    "setup": "npm --prefix server install && npm --prefix voice install && npm --prefix app install",
+    "test": "npm --prefix server test && npm --prefix voice test"
+  }
+}

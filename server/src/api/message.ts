@@ -100,6 +100,12 @@ export function createMessageHandler(deps: MessageDeps) {
     if (intent.kind === "yes") {
       const pending = deps.store.peek(req.sessionId);
       if (!pending) return done("Nothing is waiting for confirmation.");
+      // Expiry is reported first, whatever else is wrong, so the reason given is the real one.
+      if (deps.now() >= pending.expiresAt) {
+        deps.store.consume(req.sessionId, pending.id, deps.now()); // clears the expired request
+        return done("That request expired, so nothing was sent. Ask again to start over.");
+      }
+      // With no wallet the request is kept, so it is not lost if a wallet is configured in time.
       if (!deps.wallet) return done("Sending is not set up on this server, so nothing was sent.");
       const consumed = deps.store.consume(req.sessionId, pending.id, deps.now());
       if (!consumed.ok) {
@@ -134,6 +140,10 @@ export function createMessageHandler(deps: MessageDeps) {
       return done(`Refused. ${resolved.error}`);
     }
     emit({ name: "address", status: "done", detail: resolved.address });
+    // A .eth name is looked up on Ethereum mainnet, but the audit and the send are on Sepolia.
+    const ensNote = /\.eth$/i.test(intent.target)
+      ? "\nNote: this name was looked up on Ethereum mainnet, but Airlock audits and sends on the Sepolia test network, where the code at this address can be different."
+      : "";
 
     emit({ name: "bytecode", status: "pending" });
     const outcome = await deps.audit(resolved.address);
@@ -146,12 +156,12 @@ export function createMessageHandler(deps: MessageDeps) {
     const ids = new Set("findings" in outcome ? outcome.findings.map((f) => f.id) : []);
     emit(
       failed
-        ? { name: "source", status: "error", detail: "skipped (audit failed)" }
+        ? { name: "source", status: "skipped", detail: "skipped (audit failed)" }
         : ids.has("source-unavailable")
           ? { name: "source", status: "error", detail: "source lookup failed" }
           : {
               name: "source",
-              status: "done",
+              status: ids.has("no-code") ? "skipped" : "done",
               detail: ids.has("unverified-source")
                 ? "no verified source found"
                 : ids.has("no-code")
@@ -160,14 +170,14 @@ export function createMessageHandler(deps: MessageDeps) {
             },
     );
 
-    const decision = decide(outcome);
+    const decision = decide(outcome, { target: resolved.address });
     emit({ name: "gate", status: decision.action === "refuse" ? "error" : "done", detail: decision.action });
 
     if (decision.action === "refuse") {
       const findings = "findings" in outcome ? `\n${findingLines(outcome.findings)}` : "";
       const note = "verdict" in outcome ? await explainNote(outcome, "refuse") : "";
       return done(
-        `Refused. ${decision.reason}${findings}${note}`,
+        `Refused. ${decision.reason}${findings}${note}${ensNote}`,
         false,
         "verdict" in outcome ? { audit: outcome } : {},
       );
@@ -185,7 +195,7 @@ export function createMessageHandler(deps: MessageDeps) {
     return done(
       [
         `Risk signal: ${audit.verdict} (score ${audit.riskScore}).`,
-        findingLines(audit.findings) + note,
+        findingLines(audit.findings) + note + ensNote,
         `To send: ${intent.amountEth} test ETH to ${resolved.address}.`,
         `This is a risk signal, not a guarantee. Reply YES to send or NO to cancel. It expires in ${Math.round(ttlMs / 1000)} seconds.`,
       ].join("\n"),

@@ -107,7 +107,7 @@ export function toSpoken(reply: string): string {
   let findings = 0;
   for (const raw of reply.split("\n")) {
     const line = raw.trim();
-    if (!line || /https?:\/\//i.test(line)) continue;
+    if (!line || /https?:\/\//i.test(line) || /^Note:/i.test(line)) continue;
     const bullet = /^-\s*\[(?:low|medium|high)\]\s*(.*)$/i.exec(line);
     if (bullet) {
       if (findings++ >= 1) continue;

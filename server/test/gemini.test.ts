@@ -243,3 +243,56 @@ describe("withCooldown", () => {
     expect(generate).toHaveBeenCalledTimes(1);
   });
 });
+
+import { containsAmount, containsTarget } from "../src/agent/gemini.js";
+
+describe("whole-token matching (the model may only restate what the user wrote)", () => {
+  it("an amount must be its own token", () => {
+    expect(containsAmount("send 0.01 eth to a.eth", "0.01")).toBe(true);
+    expect(containsAmount("send 0.01 to a.eth", "0.01")).toBe(true);
+    expect(containsAmount("send 0.01. thanks", "0.01")).toBe(true);
+    expect(containsAmount("send 0.01eth", "0.01")).toBe(true);
+    expect(containsAmount("send 0.015 eth to a.eth", "0.01")).toBe(false);
+    expect(containsAmount("send 10.01 eth to a.eth", "0.01")).toBe(false);
+    expect(containsAmount("send 0.01.5 eth", "0.01")).toBe(false);
+    expect(containsAmount("send 1 eth", "1")).toBe(true);
+    expect(containsAmount("send 11 eth", "1")).toBe(false);
+    expect(containsAmount("send 1.5 eth", "1")).toBe(false);
+  });
+
+  it("a name must not be part of a longer name", () => {
+    expect(containsTarget("send it to vitalik.eth please", "vitalik.eth")).toBe(true);
+    expect(containsTarget("send it to Vitalik.ETH, thanks", "vitalik.eth")).toBe(true);
+    expect(containsTarget("send it to vitalik.eth.", "vitalik.eth")).toBe(true);
+    expect(containsTarget("send it to vitalik.eth.evil.example", "vitalik.eth")).toBe(false);
+    expect(containsTarget("send it to notvitalik.eth", "vitalik.eth")).toBe(false);
+    expect(containsTarget("send it to evil-vitalik.eth", "vitalik.eth")).toBe(false);
+    expect(containsTarget("send it to vitalik.ethereum", "vitalik.eth")).toBe(false);
+  });
+
+  it("an address must match exactly, ignoring case, and not be a prefix of a longer one", () => {
+    const a = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+    expect(containsTarget(`send to ${a} now`, a.toLowerCase())).toBe(true);
+    expect(containsTarget(`send to ${a}00 now`, a)).toBe(false);
+    expect(containsTarget(`send to ${a.slice(0, 30)}`, a)).toBe(false);
+  });
+
+  it("special characters in a value are not treated as a pattern", () => {
+    expect(containsAmount("send 0x01 to a.eth", "0.01")).toBe(false); // the dot is a literal dot
+    expect(containsTarget("send to vitalikXeth", "vitalik.eth")).toBe(false);
+    expect(containsTarget("send to a.eth", "(.*)")).toBe(false);
+  });
+
+  it("the agent now rejects a model that turns 0.015 into 0.01 or extends a name", async () => {
+    const swapped = fake(transfer("0.01", "vitalik.eth"));
+    expect(await createGeminiAgent(swapped.client).handle("could you send 0.015 eth to vitalik.eth please")).toEqual({ kind: "help" });
+    const longer = fake(transfer("0.01", "vitalik.eth"));
+    expect(await createGeminiAgent(longer.client).handle("could you send 0.01 eth to vitalik.eth.evil.example please")).toEqual({ kind: "help" });
+    const exact = fake(transfer("0.01", "vitalik.eth"));
+    expect(await createGeminiAgent(exact.client).handle("could you send 0.01 eth to vitalik.eth please")).toEqual({
+      kind: "send",
+      amountEth: "0.01",
+      target: "vitalik.eth",
+    });
+  });
+});

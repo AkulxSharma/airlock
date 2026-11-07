@@ -22,7 +22,7 @@ export const MessageRequestSchema = z.object({
 
 export const StageSchema = z.object({
   name: z.enum(["address", "bytecode", "source", "gate"]),
-  status: z.enum(["pending", "done", "error"]),
+  status: z.enum(["pending", "done", "error", "skipped"]),
   detail: z.string().optional(),
 });
 

@@ -218,7 +218,44 @@ describe("the source stage in the message handler", () => {
     expect(await run({ ...base, verdict: "LOW", findings: [] })).toEqual({ name: "source", status: "done", detail: "checked" });
     expect(await run({ ...base, verdict: "MEDIUM", findings: [f("unverified-source")] })).toEqual({ name: "source", status: "done", detail: "no verified source found" });
     expect(await run({ ...base, verdict: "MEDIUM", findings: [f("source-unavailable")] })).toEqual({ name: "source", status: "error", detail: "source lookup failed" });
-    expect(await run({ ...base, verdict: "LOW", findings: [{ id: "no-code", severity: "low", message: "m" }] })).toEqual({ name: "source", status: "done", detail: "skipped (no contract code)" });
-    expect(await run({ error: "rpc down" })).toEqual({ name: "source", status: "error", detail: "skipped (audit failed)" });
+    expect(await run({ ...base, verdict: "LOW", findings: [{ id: "no-code", severity: "low", message: "m" }] })).toEqual({ name: "source", status: "skipped", detail: "skipped (no contract code)" });
+    expect(await run({ error: "rpc down" })).toEqual({ name: "source", status: "skipped", detail: "skipped (audit failed)" });
+  });
+});
+
+describe("known limits of the source heuristics (documented, not hidden)", () => {
+  // These tests pin down what the regex heuristics do NOT catch. If one starts failing because
+  // the check got smarter, update the test and docs/ISSUES_FOR_AKUL.md. Bytecode checks are the
+  // backbone; source findings are extra signal and say "Heuristic" in every message.
+  it("catches a sweep whatever the function is called, because it reads the body", () => {
+    expect(ids("contract A { function totallyInnocent() external onlyOwner { payable(msg.sender).transfer(address(this).balance); } }")).toEqual(["owner-sweep"]);
+  });
+
+  it("MISS: a sweep written in inline assembly", () => {
+    const src = "contract A { function f() external onlyOwner { assembly { let ok := call(gas(), caller(), selfbalance(), 0, 0, 0, 0) } } }";
+    expect(ids(src)).toEqual([]);
+  });
+
+  it("MISS: an owner check by a modifier with a name that does not start with 'only'", () => {
+    const src = "contract A { modifier auth() { require(msg.sender == owner); _; } function drain() external auth { payable(owner).transfer(address(this).balance); } }";
+    expect(ids(src)).toEqual([]);
+  });
+
+  it("MISS: tx.origin copied into a variable first", () => {
+    const src = "contract A { function f() external { address o = tx.origin; require(o == owner); } }";
+    expect(ids(src)).toEqual([]);
+  });
+
+  it("MISS: a sweep that reaches the balance through a helper in another function", () => {
+    const src = "contract A { function _all() internal view returns (uint) { return address(this).balance; } function sweep() external onlyOwner { payable(owner).transfer(_all()); } }";
+    expect(ids(src)).toEqual([]);
+  });
+
+  it("MISS: a fee setter with an unusual name", () => {
+    expect(ids("contract A { function tune(uint a) external onlyOwner { buyFee = a; } }")).toEqual([]);
+  });
+
+  it("MISS: source that is not Solidity (for example Vyper) is not understood", () => {
+    expect(ids("@external\ndef set_fee(x: uint256):\n    assert msg.sender == self.owner\n    self.fee = x")).toEqual([]);
   });
 });

@@ -37,3 +37,11 @@ Airlock is a voice and iMessage agent that checks a crypto transaction before it
 ## Status
 
 Backend in progress (auditor, risk gate, address resolve, chain client, testnet send and the API are in `server/`). A demo GUI with voice is in `app/`, and the voice helpers are in `voice/`. See `docs/START_HERE.md` for the progress checklist.
+
+## Scope and known limits
+
+- **Local only.** The server listens on `127.0.0.1` and refuses requests from any website that is not on its short list of local GUI addresses. That, plus the 60-second single-use confirmation, is what keeps a stranger from answering YES for you. The browser chooses its own session id and there is no per-session rate limit or cap on open streams, so **do not host this server publicly as it is**. If it ever is (for example on Vultr for a prize), first issue session ids on the server, cap streams per session and add a per-session request limit.
+- **Bytecode checks are the backbone.** The source checks are regex heuristics on Solidity (names, `onlyOwner` plus the whole balance, `tx.origin`, fee, pause and blacklist switches). Every message says "Heuristic". A sweep written in assembly, an owner check through a modifier not named `only...`, `tx.origin` copied into a variable, a helper function, or non-Solidity source can slip past them. The tests list these known misses on purpose (`server/test/source.test.ts`). A clean result is a risk signal, not a guarantee.
+- **ENS names are looked up on Ethereum mainnet, but audited and sent on Sepolia.** `vitalik.eth` resolves to a mainnet address, which on Sepolia is usually a plain wallet. Replies for a `.eth` name say so. The `.demo` names (`drainer.demo`, `proxy.demo`, and so on) point at real Sepolia contracts and are the right ones for the demo.
+- **Testnet only.** Sepolia, test ETH, a 0.01 ETH cap per transfer. The gate refuses an audit for any other chain or for a different address than the one requested, and the wallet checks the chain again before signing.
+- **After you pull,** run `npm run setup` once (it installs `server/`, `voice/` and `app/`), or run `npm install` in each folder whose `package.json` changed. A new package otherwise crashes the server on start with `ERR_MODULE_NOT_FOUND`.
