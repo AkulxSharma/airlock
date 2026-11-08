@@ -130,7 +130,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 12. Anyone who can text the line can make Airlock send test ETH
 
-- [ ] Decided (fix, or write down the risk)
+- [x] Fixed (server side, after 0949420): `IMESSAGE_CONFIRM_ALLOWLIST` (comma list; unset = any sender may confirm, so set it before a public demo) limits who can confirm a send. Audits stay open to everyone. `DAILY_CAP_ETH` (default 0.05) caps total test ETH per UTC day, and every send or refusal is logged with a masked sender.
 
 **Where:** `docs/IMESSAGE.md` ("Anyone can text the line", `IMESSAGE_ALLOWLIST=*`), `server/src/imessage/`, `server/src/index.ts`.
 
@@ -142,7 +142,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 13. Spoken YES from anyone in the room (hands-free)
 
-- [ ] Decided (Muhammad and Akul)
+- [x] Server side done (after 0949420): `POST /api/message` accepts an optional `source` ("hands-free" or "hold") and refuses a YES with `source: "hands-free"`. **Muhammad: the GUI must send `source` on voice requests** (hands-free listener = "hands-free", hold-to-talk = "hold") and show YES/NO buttons in hands-free mode.
 
 **Where:** the voice path in `server/src/api/message.ts`, and Muhammad's hands-free listener in `app/lib/useWakeWord.ts`.
 

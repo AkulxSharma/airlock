@@ -28,6 +28,12 @@ export type MessageDeps = {
   // Canned replies for greetings, "how are you", "what does it do", thanks and goodbye. They run before the
   // model is asked anything, so they cost no tokens. Defaults to the replies in agent/smalltalk.json.
   smallTalk?: SmallTalk;
+  // Who may confirm a send, by session id (iMessage ids look like "imessage:<handle>"). Everyone can still
+  // ask for audits; a refused sender is told so and nothing is sent. Omit to allow every session.
+  canConfirm?(sessionId: string): boolean;
+  // Total test ETH the server will send per UTC day, across all senders. Omit for no daily cap.
+  dailyCapEth?: string;
+  log?(line: string): void;
 };
 
 const HELP =
@@ -75,6 +81,12 @@ export function createMessageHandler(deps: MessageDeps) {
   const agent = deps.agent ?? ruleBasedAgent;
   const ttlMs = deps.ttlMs ?? DEFAULT_TTL_MS;
   const newId = deps.newId ?? randomUUID;
+  const log = deps.log ?? ((line: string) => console.log(line));
+  const dailyCap = deps.dailyCapEth === undefined ? undefined : Number(deps.dailyCapEth);
+  let sentDay = "";
+  let sentToday = 0;
+  const today = () => new Date(deps.now()).toISOString().slice(0, 10);
+  const sentSoFar = () => (sentDay === today() ? sentToday : 0);
 
   const explainNote = async (a: AuditResult, decision: "refuse" | "confirm"): Promise<string> => {
     if (!deps.explain) return "";
@@ -140,6 +152,19 @@ export function createMessageHandler(deps: MessageDeps) {
     if (intent.kind === "yes") {
       const pending = deps.store.peek(req.sessionId);
       if (!pending) return done("Nothing is waiting for confirmation.");
+      // Item 13: anyone near an always-listening mic can say YES, so a hands-free YES never confirms.
+      if (req.channel === "voice" && req.source === "hands-free") {
+        return done("A spoken YES does not count in hands-free mode. Press YES on screen, or hold the mic button and say it.", true);
+      }
+      // Item 12: audits are open to everyone, sends are not.
+      if (deps.canConfirm && !deps.canConfirm(req.sessionId)) {
+        log(`send refused: sender not approved (${req.sessionId.replace(/(.{6}).*(.{2})$/, "$1...$2")})`);
+        return done("You can ask me for audits, but only approved senders can confirm a send, so nothing was sent.");
+      }
+      if (dailyCap !== undefined && sentSoFar() + Number(pending.amountEth) > dailyCap) {
+        log("send refused: daily cap reached");
+        return done(`Refused. The daily limit of ${deps.dailyCapEth} test ETH has been reached, so nothing was sent.`);
+      }
       // Expiry is reported first, whatever else is wrong, so the reason given is the real one.
       if (deps.now() >= pending.expiresAt) {
         deps.store.consume(req.sessionId, pending.id, deps.now()); // clears the expired request
@@ -157,6 +182,12 @@ export function createMessageHandler(deps: MessageDeps) {
       }
       const sent = await sendTestnet(consumed.transfer, deps.wallet, deps.maxTransferEth);
       if (!sent.ok) return done(SEND_FAILURE[sent.reason] ?? SEND_FAILURE["send-failed"]);
+      if (sentDay !== today()) {
+        sentDay = today();
+        sentToday = 0;
+      }
+      sentToday += Number(consumed.transfer.amountEth);
+      log(`send ok: ${consumed.transfer.amountEth} ETH, day total ${sentToday} (${req.sessionId.replace(/(.{6}).*(.{2})$/, "$1...$2")})`);
       return done(
         `Sent ${consumed.transfer.amountEth} test ETH to ${consumed.transfer.to}.\nhttps://sepolia.etherscan.io/tx/${sent.hash}`,
       );

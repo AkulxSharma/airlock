@@ -7,6 +7,7 @@ import { createExplainer, createGeminiAgent, createGeminiClient, withCooldown } 
 import { auditAddress, auditTimeoutFromEnv, readerFromEnv } from "./auditor/chain.js";
 import { createSourcifyFetcher } from "./auditor/source.js";
 import { createApp, parseAllowedOrigins } from "./api/app.js";
+import { isAllowed, parseAllowlist } from "./imessage/text.js";
 import { createMessageHandler } from "./api/message.js";
 import { resolveTarget, type EnsClient } from "./api/resolve.js";
 import { createStageBus } from "./api/stream.js";
@@ -43,6 +44,12 @@ const geminiKey = env.GEMINI_API_KEY?.trim();
 const gemini = geminiKey ? withCooldown(createGeminiClient(geminiKey)) : null;
 console.log(gemini ? "Gemini: on (gemini-2.5-flash)" : "Gemini: off (no GEMINI_API_KEY), using the rule-based parser");
 const ttlSeconds = Number(env.CONFIRM_TTL_SECONDS);
+// Item 12. IMESSAGE_CONFIRM_ALLOWLIST (comma list of phone numbers/emails): only these iMessage senders may
+// confirm a send. Unset = any sender may (demo-friendly). GUI and voice sessions are never blocked by it.
+const confirmList = parseAllowlist(env.IMESSAGE_CONFIRM_ALLOWLIST);
+const confirmRestricted = confirmList.handles.size > 0 && !confirmList.anyone;
+console.log(confirmRestricted ? `Confirm allowlist: ${confirmList.handles.size} iMessage sender(s)` : "Confirm allowlist: off (any iMessage sender may confirm a send)");
+const dailyCapEth = env.DAILY_CAP_ETH?.trim() || "0.05";
 const bus = createStageBus();
 const handle = createMessageHandler({
   resolve: (input) => resolveTarget(input, ensClient, demoAliases),
@@ -51,6 +58,10 @@ const handle = createMessageHandler({
   wallet,
   now: () => Date.now(),
   maxTransferEth: maxTransferFromEnv(env),
+  dailyCapEth,
+  canConfirm: confirmRestricted
+    ? (sid) => !sid.startsWith("imessage:") || isAllowed(confirmList, sid.slice("imessage:".length))
+    : undefined,
   ttlMs: Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds * 1000 : DEFAULT_TTL_MS,
   publish: bus.publish,
   agent: gemini ? createGeminiAgent(gemini) : undefined,

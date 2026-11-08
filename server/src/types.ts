@@ -18,6 +18,9 @@ export const MessageRequestSchema = z.object({
   sessionId: z.string().min(1),
   channel: z.enum(["gui", "imessage", "voice"]),
   text: z.string().min(1),
+  // Voice only. "hands-free" = the always-listening mic (anyone nearby can speak), "hold" = push-to-talk.
+  // A spoken YES from hands-free is refused: confirm with the on-screen button instead.
+  source: z.enum(["hold", "hands-free"]).optional(),
 });
 
 export const StageSchema = z.object({

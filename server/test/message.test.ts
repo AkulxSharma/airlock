@@ -49,7 +49,7 @@ function setup(over: Partial<MessageDeps> & { outcome?: LiveAuditOutcome; chainI
   });
   const say = (text: string, sessionId = "s1", channel: MessageRequest["channel"] = "gui") =>
     handle({ sessionId, channel, text });
-  return { say, sendTransaction, resolve, auditFn, published, clock, store };
+  return { say, handle, sendTransaction, resolve, auditFn, published, clock, store };
 }
 
 const replies: string[] = [];
@@ -524,3 +524,52 @@ describe("canonicalizeTyped (synonyms on typed and texted messages)", () => {
     expect(canonicalizeTyped("What is Airlock?")).toBe("What is Airlock?");
   });
 });
+
+describe("who may confirm and how much may be sent (items 12 and 13)", () => {
+  const quiet = { log: () => {} };
+
+  it("an unapproved iMessage sender gets the audit but a YES sends nothing", async () => {
+    const t = setup({ ...quiet, canConfirm: (sid) => sid === "imessage:+17165550100" });
+    const ask = await track(t.say("send 0.005 to vitalik.eth", "imessage:+19998887777", "imessage"));
+    expect(ask.needsConfirm).toBe(true); // the audit is open to everyone
+    const r = await track(t.say("yes", "imessage:+19998887777", "imessage"));
+    expect(r.reply).toMatch(/only approved senders/i);
+    expect(t.sendTransaction).not.toHaveBeenCalled();
+  });
+
+  it("an approved sender can confirm", async () => {
+    const t = setup({ ...quiet, canConfirm: (sid) => sid === "imessage:+17165550100" });
+    await track(t.say("send 0.005 to vitalik.eth", "imessage:+17165550100", "imessage"));
+    await track(t.say("yes", "imessage:+17165550100", "imessage"));
+    expect(t.sendTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("a send past the daily cap is refused, and the next day starts fresh", async () => {
+    const t = setup({ ...quiet, dailyCapEth: "0.01" });
+    await track(t.say("send 0.006 to vitalik.eth"));
+    await track(t.say("yes"));
+    await track(t.say("send 0.006 to vitalik.eth"));
+    const r = await track(t.say("yes"));
+    expect(r.reply).toMatch(/daily limit/i);
+    expect(t.sendTransaction).toHaveBeenCalledTimes(1);
+    t.clock.t += 24 * 3600 * 1000;
+    await track(t.say("send 0.006 to vitalik.eth"));
+    await track(t.say("yes"));
+    expect(t.sendTransaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("a spoken YES from the hands-free mic never confirms; hold-to-talk and typing do", async () => {
+    const t = setup(quiet);
+    await track(t.say("send 0.005 to vitalik.eth"));
+    const hf = await track(handleVoice(t, "yes", "hands-free"));
+    expect(hf.reply).toMatch(/press YES on screen/i);
+    expect(hf.needsConfirm).toBe(true);
+    expect(t.sendTransaction).not.toHaveBeenCalled();
+    await track(handleVoice(t, "yes", "hold"));
+    expect(t.sendTransaction).toHaveBeenCalledTimes(1);
+  });
+});
+
+function handleVoice(t: ReturnType<typeof setup>, text: string, source: "hold" | "hands-free") {
+  return t.handle({ sessionId: "s1", channel: "voice", text, source });
+}
