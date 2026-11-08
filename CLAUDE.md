@@ -63,7 +63,7 @@ When we upload the project to Devpost and submit, we must also make a **video of
 4. How it works: the pipeline (voice or iMessage in, Gemini for intent, our own auditor, the gate, ElevenLabs voice out) and the safety rules (testnet only, per-transfer cap, "risk signal, not a guarantee").
 5. Prize angles and what is next.
 
-Record a backup take in case the live demo fails. Whoever finishes the backend and GUI first starts the slides.
+Record a backup take in case the live demo fails. The draft script, timing and recording plan are in `docs/VIDEO_SCRIPT.md`. Whoever finishes the backend and GUI first starts the slides.
 
 ## Small talk is cached (no tokens)
 
