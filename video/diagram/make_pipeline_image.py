@@ -74,17 +74,15 @@ label(62, 20, "Intent Recognition", center=True)
 label(88, 20, "Function Tools", center=True)
 vline(62, 21, 24); vline(88, 21, 24)
 hline(24, 12, 88)
-for cx in (12, 30, 48, 66, 84):
+for cx in (12, 36, 60, 84):
     vline(cx, 24, 25); arrow_down(cx, 26)
 
 # ---- tools ----
-TOOLS = [(4, ["Resolve", "ENS name", "or address"]), (22, ["Contract", "Auditor", "bytecode+source"]), (40, ["Simulate", "on a fork", "(not built)"]), (58, ["Send", "Sepolia", "test ETH"]), (76, ["Explain", "the findings", "in plain words"])]
+TOOLS = [(2, ["Resolve", "ENS name", "or address"]), (26, ["Contract", "Auditor", "bytecode+source"]), (50, ["Send", "Sepolia", "test ETH"]), (74, ["Explain", "the findings", "in plain words"])]
 for x, rows in TOOLS:
-    box(x, 27, 17, 6, rows)
-for cx in (12, 30, 48, 66, 84):
-    pass
+    box(x, 27, 20, 6, rows)
 for x, _ in TOOLS:
-    vline(x + 8, 33, 36)
+    vline(x + 10, 33, 36)
 hline(36, 12, 84)
 vline(48, 36, 38); arrow_down(48, 39)
 
