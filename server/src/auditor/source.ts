@@ -250,7 +250,7 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
   if (sweep.length > 0) {
     findings.push({
       id: "owner-sweep",
-      severity: "medium",
+      severity: "high",
       message: `Heuristic: an owner-only function${quoted(sweep)} can move this contract's whole balance out.`,
     });
   }
@@ -278,8 +278,8 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
   const add = (id: string, severity: Finding["severity"], message: string) => findings.push({ id, severity, message });
   if (reentrancy.length > 0) add("reentrancy-risk", "medium", `Heuristic: a function${quoted(reentrancy)} sends ether before it updates its records, so a malicious receiver may call back in and withdraw again.`);
   if (unchecked.length > 0) add("unchecked-call", "medium", `Heuristic: a function${quoted(unchecked)} ignores whether a send or call succeeded, so a failed payment can look like a successful one.`);
-  if (unprotectedInit.length > 0) add("unprotected-init", "medium", `Heuristic: an initializer${quoted(unprotectedInit)} sets the owner but has no guard, so anyone may be able to call it and take control.`);
-  if (seize.length > 0) add("owner-seize", "medium", `Heuristic: an owner-only function${quoted(seize)} can move tokens out of other people's wallets.`);
+  if (unprotectedInit.length > 0) add("unprotected-init", "high", `Heuristic: an initializer${quoted(unprotectedInit)} sets the owner but has no guard, so anyone may be able to call it and take control.`);
+  if (seize.length > 0) add("owner-seize", "high", `Heuristic: an owner-only function${quoted(seize)} can move tokens out of other people's wallets.`);
   if (randomness.length > 0) add("weak-randomness", "medium", `Heuristic: a function${quoted(randomness)} uses block values as randomness, which miners and other contracts can predict.`);
   if (dosLoop.length > 0) add("dos-loop-payment", "medium", `Heuristic: a function${quoted(dosLoop)} pays many recipients in one loop, so one failing recipient or a long list can block everyone.`);
   if (replay) add("signature-replay", "medium", "Heuristic: the source checks a signature but shows no nonce or used-signature record, so the same signature may be replayable.");

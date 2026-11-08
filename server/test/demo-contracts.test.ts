@@ -29,10 +29,10 @@ describe("Solidity demo contracts", () => {
     expect(r.verdict).toBe("LOW");
   });
 
-  it("RugVault: owner can sweep the pool, MEDIUM", () => {
+  it("RugVault: owner can sweep the pool, HIGH", () => {
     const r = audit("RugVault");
     expect(r.ids).toEqual(["owner-sweep"]);
-    expect(r.verdict).toBe("MEDIUM");
+    expect(r.verdict).toBe("HIGH");
   });
 
   it("OriginWallet: tx.origin authorization, MEDIUM", () => {
@@ -60,14 +60,14 @@ const CLASSES: Array<[string, string, string[], "LOW" | "MEDIUM" | "HIGH"]> = [
   ["ReentrancyBank", "reentrancy", ["reentrancy-risk"], "MEDIUM"],
   ["UncheckedSend", "unchecked call return", ["unchecked-call"], "MEDIUM"],
   ["UnprotectedKill", "unprotected selfdestruct", ["selfdestruct"], "HIGH"],
-  ["UnprotectedInit", "unprotected initializer", ["unprotected-init"], "MEDIUM"],
+  ["UnprotectedInit", "unprotected initializer", ["unprotected-init"], "HIGH"],
   ["DelegateToUser", "delegatecall to a caller-chosen address", ["delegatecall"], "MEDIUM"],
   ["WeakRandomLottery", "weak randomness", ["weak-randomness"], "MEDIUM"],
   ["StrictBalanceGame", "forced ether / strict balance check", ["strict-balance"], "LOW"],
   ["DosRefund", "denial of service by looped payments", ["dos-loop-payment"], "MEDIUM"],
   ["SignatureReplay", "signature replay", ["signature-replay"], "MEDIUM"],
-  ["BackdoorToken", "hidden owner backdoor", ["owner-seize"], "MEDIUM"],
-  ["ApprovalDrainer", "approval phishing", ["owner-seize"], "MEDIUM"],
+  ["BackdoorToken", "hidden owner backdoor", ["owner-seize"], "HIGH"],
+  ["ApprovalDrainer", "approval phishing", ["owner-seize"], "HIGH"],
   ["UncheckedMath", "unchecked arithmetic", ["unchecked-math"], "MEDIUM"],
   ["SpotOracleLender", "oracle manipulation (NOT detected)", [], "LOW"],
 ];

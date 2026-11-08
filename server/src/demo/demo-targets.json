@@ -26,6 +26,36 @@
       "address": "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9",
       "expected": "LOW",
       "why": "real Sepolia WETH9, verified on Sourcify, nothing flagged"
+    },
+    "rugvault.demo": {
+      "address": "0x4f996B50a1448C8AA87a5AC6A7Bc73d4Ec215a7F",
+      "expected": "HIGH",
+      "why": "owner can sweep the whole pool (owner-sweep)",
+      "contract": "RugVault"
+    },
+    "reentrancy.demo": {
+      "address": "0x197a03179F9115A3BD355d801d3F43B740251716",
+      "expected": "MEDIUM",
+      "why": "sends ether before updating balances (reentrancy-risk)",
+      "contract": "ReentrancyBank"
+    },
+    "honeypot.demo": {
+      "address": "0x5caE09aCc98A86c6956EE18eAf24ff5E0A4e77F1",
+      "expected": "MEDIUM",
+      "why": "blacklist, sell-fee and trading switches",
+      "contract": "HoneypotToken"
+    },
+    "selfkill.demo": {
+      "address": "0x0C7Caa6629Af7601eBd347F5f867D1979D091e93",
+      "expected": "HIGH",
+      "why": "anyone can SELFDESTRUCT it",
+      "contract": "UnprotectedKill"
+    },
+    "vault.demo": {
+      "address": "0xE5ce5ee5A8dC8D44c7cBcF3b6F51f4bef6b55CC6",
+      "expected": "LOW",
+      "why": "user-only vault, source verified, nothing flagged",
+      "contract": "CleanVault"
     }
   }
 }

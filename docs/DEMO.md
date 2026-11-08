@@ -13,6 +13,13 @@ Type or paste these names instead of addresses. They end in `.demo` so they can 
 | `clone.demo` | EIP-1167 minimal proxy pointing at the Sepolia WETH contract | MEDIUM, asks to confirm | Minimal proxy, real logic lives elsewhere, no verified source |
 | `clean.demo` | Accepts ETH and does nothing else | MEDIUM, asks to confirm | Its bytecode is clean, but it has no verified source (`unverified-source`) |
 | `weth.demo` | The public Sepolia WETH9 contract, verified on Sourcify | LOW, asks to confirm | Bytecode and source checks flag nothing |
+| `rugvault.demo` | Solidity vault; the owner can send the whole pool to themselves | HIGH, refused | owner-sweep, found in the verified source |
+| `reentrancy.demo` | Solidity bank that sends ether before zeroing the balance | MEDIUM, asks to confirm | reentrancy-risk |
+| `honeypot.demo` | Solidity token with blacklist, sell-fee and trading switches | MEDIUM, asks to confirm | blacklist-switch, adjustable-fee, trading-switch |
+| `selfkill.demo` | Solidity contract anyone can SELFDESTRUCT | HIGH, refused | selfdestruct |
+| `vault.demo` | Solidity vault, you can only withdraw your own deposit; source verified | LOW, asks to confirm | nothing flagged |
+
+The five Solidity demos are in `server/contracts/` (13 contracts in all, one per vulnerability class), compiled by `server/scripts/compile-demo-contracts.ts`, deployed by `deploy-solidity-demos.ts` and verified on Sourcify by `verify-solidity-demos.ts` (all five exact matches). `server/scripts/audit-demo-names.ts` audits every name against the live chain and Sourcify and prints any mismatch; on 2026-11-07 all ten matched. Restart the server after pulling so it loads the new names.
 
 Addresses (checksummed):
 
