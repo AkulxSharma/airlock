@@ -1,0 +1,134 @@
+[
+  {
+    "text": "Text",
+    "start": 0.06,
+    "end": 0.42,
+    "id": "w0"
+  },
+  {
+    "text": "airlock",
+    "start": 0.53,
+    "end": 1,
+    "id": "w1"
+  },
+  {
+    "text": "from",
+    "start": 1.35,
+    "end": 1.8,
+    "id": "w2"
+  },
+  {
+    "text": "iMessage.",
+    "start": 1.8,
+    "end": 2.91,
+    "id": "w3"
+  },
+  {
+    "text": "Your",
+    "start": 2.91,
+    "end": 3.07,
+    "id": "w4"
+  },
+  {
+    "text": "message",
+    "start": 3.07,
+    "end": 3.36,
+    "id": "w5"
+  },
+  {
+    "text": "pops",
+    "start": 3.36,
+    "end": 3.66,
+    "id": "w6"
+  },
+  {
+    "text": "up",
+    "start": 3.67,
+    "end": 3.8,
+    "id": "w7"
+  },
+  {
+    "text": "live",
+    "start": 3.87,
+    "end": 4.24,
+    "id": "w8"
+  },
+  {
+    "text": "on",
+    "start": 4.24,
+    "end": 4.4,
+    "id": "w9"
+  },
+  {
+    "text": "the",
+    "start": 4.4,
+    "end": 4.48,
+    "id": "w10"
+  },
+  {
+    "text": "website,",
+    "start": 4.48,
+    "end": 5.36,
+    "id": "w11"
+  },
+  {
+    "text": "gets",
+    "start": 5.42,
+    "end": 5.7,
+    "id": "w12"
+  },
+  {
+    "text": "audited",
+    "start": 5.75,
+    "end": 6.35,
+    "id": "w13"
+  },
+  {
+    "text": "and",
+    "start": 6.35,
+    "end": 6.37,
+    "id": "w14"
+  },
+  {
+    "text": "the",
+    "start": 6.71,
+    "end": 6.84,
+    "id": "w15"
+  },
+  {
+    "text": "answer",
+    "start": 6.9,
+    "end": 7.42,
+    "id": "w16"
+  },
+  {
+    "text": "comes",
+    "start": 7.42,
+    "end": 7.6,
+    "id": "w17"
+  },
+  {
+    "text": "back",
+    "start": 7.6,
+    "end": 8.27,
+    "id": "w18"
+  },
+  {
+    "text": "to",
+    "start": 8.27,
+    "end": 8.42,
+    "id": "w19"
+  },
+  {
+    "text": "your",
+    "start": 8.42,
+    "end": 8.78,
+    "id": "w20"
+  },
+  {
+    "text": "phone.",
+    "start": 8.78,
+    "end": 9.28,
+    "id": "w21"
+  }
+]

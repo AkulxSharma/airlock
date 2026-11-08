@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;1,500&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      :root { --ink: #1a1a1a; --paper: #f5f3ef; --muted: #b9b5ae; --line: #3a3a3a; --card: #232323; --low: #4ade80; --medium: #fbbf24; --high: #f87171; --blue: #0a84ff;
+        --font-display: "Playfair Display", Georgia, serif; --font-body: "Geist", system-ui, sans-serif; --font-mono: "Geist Mono", ui-monospace, monospace; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--ink); }
+      #root { position: relative; width: 1920px; height: 1080px; background: var(--ink); color: var(--paper); font-family: var(--font-body); }
+      .scene { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+      .abs { position: absolute; }
+      .center { position: absolute; left: 0; right: 0; text-align: center; }
+      .vid { position: absolute; object-fit: cover; z-index: 2; }
+      .frame { position: absolute; overflow: hidden; border: 3px solid var(--line); background: #000; border-radius: 24px; }
+      .mono { font-family: var(--font-mono); }
+      .label { font-family: var(--font-mono); font-size: 30px; letter-spacing: 0.14em; color: var(--paper); }
+      .card { position: absolute; background: var(--card); border: 3px solid var(--line); border-radius: 30px; padding: 30px 34px; }
+      .card .k { font-family: var(--font-mono); font-size: 28px; color: var(--muted); letter-spacing: 0.1em; }
+      .card .h { font-family: var(--font-display); font-size: 62px; line-height: 1.05; margin-top: 10px; }
+      .card .s { font-size: 30px; color: var(--muted); margin-top: 12px; line-height: 1.2; }
+      .line { position: absolute; height: 6px; background: #8a8780; border-radius: 3px; }
+      #ex1 .h, #ex2 .h, #ex3 .h { font-size: 50px; }
+      #ex1 .s, #ex2 .s, #ex3 .s { font-size: 28px; }
+      .glyph { position: absolute; font-size: 64px; color: var(--muted); }
+      .cap { font-family: var(--font-display); font-size: 58px; line-height: 1.15; }
+
+      /* title */
+      #t0 { top: 250px; font-family: var(--font-mono); font-size: 30px; letter-spacing: 0.3em; color: var(--muted); }
+      #t1 { top: 360px; font-family: var(--font-display); font-style: italic; font-size: 150px; line-height: 1.05; }
+      #t2 { top: 560px; font-size: 48px; color: var(--muted); opacity: 0; }
+
+      /* pop bubble */
+      #phLabel { left: 90px; top: 200px; }
+      .bb { position: absolute; font-size: 44px; font-weight: 500; line-height: 1.18; opacity: 0; }
+      #bub { right: 1310px; top: 280px; width: max-content; max-width: 480px; background: var(--blue); color: #fff; border-radius: 48px 48px 12px 48px; padding: 34px 44px; transform-origin: 100% 100%; }
+      #bubA { left: 90px; top: 540px; width: 480px; background: #3a3a3a; color: #fff; border-radius: 48px 48px 48px 12px; padding: 30px 44px; font-size: 38px; transform-origin: 0% 100%; }
+      #bub2 { right: 1310px; top: 800px; width: max-content; background: var(--blue); color: #fff; border-radius: 48px 48px 12px 48px; padding: 26px 48px; text-align: center; transform-origin: 100% 100%; }
+      #deliv { left: 90px; top: 940px; width: 520px; text-align: right; font-size: 28px; color: var(--muted); }
+      #pulse { left: 640px; top: 520px; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 40px var(--blue); opacity: 0; }
+      #siteLabel { left: 700px; top: 120px; }
+      #zoomFrame { left: 680px; top: 180px; width: 1200px; height: 700px; }
+      #zoomNote { left: 680px; top: 905px; width: 1200px; font-family: var(--font-display); font-size: 52px; }
+
+      /* explainer part 1 */
+      #ex1 { left: 130px; top: 370px; width: 400px; height: 270px; opacity: 0; }
+      #ex2 { left: 760px; top: 370px; width: 400px; height: 270px; opacity: 0; }
+      #ex3 { left: 1390px; top: 370px; width: 400px; height: 270px; opacity: 0; }
+      #exQ { left: 1090px; top: 346px; width: 96px; height: 96px; border-radius: 50%; background: var(--high); color: var(--ink); font-family: var(--font-mono); font-size: 64px; font-weight: 600; text-align: center; line-height: 96px; opacity: 0; }
+      #exOk { left: 1090px; top: 346px; width: 96px; height: 96px; border-radius: 50%; background: var(--low); color: var(--ink); font-family: var(--font-mono); font-size: 56px; font-weight: 600; text-align: center; line-height: 96px; opacity: 0; }
+      #exShield { left: 760px; top: 120px; width: 400px; height: 150px; text-align: center; padding: 34px 0; border-color: var(--paper); opacity: 0; }
+      #exShield .h { font-style: italic; font-size: 64px; margin-top: 0; }
+      #exShieldLine { left: 957px; top: 270px; width: 6px; height: 120px; background: var(--paper); opacity: 0; }
+      #exIntroA { top: 330px; font-family: var(--font-display); font-style: italic; font-size: 190px; line-height: 1; opacity: 0; }
+      #exIntroB { top: 590px; font-family: var(--font-display); font-size: 70px; opacity: 0; }
+      .exCap { left: 130px; top: 760px; width: 1660px; opacity: 0; }
+
+      /* explainer part 2 */
+      #hd { left: 120px; top: 80px; font-family: var(--font-display); font-style: italic; font-size: 88px; opacity: 0; }
+      #chipB { left: 120px; top: 290px; width: 470px; height: 210px; opacity: 0; }
+      #chipS { left: 120px; top: 540px; width: 470px; height: 210px; opacity: 0; }
+      #arr1 { left: 600px; top: 380px; opacity: 1; }
+      #score { left: 740px; top: 340px; width: 470px; height: 360px; opacity: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px; }
+      #score .num { font-family: var(--font-mono); font-size: 52px; opacity: 0; }
+      #track { width: 100%; height: 30px; background: #3a3a3a; border-radius: 15px; overflow: hidden; }
+      #bar { width: 0; height: 100%; background: var(--high); border-radius: 15px; }
+      #scHigh { font-family: var(--font-display); font-size: 100px; line-height: 1; color: var(--high); opacity: 0; }
+      #arr2 { left: 1220px; top: 400px; opacity: 1; }
+      #gateRef { left: 1370px; top: 330px; width: 480px; height: 200px; border-color: var(--high); opacity: 0; }
+      #gateRef .h { color: var(--high); }
+      #gateYes { left: 1370px; top: 560px; width: 480px; height: 200px; border-color: var(--medium); opacity: 0; }
+      #gateYes .h { color: var(--medium); }
+      #gateNote { top: 860px; font-family: var(--font-display); font-size: 62px; opacity: 0; }
+
+      /* walkthrough */
+      #walkFrame { left: 160px; top: 38px; width: 1600px; height: 1004px; border-radius: 22px; }
+      .wtag { position: absolute; right: 190px; top: 68px; z-index: 5; padding: 14px 28px; border-radius: 16px; font-family: var(--font-mono); font-size: 34px; letter-spacing: 0.1em; opacity: 0; }
+      #tagW1 { background: #3a1414; color: var(--high); border: 3px solid var(--high); }
+      #tagW2 { background: #14301c; color: var(--low); border: 3px solid var(--low); }
+      #tagW3 { background: #1c1c1c; color: var(--paper); border: 3px solid var(--paper); }
+      #tagW4 { background: #1c1c1c; color: var(--paper); border: 3px solid var(--paper); }
+
+      /* rules */
+      #ruTitle { left: 160px; top: 110px; font-family: var(--font-display); font-style: italic; font-size: 100px; opacity: 0; }
+      .rc { top: 330px; width: 520px; height: 400px; opacity: 0; }
+      #rc1 { left: 160px; border-color: var(--high); } #rc1 .k { color: var(--high); }
+      #rc2 { left: 700px; border-color: var(--medium); } #rc2 .k { color: var(--medium); }
+      #rc3 { left: 1240px; border-color: var(--low); } #rc3 .k { color: var(--low); }
+      .rc .h { font-size: 78px; margin-top: 28px; }
+      #ruNote { top: 840px; font-family: var(--font-display); font-size: 66px; opacity: 0; }
+
+      /* outro */
+      #o1 { top: 330px; font-family: var(--font-display); font-style: italic; font-size: 120px; opacity: 0; }
+      #o2 { top: 500px; font-family: var(--font-display); font-size: 100px; line-height: 1.12; opacity: 0; }
+      #o3 { top: 800px; font-family: var(--font-mono); font-size: 52px; opacity: 0; }
+      #o4 { top: 890px; font-size: 34px; color: var(--muted); opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="@@END@@" data-width="1920" data-height="1080">
+
+      <section id="sc0" class="scene clip" data-start="0" data-duration="@@TITLE@@" data-track-index="0">
+        <div id="t0" class="center">AIRLOCK</div>
+        <div id="t1" class="center">Text it. Watch it land.</div>
+        <div id="t2" class="center">A firewall for AI agents that move money.</div>
+      </section>
+
+      <section id="scPS" class="scene clip" data-start="@@PS0@@" data-duration="@@PSD@@" data-track-index="0">
+        <div id="phLabel" class="abs label">IMESSAGE</div>
+        <div id="bub" class="bb">Send 0.00001<br />to akul.demo</div>
+        <div id="bubA" class="bb">Risk signal: LOW (score 0). Reply YES to send.</div>
+        <div id="bub2" class="bb">Yes</div>
+        <div id="deliv" class="abs">Delivered</div>
+        <div id="pulse" class="abs"></div>
+        <div id="siteLabel" class="abs label">AIRLOCK.INK</div>
+        <div id="zoomFrame" class="frame">
+        </div>
+        <div id="zoomNote" class="abs" style="opacity:0">The same message, live on the website.</div>
+      </section>
+
+      <section id="scEX" class="scene clip" data-start="@@EX0@@" data-duration="@@EXD@@" data-track-index="0">
+        <div id="exPart1" class="scene">
+          <div id="exIntroA" class="center">Airlock</div>
+          <div id="exIntroB" class="center">A firewall for agentic crypto transactions.</div>
+          <div id="ex1" class="card"><div class="k">1</div><div class="h">AI agent</div><div class="s">sends the money</div></div>
+          <svg id="exL1" class="abs" style="left:545px;top:485px;transform-origin:0 50%;" width="210" height="40" viewBox="0 0 210 40"><path d="M0 20 H192" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M178 6 L204 20 L178 34" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <div id="ex2" class="card"><div class="k">2</div><div class="h">Smart contract</div><div class="s">money passes through</div></div>
+          <svg id="exL2" class="abs" style="left:1175px;top:485px;transform-origin:0 50%;" width="210" height="40" viewBox="0 0 210 40"><path d="M0 20 H192" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M178 6 L204 20 L178 34" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <div id="ex3" class="card"><div class="k">3</div><div class="h">Other wallet</div><div class="s">receives it</div></div>
+          <div id="exQ" class="abs">?</div>
+          <div id="exOk" class="abs">✓</div>
+          <div id="exShield" class="card"><div class="h">Airlock</div></div>
+          <div id="exShieldLine" class="abs"></div>
+          <div id="exCap1" class="abs cap exCap">An AI agent sends money through a smart contract.</div>
+          <div id="exCap2" class="abs cap exCap">Sometimes that smart contract is vulnerable.</div>
+          <div id="exCap3" class="abs cap exCap">Those vulnerabilities are what Airlock checks for.</div>
+        </div>
+
+        <div id="hd" class="abs">How Airlock decides</div>
+        <div id="chipB" class="card"><div class="k">LAYER 1</div><div class="h">Bytecode</div><div class="s">the compiled code</div></div>
+        <div id="chipS" class="card"><div class="k">LAYER 2</div><div class="h">Source</div><div class="s">the verified code</div></div>
+        <svg id="arr1" class="abs" style="transform-origin:0 50%;" width="135" height="280" viewBox="0 0 135 280"><path d="M0 15 H64 V140 M0 265 H64 V140 M64 140 H118" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M104 126 L130 140 L104 154" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <div id="score" class="card"><div class="k">RISK SCORE</div><div id="sc60" class="num">60 / 100</div><div id="track"><div id="bar"></div></div><div id="scHigh">HIGH</div></div>
+        <svg id="arr2" class="abs" style="transform-origin:0 50%;" width="140" height="280" viewBox="0 0 140 280"><path d="M0 120 H60 M60 30 V210 M60 30 H116 M60 210 H116" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M102 16 L128 30 L102 44 M102 196 L128 210 L102 224" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <div id="gateRef" class="card"><div class="h">Refused</div><div class="s">HIGH, an error or a timeout</div></div>
+        <div id="gateYes" class="card"><div class="h">Asks for YES</div><div class="s">LOW or MEDIUM</div></div>
+        <div id="gateNote" class="center">Plain code decides. Never the AI.</div>
+      </section>
+
+      <section id="scWalk" class="scene clip" data-start="@@W0@@" data-duration="@@WD@@" data-track-index="0">
+        <div id="walkFrame" class="frame"></div>
+        <div id="tagW1" class="wtag">REFUSED · HIGH</div>
+        <div id="tagW2" class="wtag">SAFER WALLET · ASKS FOR YES</div>
+        <div id="tagW3" class="wtag">THE REAL TRANSACTION</div>
+        <div id="tagW4" class="wtag">ALL DEMO WALLETS</div>
+      </section>
+
+      <section id="scRU" class="scene clip" data-start="@@RU0@@" data-duration="@@RUD@@" data-track-index="0">
+        <div id="ruTitle" class="abs">The rules</div>
+        <div id="rc1" class="card rc"><div class="k">HIGH RISK, AN ERROR OR A TIMEOUT</div><div class="h">Refused</div></div>
+        <div id="rc2" class="card rc"><div class="k">LOW OR MEDIUM</div><div class="h">Asks for YES</div><div class="s">within 60 seconds</div></div>
+        <div id="rc3" class="card rc"><div class="k">ALWAYS</div><div class="h">Testnet only</div><div class="s">Sepolia, with a cap on every transfer</div></div>
+        <div id="ruNote" class="center">A risk signal, not a guarantee.</div>
+      </section>
+
+      <section id="sc5" class="scene clip" data-start="@@OUT0@@" data-duration="@@OUTD@@" data-track-index="0">
+        <div id="o1" class="center">Airlock</div>
+        <div id="o2" class="center">Say it. Airlock checks it.<br />Then it moves.</div>
+        <div id="o3" class="center">airlock.ink</div>
+        <div id="o4" class="center">Sepolia testnet only. A risk signal, not a guarantee.</div>
+      </section>
+
+      <video id="siZ" class="clip vid" data-start="@@SITEB_START@@" data-duration="@@SITEB_DUR@@" data-media-start="0" data-track-index="2" src="assets/media/sitezoom.mp4" muted playsinline></video>
+      <video id="w1" class="clip vid" data-start="@@W1S@@" data-duration="@@W1D@@" data-media-start="@@W1M@@" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
+      <video id="w2" class="clip vid" data-start="@@W2S@@" data-duration="@@W2D@@" data-media-start="@@W2M@@" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
+      <video id="w3" class="clip vid" data-start="@@W3S@@" data-duration="@@W3D@@" data-media-start="@@W3M@@" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
+      <video id="w4" class="clip vid" data-start="@@W4S@@" data-duration="@@W4D@@" data-media-start="@@W4M@@" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
+
+      <audio id="music" data-start="0" data-duration="@@MUSICD@@" data-track-index="5" data-volume="0.11" data-fade-in="0.5" data-fade-out="1.6" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
+      @@AUDIO@@
+      @@SFX@@
+    </div>
+
+    <script>
+      // Place the walkthrough recordings inside their frame (fixed numbers, independent of layout timing).
+      ["w1", "w2", "w3", "w4"].forEach((id) => { const v = document.getElementById(id); v.style.left = "163px"; v.style.top = "41px"; v.style.width = "1594px"; v.style.height = "998px"; v.style.borderRadius = "19px"; });
+      { const z = document.getElementById("siZ"); z.style.left = "683px"; z.style.top = "183px"; z.style.width = "1194px"; z.style.height = "694px"; z.style.borderRadius = "21px"; }
+
+      const tl = gsap.timeline({ paused: true });
+      @@TIMELINE@@
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

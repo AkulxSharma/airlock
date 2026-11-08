@@ -38,9 +38,9 @@
       /* pop bubble */
       #phLabel { left: 90px; top: 200px; }
       .bb { position: absolute; font-size: 44px; font-weight: 500; line-height: 1.18; opacity: 0; }
-      #bub { left: 90px; top: 280px; width: 520px; background: var(--blue); color: #fff; border-radius: 48px 48px 48px 12px; padding: 34px 44px; transform-origin: 0% 100%; }
-      #bubA { left: 90px; top: 520px; width: 520px; background: #3a3a3c; color: #fff; border-radius: 48px 48px 12px 48px; padding: 30px 44px; font-size: 38px; transform-origin: 100% 100%; }
-      #bub2 { left: 350px; top: 800px; width: 260px; background: var(--blue); color: #fff; border-radius: 48px 48px 12px 48px; padding: 26px 40px; text-align: center; transform-origin: 100% 100%; }
+      #bub { right: 1310px; top: 280px; width: max-content; max-width: 480px; background: var(--blue); color: #fff; border-radius: 48px 48px 12px 48px; padding: 34px 44px; transform-origin: 100% 100%; }
+      #bubA { left: 90px; top: 540px; width: 480px; background: #3a3a3a; color: #fff; border-radius: 48px 48px 48px 12px; padding: 30px 44px; font-size: 38px; transform-origin: 0% 100%; }
+      #bub2 { right: 1310px; top: 800px; width: max-content; background: var(--blue); color: #fff; border-radius: 48px 48px 12px 48px; padding: 26px 48px; text-align: center; transform-origin: 100% 100%; }
       #deliv { left: 90px; top: 940px; width: 520px; text-align: right; font-size: 28px; color: var(--muted); }
       #pulse { left: 640px; top: 520px; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 40px var(--blue); opacity: 0; }
       #siteLabel { left: 700px; top: 120px; }
@@ -56,6 +56,8 @@
       #exShield { left: 760px; top: 120px; width: 400px; height: 150px; text-align: center; padding: 34px 0; border-color: var(--paper); opacity: 0; }
       #exShield .h { font-style: italic; font-size: 64px; margin-top: 0; }
       #exShieldLine { left: 957px; top: 270px; width: 6px; height: 120px; background: var(--paper); opacity: 0; }
+      #exIntroA { top: 330px; font-family: var(--font-display); font-style: italic; font-size: 190px; line-height: 1; opacity: 0; }
+      #exIntroB { top: 590px; font-family: var(--font-display); font-size: 70px; opacity: 0; }
       .exCap { left: 130px; top: 760px; width: 1660px; opacity: 0; }
 
       /* explainer part 2 */
@@ -123,6 +125,8 @@
 
       <section id="scEX" class="scene clip" data-start="10.53" data-duration="33.63" data-track-index="0">
         <div id="exPart1" class="scene">
+          <div id="exIntroA" class="center">Airlock</div>
+          <div id="exIntroB" class="center">A firewall for agentic crypto transactions.</div>
           <div id="ex1" class="card"><div class="k">1</div><div class="h">AI agent</div><div class="s">sends the money</div></div>
           <svg id="exL1" class="abs" style="left:545px;top:485px;transform-origin:0 50%;" width="210" height="40" viewBox="0 0 210 40"><path d="M0 20 H192" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M178 6 L204 20 L178 34" stroke="#b9b5ae" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
           <div id="ex2" class="card"><div class="k">2</div><div class="h">Smart contract</div><div class="s">money passes through</div></div>
@@ -132,9 +136,9 @@
           <div id="exOk" class="abs">✓</div>
           <div id="exShield" class="card"><div class="h">Airlock</div></div>
           <div id="exShieldLine" class="abs"></div>
-          <div id="exCap1" class="abs cap exCap">An AI agent moves money through a smart contract.</div>
-          <div id="exCap2" class="abs cap exCap">Sometimes that contract is vulnerable.</div>
-          <div id="exCap3" class="abs cap exCap">Airlock checks it first.</div>
+          <div id="exCap1" class="abs cap exCap">An AI agent sends money through a smart contract.</div>
+          <div id="exCap2" class="abs cap exCap">Sometimes that smart contract is vulnerable.</div>
+          <div id="exCap3" class="abs cap exCap">Those vulnerabilities are what Airlock checks for.</div>
         </div>
 
         <div id="hd" class="abs">How Airlock decides</div>
@@ -171,7 +175,7 @@
         <div id="o4" class="center">Sepolia testnet only. A risk signal, not a guarantee.</div>
       </section>
 
-      <video id="siZ" class="clip vid" data-start="6.3" data-duration="4.23" data-media-start="0" data-track-index="2" src="assets/media/sitezoom.mp4" muted playsinline></video>
+      <video id="siZ" class="clip vid" data-start="3.72" data-duration="6.81" data-media-start="0" data-track-index="2" src="assets/media/sitezoom.mp4" muted playsinline></video>
       <video id="w1" class="clip vid" data-start="44.16" data-duration="12.57" data-media-start="49.0" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
       <video id="w2" class="clip vid" data-start="56.73" data-duration="10.0" data-media-start="71.0" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
       <video id="w3" class="clip vid" data-start="66.73" data-duration="4.1" data-media-start="84.8" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
@@ -186,13 +190,13 @@
       <audio id="nar_d3" data-start="66.93" data-duration="3.73" data-track-index="7" data-volume="1" src="assets/narration/d3.mp3"></audio>
       <audio id="nar_d4" data-start="71.03" data-duration="7.81" data-track-index="7" data-volume="1" src="assets/narration/d4.mp3"></audio>
       <audio id="nar_d5" data-start="79.23" data-duration="8.77" data-track-index="7" data-volume="1" src="assets/narration/d5.mp3"></audio>
-      <audio id="sfx_0" data-start="2.8" data-duration="0.18" data-track-index="6" data-volume="0.6" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
-      <audio id="sfx_1" data-start="3.7" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
-      <audio id="sfx_2" data-start="4.8" data-duration="0.18" data-track-index="6" data-volume="0.6" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
-      <audio id="sfx_3" data-start="6.3" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
-      <audio id="sfx_4" data-start="22.43" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
-      <audio id="sfx_5" data-start="24.53" data-duration="1.5" data-track-index="6" data-volume="0.35" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
-      <audio id="sfx_6" data-start="34.57" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_0" data-start="2.7" data-duration="0.18" data-track-index="6" data-volume="0.6" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_1" data-start="3.72" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_2" data-start="7.6" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_3" data-start="9.18" data-duration="0.18" data-track-index="6" data-volume="0.6" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_4" data-start="27.3" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_5" data-start="27.63" data-duration="1.5" data-track-index="6" data-volume="0.35" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
+      <audio id="sfx_6" data-start="39.24" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
       <audio id="sfx_7" data-start="79.83" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
       <audio id="sfx_8" data-start="81.43" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
       <audio id="sfx_9" data-start="83.03" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
@@ -210,48 +214,52 @@
       tl.to("#sc0", { opacity: 0, duration: 0.25, ease: "power1.in" }, 2.45);
       tl.fromTo("#phLabel", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 2.75);
       tl.fromTo("#bub", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 2.8);
-      tl.fromTo("#bubA", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 3.7);
-      tl.fromTo("#bub2", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 4.8);
-      tl.fromTo("#deliv", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 5.5);
-      tl.fromTo("#pulse", { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.15 }, 5.7);
-      tl.to("#pulse", { x: 360, duration: 0.7, ease: "power2.inOut" }, 5.85);
-      tl.to("#pulse", { opacity: 0, duration: 0.15, ease: "power1.in" }, 6.5);
-      tl.fromTo("#siteLabel", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 6.3);
-      tl.fromTo("#zoomFrame", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 6.3);
-      tl.fromTo("#siZ", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 6.3);
-      tl.fromTo("#zoomNote", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 7.3);
+      tl.fromTo("#deliv", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 3.57);
+      tl.fromTo("#pulse", { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.15 }, 3.32);
+      tl.to("#pulse", { x: 360, duration: 0.5, ease: "power2.inOut" }, 3.47);
+      tl.to("#pulse", { opacity: 0, duration: 0.15, ease: "power1.in" }, 3.97);
+      tl.fromTo("#siteLabel", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 3.72);
+      tl.fromTo("#zoomFrame", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 3.72);
+      tl.fromTo("#siZ", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 3.72);
+      tl.fromTo("#zoomNote", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 6.45);
+      tl.fromTo("#bubA", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 7.6);
+      tl.fromTo("#bub2", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 9.18);
       tl.to("#scPS", { opacity: 0, duration: 0.25, ease: "power1.in" }, 10.28);
-      tl.fromTo("#ex1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 10.93);
-      tl.fromTo("#exL1", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 11.73);
-      tl.fromTo("#ex2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 12.33);
-      tl.fromTo("#exL2", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 13.43);
-      tl.fromTo("#ex3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 14.03);
-      tl.fromTo("#exCap1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 11.33);
-      tl.to("#exCap1", { opacity: 0, duration: 0.25, ease: "power1.in" }, 16.93);
-      tl.fromTo("#exCap2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 17.33);
-      tl.fromTo("#exQ", { opacity: 0, scale: 0.2 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 17.73);
-      tl.to("#exQ", { scale: 1.18, duration: 0.5, yoyo: true, repeat: 3, ease: "sine.inOut" }, 18.53);
-      tl.to("#exCap2", { opacity: 0, duration: 0.25, ease: "power1.in" }, 21.93);
-      tl.fromTo("#exCap3", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 22.33);
-      tl.fromTo("#exShield", { opacity: 0, y: -50 }, { opacity: 1, y: 0, duration: 0.7, ease: "bounce.out" }, 22.43);
-      tl.fromTo("#exShieldLine", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 23.33);
-      tl.set("#exQ", { opacity: 0 }, 24.53);
-      tl.fromTo("#exOk", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 24.53);
-      tl.to("#exOk", { scale: 1.12, duration: 0.6, yoyo: true, repeat: 4, ease: "sine.inOut" }, 25.33);
-      tl.to("#exShield", { y: -8, duration: 0.9, yoyo: true, repeat: 3, ease: "sine.inOut" }, 25.33);
-      tl.to("#exPart1", { opacity: 0, duration: 0.25, ease: "power1.in" }, 28.37);
+      tl.fromTo("#exIntroA", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 10.63);
+      tl.fromTo("#exIntroB", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 12.13);
+      tl.to("#exIntroA", { opacity: 0, duration: 0.25, ease: "power1.in" }, 15.82);
+      tl.to("#exIntroB", { opacity: 0, duration: 0.25, ease: "power1.in" }, 15.82);
+      tl.fromTo("#exCap1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 16.02);
+      tl.to("#exCap1", { opacity: 0, duration: 0.25, ease: "power1.in" }, 22.02);
+      tl.fromTo("#ex1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 16.33);
+      tl.fromTo("#ex3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 18.13);
+      tl.fromTo("#ex2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 20.29);
+      tl.fromTo("#exL1", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 20.44);
+      tl.fromTo("#exL2", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 20.74);
+      tl.fromTo("#exCap2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 22.22);
+      tl.fromTo("#exQ", { opacity: 0, scale: 0.2 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 24.4);
+      tl.to("#exQ", { scale: 1.18, duration: 0.5, yoyo: true, repeat: 3, ease: "sine.inOut" }, 25.0);
+      tl.to("#exCap2", { opacity: 0, duration: 0.25, ease: "power1.in" }, 25.53);
+      tl.fromTo("#exCap3", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 25.73);
+      tl.fromTo("#exShield", { opacity: 0, y: -50 }, { opacity: 1, y: 0, duration: 0.7, ease: "bounce.out" }, 27.3);
+      tl.fromTo("#exShieldLine", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 27.9);
+      tl.set("#exQ", { opacity: 0 }, 27.63);
+      tl.fromTo("#exOk", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 27.63);
+      tl.to("#exOk", { scale: 1.12, duration: 0.6, yoyo: true, repeat: 3, ease: "sine.inOut" }, 28.33);
+      tl.to("#exShield", { y: -8, duration: 0.9, yoyo: true, repeat: 2, ease: "sine.inOut" }, 28.33);
+      tl.to("#exPart1", { opacity: 0, duration: 0.25, ease: "power1.in" }, 28.47);
       tl.fromTo("#hd", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 28.67);
-      tl.fromTo("#chipB", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 29.27);
-      tl.fromTo("#chipS", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 30.37);
-      tl.fromTo("#arr1", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 31.37);
-      tl.fromTo("#score", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 31.87);
-      tl.fromTo("#bar", { width: "0%" }, { width: "60%", duration: 1.8, ease: "power2.out" }, 32.67);
-      tl.fromTo("#sc60", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 32.87);
-      tl.fromTo("#scHigh", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 34.57);
-      tl.fromTo("#arr2", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 35.47);
-      tl.fromTo("#gateRef", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 36.17);
-      tl.fromTo("#gateYes", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 37.77);
-      tl.fromTo("#gateNote", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 39.57);
+      tl.fromTo("#chipB", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 30.44);
+      tl.fromTo("#chipS", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 32.06);
+      tl.fromTo("#arr1", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 35.63);
+      tl.fromTo("#score", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 36.86);
+      tl.fromTo("#bar", { width: "0%" }, { width: "60%", duration: 1.6, ease: "power2.out" }, 37.54);
+      tl.fromTo("#sc60", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 37.64);
+      tl.fromTo("#scHigh", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 39.24);
+      tl.fromTo("#gateNote", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 38.39);
+      tl.fromTo("#arr2", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out", transformOrigin: "0 50%" }, 40.28);
+      tl.fromTo("#gateRef", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 41.12);
+      tl.fromTo("#gateYes", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 42.09);
       tl.to("#scEX", { opacity: 0, duration: 0.25, ease: "power1.in" }, 43.91);
       tl.fromTo("#tagW1", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 48.16);
       tl.to("#tagW1", { opacity: 0, duration: 0.2, ease: "power1.in" }, 56.43);
