@@ -8,6 +8,7 @@ import { useWakeWord } from "@/lib/useWakeWord";
 import { Console } from "./Console";
 import { EventLog, LogHeader } from "./EventLog";
 import { Sidebar, type View } from "./Sidebar";
+import { WalletsPanel } from "./WalletsPanel";
 import { VoicePanel } from "./VoicePanel";
 
 // Quick-start commands. Real demo addresses (draining contract, clean address, proxy) are added
@@ -65,6 +66,7 @@ export function AppShell() {
               <EventLog log={air.log} tall />
             </div>
           )}
+          {view === "wallets" && <WalletsPanel onPick={sendTyped} />}
           {view === "targets" && (
             <div className="animate-fade-in-up space-y-6">
               <h2 className="font-serif text-4xl italic">Demo targets</h2>

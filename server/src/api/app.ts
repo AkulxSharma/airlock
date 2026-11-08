@@ -10,6 +10,8 @@ export type AppDeps = {
   handle(req: ReturnType<typeof MessageRequestSchema.parse>): Promise<MessageResponse>;
   bus: StageBus;
   allowedOrigins: string[];
+  /** Agent wallet and demo contract balances for the GUI. Omit to leave the route off. */
+  wallets?(): Promise<unknown>;
 };
 
 export function parseAllowedOrigins(raw: string | undefined): string[] {
@@ -42,6 +44,15 @@ export function createApp(deps: AppDeps) {
   );
 
   app.get("/health", (c) => c.json({ ok: true }));
+
+  app.get("/api/wallets", async (c) => {
+    if (!deps.wallets) return c.json({ error: "not available" }, 404);
+    try {
+      return c.json(await deps.wallets());
+    } catch {
+      return c.json({ error: "could not read balances" }, 502);
+    }
+  });
 
   // The largest legitimate request is a few hundred bytes. Refuse anything big before it is read.
   const tooLarge = bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ error: "request too large" }, 413) });

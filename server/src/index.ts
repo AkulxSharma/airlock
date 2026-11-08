@@ -1,8 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { config } from "dotenv";
-import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";
+import { createPublicClient, fallback, http } from "viem";
+import { mainnet, sepolia } from "viem/chains";
 import { createExplainer, createGeminiAgent, createGeminiClient, describeGeminiError, modelFromEnv, withCooldown } from "./agent/gemini.js";
 import { auditAddress, auditTimeoutFromEnv, readerFromEnv } from "./auditor/chain.js";
 import { createSourcifyFetcher } from "./auditor/source.js";
@@ -11,7 +11,8 @@ import { isAllowed, parseAllowlist } from "./imessage/text.js";
 import { createMessageHandler } from "./api/message.js";
 import { resolveTarget, type EnsClient } from "./api/resolve.js";
 import { createStageBus } from "./api/stream.js";
-import { loadDemoAliases } from "./demo/aliases.js";
+import { loadDemoAliases, loadDemoTargets } from "./demo/aliases.js";
+import { createWalletsService } from "./demo/balances.js";
 import { DEFAULT_TTL_MS, createConfirmStore } from "./gate/confirm.js";
 import { createSepoliaWallet, maxTransferFromEnv, type WalletLike } from "./wallet/send.js";
 
@@ -75,7 +76,19 @@ const handle = createMessageHandler({
   explain: gemini ? createExplainer(gemini) : undefined,
 });
 
-const app = createApp({ handle, bus, allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS) });
+const sepoliaClient = createPublicClient({
+  chain: sepolia,
+  transport: fallback(
+    [env.RPC_URL_SEPOLIA, env.RPC_URL_SEPOLIA_FALLBACK].filter((u): u is string => !!u?.trim()).map((u) => http(u, { timeout: 8_000, retryCount: 1 })),
+  ),
+});
+const wallets = createWalletsService({
+  read: (address) => sepoliaClient.getBalance({ address: address as `0x${string}` }),
+  targets: loadDemoTargets(),
+  agentAddress: wallet?.address,
+});
+
+const app = createApp({ handle, bus, allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS), wallets });
 const port = Number(env.PORT) || 8787;
 serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   console.log(`Airlock server listening on http://127.0.0.1:${port}`);

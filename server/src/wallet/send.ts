@@ -8,6 +8,8 @@ export const DEFAULT_MAX_TRANSFER_ETH = "0.01";
 
 // The only wallet operations the send needs. Tests pass a plain fake.
 export type WalletLike = {
+  /** The public address only (never the key), so the GUI can show the agent wallet's balance. */
+  address?: string;
   getChainId(): Promise<number>;
   sendTransaction(args: { to: `0x${string}`; value: bigint }): Promise<`0x${string}`>;
 };
@@ -71,12 +73,14 @@ export function createSepoliaWallet(env: NodeJS.ProcessEnv): WalletLike {
   const urls = [env.RPC_URL_SEPOLIA ?? "", env.RPC_URL_SEPOLIA_FALLBACK ?? ""].filter((u) => u.trim() !== "");
   if (urls.length === 0) throw new Error("No Sepolia RPC URL configured (RPC_URL_SEPOLIA).");
 
+  const account = privateKeyToAccount(key as `0x${string}`);
   const client = createWalletClient({
-    account: privateKeyToAccount(key as `0x${string}`),
+    account,
     chain: sepolia,
     transport: fallback(urls.map((u) => http(u, { timeout: 8_000, retryCount: 1 }))),
   });
   return {
+    address: account.address,
     getChainId: () => client.getChainId(),
     sendTransaction: ({ to, value }) => client.sendTransaction({ to, value }),
   };
