@@ -34,6 +34,16 @@ export function parseAllowedOrigins(raw: string | undefined): string[] {
   return list;
 }
 
+// An allowed origin may use * as a wildcard for one host label, for example https://*.vercel.app
+// (Vercel gives every deployment its own address). Matching is on the whole origin string.
+export function originAllowed(list: string[], origin: string): boolean {
+  return list.some((o) => {
+    if (!o.includes("*")) return o === origin;
+    const re = new RegExp("^" + o.split("*").map((p) => p.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join("[a-z0-9-]+") + "$", "i");
+    return re.test(origin);
+  });
+}
+
 export function createApp(deps: AppDeps) {
   const app = new Hono();
 
@@ -41,7 +51,7 @@ export function createApp(deps: AppDeps) {
   // Browsers always send Origin on cross-site requests, so an unlisted Origin is refused.
   app.use("*", async (c, next) => {
     const origin = c.req.header("origin");
-    if (origin && !deps.allowedOrigins.includes(origin)) {
+    if (origin && !originAllowed(deps.allowedOrigins, origin)) {
       return c.json({ error: "origin not allowed" }, 403);
     }
     await next();
@@ -49,9 +59,9 @@ export function createApp(deps: AppDeps) {
   app.use(
     "*",
     cors({
-      origin: (origin) => (deps.allowedOrigins.includes(origin) ? origin : null),
+      origin: (origin) => (originAllowed(deps.allowedOrigins, origin) ? origin : null),
       allowMethods: ["GET", "POST", "OPTIONS"],
-      allowHeaders: ["content-type"],
+      allowHeaders: ["content-type", "ngrok-skip-browser-warning"],
     }),
   );
 

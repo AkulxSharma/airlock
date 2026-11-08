@@ -65,3 +65,18 @@ describe("bridge token on a public server", () => {
     expect((await post(app, "imessage:+17165550100")).status).toBe(200);
   });
 });
+
+import { originAllowed } from "../src/api/app.js";
+
+describe("allowed origins with a wildcard", () => {
+  const list = ["http://localhost:3100", "https://*.vercel.app"];
+  it("matches one host label for *, and exact entries exactly", () => {
+    expect(originAllowed(list, "https://airlock-abc123.vercel.app")).toBe(true);
+    expect(originAllowed(list, "http://localhost:3100")).toBe(true);
+    expect(originAllowed(list, "https://evil.example")).toBe(false);
+    expect(originAllowed(list, "https://a.b.vercel.app")).toBe(false); // * is one label, not many
+    expect(originAllowed(list, "https://vercel.app.evil.example")).toBe(false);
+    expect(originAllowed(list, "http://airlock.vercel.app")).toBe(false); // scheme must match
+    expect(originAllowed(list, "https://xvercel.app")).toBe(false);
+  });
+});

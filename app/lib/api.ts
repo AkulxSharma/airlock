@@ -11,7 +11,7 @@ export async function sendMessage(body: { sessionId: string; channel: "gui" | "v
   try {
     res = await fetch(`${API_URL}/api/message`, {
       method: "POST",
-      headers: { "content-type": "application/json" }, // required by the server (415 otherwise)
+      headers: { "content-type": "application/json", "ngrok-skip-browser-warning": "1" }, // content-type is required by the server (415 otherwise); the other skips ngrok's free-plan warning page
       body: JSON.stringify(body),
     });
   } catch {
@@ -23,7 +23,7 @@ export async function sendMessage(body: { sessionId: string; channel: "gui" | "v
 
 export async function checkHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_URL}/health`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}/health`, { cache: "no-store", headers: { "ngrok-skip-browser-warning": "1" } });
     return res.ok;
   } catch {
     return false;

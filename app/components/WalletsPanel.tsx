@@ -17,7 +17,7 @@ export function WalletsPanel({ onPick }: { onPick: (text: string) => void }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/wallets`, { cache: "no-store" });
+      const res = await fetch(`${API_URL}/api/wallets`, { cache: "no-store", headers: { "ngrok-skip-browser-warning": "1" } });
       if (!res.ok) throw new Error(String(res.status));
       setSnap((await res.json()) as Snapshot);
       setError(null);
