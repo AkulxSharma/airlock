@@ -1,6 +1,6 @@
 # Devpost submission text
 
-Paste the paragraph into the "About the project" box on the Devpost submission page (a short heading such as "What it does" above it works well). The same paragraph is on the website under "How we work", with a Copy button.
+Paste the paragraph into the "About the project" box on the Devpost submission page (a short heading such as "What it does" above it works well).
 
 ## Paragraph
 

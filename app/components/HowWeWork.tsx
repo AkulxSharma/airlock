@@ -1,11 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { PipelineDiagram } from "./PipelineDiagram";
-
-// The text judges and readers get. Kept in one place so the page and the copy button never drift apart.
-export const SUBMISSION_PARAGRAPH =
-  "Airlock is a safety check for AI agents that move money. You tell it, by voice, by typing or over iMessage, to send test ETH. Before anything moves, our own auditor reads the destination contract two ways: its bytecode (SELFDESTRUCT, DELEGATECALL, proxies and upgradeable proxies), and, when the source is verified, 16 pattern checks for rug-pull and bug signals such as owner-only sweeps, hidden backdoors that move other people's tokens, reentrancy, tx.origin authorization and honeypot switches. The findings become a risk signal, and a rule in plain code decides: HIGH risk, an error or a timeout is refused, while LOW or MEDIUM asks for a YES within 60 seconds. Gemini only turns speech into a structured request and writes a short explanation that code checks before it is shown. ElevenLabs handles the voice in and out. Everything runs on Sepolia with a per-transfer cap, and we deployed 22 vulnerable and safe demo contracts, verified on Sourcify, so you can try both the refusal and the approval yourself. It is a risk signal, not a guarantee: the source checks are heuristics, and we document what they miss.";
 
 const STEPS = [
   { n: "1", h: "You", s: "voice, iMessage or typing" },
@@ -58,17 +53,6 @@ function Structure() {
 }
 
 export function HowWeWork() {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(SUBMISSION_PARAGRAPH);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard blocked: the text is selectable on screen */
-    }
-  };
-
   return (
     <div className="animate-fade-in-up space-y-10 pb-16">
       <header className="space-y-3">
@@ -155,16 +139,6 @@ export function HowWeWork() {
             <li>A contract with no published source gets a MEDIUM &ldquo;unverified source&rdquo; finding, because only its bytecode could be checked.</li>
             <li className="text-muted-foreground">Everything Airlock says is a risk signal, not a guarantee.</li>
           </ul>
-        </Card>
-      </section>
-
-      <section aria-label="Submission paragraph" className="space-y-4">
-        <div className="flex items-end justify-between">
-          <Label>For the submission</Label>
-          <button onClick={copy} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent">{copied ? "Copied" : "Copy paragraph"}</button>
-        </div>
-        <Card>
-          <p className="max-w-4xl select-all leading-relaxed">{SUBMISSION_PARAGRAPH}</p>
         </Card>
       </section>
     </div>
