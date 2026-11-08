@@ -107,11 +107,13 @@ label(72, 70, "iMessage: text reply", center=True)
 label(48, 72, "Live event log: audit stages stream to the dashboard", center=True)
 
 # ---- render ----
-CW, CHT = 11, 23
-PAD = 28
-img = Image.new("RGB", (COLS * CW + PAD * 2, ROWS * CHT + PAD * 2), "#f3f2f0")
+SCALE = 2 if len(sys.argv) > 2 and sys.argv[2] == "transparent" else 1
+CW, CHT = 11 * SCALE, 23 * SCALE
+PAD = 28 * SCALE
+BG = (0, 0, 0, 0) if SCALE == 2 else "#f3f2f0"
+img = Image.new("RGBA" if SCALE == 2 else "RGB", (COLS * CW + PAD * 2, ROWS * CHT + PAD * 2), BG)
 d = ImageDraw.Draw(img)
-font = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", 18)
+font = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", 18 * SCALE)
 ink = "#1f2d36"
 for y in range(ROWS):
     for x in range(COLS):

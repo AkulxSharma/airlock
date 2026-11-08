@@ -52,11 +52,12 @@ function Structure() {
         <Label>The structure</Label>
         <a href="/airlock-pipeline.png" download="Airlock pipeline.png" className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent">Download the picture</a>
       </div>
-      <Card className="mx-auto w-full max-w-3xl">
+      {/* A transparent picture with no card around it, so it sits on the page like the rest. In dark mode the ink is flipped to light. */}
+      <figure className="mx-auto w-full max-w-3xl">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/airlock-pipeline.png" alt="The Airlock pipeline: voice, text or iMessage input goes through the input router to Gemini, then to five tools (resolve, contract auditor, simulate, send, explain), then to the risk gate, the context builder, Gemini's response and the output router, which answers in the GUI or by iMessage." className="h-auto w-full rounded-lg" />
-        <p className="mt-4 text-center text-xs text-muted-foreground">Drawn from docs/PLAN.md. The model never decides whether money moves; the gate does. Simulate is the one box that was not built.</p>
-      </Card>
+        <img src="/airlock-pipeline.png" alt="The Airlock pipeline: voice, text or iMessage input goes through the input router to Gemini, then to five tools (resolve, contract auditor, simulate, send, explain), then to the risk gate, the context builder, Gemini's response and the output router, which answers in the GUI or by iMessage." className="h-auto w-full [.dark_&]:invert" />
+        <figcaption className="mt-4 text-center text-xs text-muted-foreground">Drawn from docs/PLAN.md. The model never decides whether money moves; the gate does. Simulate is the one box that was not built.</figcaption>
+      </figure>
     </section>
   );
 }
