@@ -67,7 +67,7 @@ export const NAMES = ["Airlock", "Hey Airlock", "ElevenLabs", "vitalik"];
  * The demo contract names (spoken as "drainer dot demo", written drainer.demo). A test in server/test
  * checks this list matches server/src/demo/demo-targets.json, so a new demo target cannot be forgotten.
  */
-export const DEMO_NAMES = ["drainer", "clean", "proxy", "clone", "weth", "rugvault", "reentrancy", "honeypot", "selfkill", "vault", "origin", "unchecked", "init", "delegate", "lottery", "strictbalance", "dos", "replay", "backdoor", "approval", "math", "oracle"];
+export const DEMO_NAMES = ["drainer", "clean", "proxy", "clone", "weth", "rugvault", "reentrancy", "honeypot", "selfkill", "vault", "origin", "unchecked", "init", "delegate", "lottery", "strictbalance", "dos", "replay", "backdoor", "approval", "math", "oracle", "akul"];
 
 /**
  * Words sent to ElevenLabs Scribe as keyterms: only the rare ones, because common words like "yes"
@@ -76,12 +76,12 @@ export const DEMO_NAMES = ["drainer", "clean", "proxy", "clone", "weth", "rugvau
  * a test checks the two are identical.)
  */
 export const KEYTERMS = [
-  "Airlock", "Hey Airlock", "vitalik", "Sepolia", "testnet", "ETH", "ENS", "gwei", "wei", "Etherscan",
+  "Airlock", "Hey Airlock", "vitalik", "Sepolia", "testnet", "ETH", "ENS", "gwei", "Etherscan",
   "Sourcify", "selfdestruct", "delegatecall", "callcode", "bytecode", "reentrancy", "honeypot", "upgradeable",
   "proxy", "blacklist", "tx origin", "minimal proxy", "unverified", "mainnet", "faucet", "nonce",
   "ElevenLabs", "dot eth", "dot demo",
   // demo contract names; proxy, reentrancy and honeypot are already listed above
-  "drainer", "clean", "clone", "weth", "rugvault", "selfkill", "vault", "origin", "unchecked", "init", "delegate", "lottery", "strictbalance", "dos", "replay", "backdoor", "approval", "math", "oracle",
+  "drainer", "clean", "clone", "weth", "rugvault", "selfkill", "vault", "origin", "unchecked", "init", "delegate", "lottery", "strictbalance", "dos", "replay", "backdoor", "approval", "math", "oracle", "akul",
 ];
 
 /** A compact text block for the Gemini system prompt, so the model matches related words. */

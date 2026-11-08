@@ -16,7 +16,7 @@ export type WalletLike = {
 
 export type SendResult =
   | { ok: true; hash: `0x${string}` }
-  | { ok: false; reason: "invalid-address" | "invalid-amount" | "over-cap" | "wrong-chain" | "send-failed" };
+  | { ok: false; reason: "invalid-address" | "invalid-amount" | "over-cap" | "wrong-chain" | "reverted" | "send-failed" };
 
 // Plain decimal, up to 18 places. Rejects "1e3", "-1", "0x10", " 1", "abc", "".
 const AMOUNT_RE = /^\d+(\.\d{1,18})?$/;
@@ -53,8 +53,10 @@ export async function sendTestnet(
     if ((await wallet.getChainId()) !== SEPOLIA_CHAIN_ID) return { ok: false, reason: "wrong-chain" };
     const hash = await wallet.sendTransaction({ to: transfer.to as `0x${string}`, value });
     return { ok: true, hash };
-  } catch {
-    return { ok: false, reason: "send-failed" };
+  } catch (err) {
+    // The network checks a send before signing it. A contract with no way to receive plain ETH makes that check
+    // fail with "reverted", and nothing is sent or spent. That is not a network outage, so say so.
+    return { ok: false, reason: err instanceof Error && /revert/i.test(err.message) ? "reverted" : "send-failed" };
   }
 }
 

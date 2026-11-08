@@ -12,9 +12,9 @@ const ensNeverCalled: EnsClient = {
 describe("demo-targets.json", () => {
   const targets = loadDemoTargets();
 
-  it("lists the twenty-two targets with valid checksummed addresses and an expected verdict", () => {
+  it("lists the twenty-three targets with valid checksummed addresses and an expected verdict", () => {
     expect(Object.keys(targets).sort()).toEqual(
-      ["approval.demo", "backdoor.demo", "clean.demo", "clone.demo", "delegate.demo", "dos.demo", "drainer.demo", "honeypot.demo", "init.demo", "lottery.demo", "math.demo", "oracle.demo", "origin.demo", "proxy.demo", "reentrancy.demo", "replay.demo", "rugvault.demo", "selfkill.demo", "strictbalance.demo", "unchecked.demo", "vault.demo", "weth.demo"],
+      ["akul.demo", "approval.demo", "backdoor.demo", "clean.demo", "clone.demo", "delegate.demo", "dos.demo", "drainer.demo", "honeypot.demo", "init.demo", "lottery.demo", "math.demo", "oracle.demo", "origin.demo", "proxy.demo", "reentrancy.demo", "replay.demo", "rugvault.demo", "selfkill.demo", "strictbalance.demo", "unchecked.demo", "vault.demo", "weth.demo"],
     );
     for (const t of Object.values(targets)) {
       expect(isAddress(t.address, { strict: true })).toBe(true);
@@ -35,8 +35,12 @@ describe("demo-targets.json", () => {
     expect(targets["honeypot.demo"].expected).toBe("MEDIUM");
   });
 
+  it("akul.demo is a LOW alias of weth.demo, so it accepts a plain ETH send and shares its address", () => {
+    expect(targets["akul.demo"]).toMatchObject({ expected: "LOW", aliasOf: "weth.demo", address: targets["weth.demo"].address });
+  });
+
   it("has no duplicate addresses", () => {
-    const addrs = Object.values(targets).map((t) => t.address.toLowerCase());
+    const addrs = Object.values(targets).filter((t) => !t.aliasOf).map((t) => t.address.toLowerCase()); // an alias shares its original's address on purpose
     expect(new Set(addrs).size).toBe(addrs.length);
   });
 });

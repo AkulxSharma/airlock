@@ -145,6 +145,12 @@
       "why": "flash-loan price manipulation: NOT detected, a known gap",
       "contract": "SpotOracleLender",
       "verified": true
+    },
+    "akul.demo": {
+      "address": "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9",
+      "expected": "LOW",
+      "why": "alias of weth.demo: a safe address that accepts a plain test-ETH send",
+      "aliasOf": "weth.demo"
     }
   }
 }

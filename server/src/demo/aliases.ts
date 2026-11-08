@@ -4,7 +4,7 @@ import type { Aliases } from "../api/resolve.js";
 
 const FILE = fileURLToPath(new URL("./demo-targets.json", import.meta.url));
 
-export type DemoTarget = { address: string; expected: "LOW" | "MEDIUM" | "HIGH"; why: string };
+export type DemoTarget = { address: string; expected: "LOW" | "MEDIUM" | "HIGH"; why: string; aliasOf?: string };
 
 export function loadDemoTargets(file: string = FILE): Record<string, DemoTarget> {
   if (!existsSync(file)) return {};

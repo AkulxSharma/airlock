@@ -13,6 +13,7 @@ Type or paste these names instead of addresses. They end in `.demo` so they can 
 | `clone.demo` | EIP-1167 minimal proxy pointing at the Sepolia WETH contract | MEDIUM, asks to confirm | Minimal proxy, real logic lives elsewhere, no verified source |
 | `clean.demo` | Accepts ETH and does nothing else | MEDIUM, asks to confirm | Its bytecode is clean, but it has no verified source (`unverified-source`) |
 | `weth.demo` | The public Sepolia WETH9 contract, verified on Sourcify | LOW, asks to confirm | Bytecode and source checks flag nothing |
+| `akul.demo` | an alias of `weth.demo`: a safe address that accepts a plain test-ETH send | LOW, asks to confirm | nothing flagged; use it to send money to |
 | `rugvault.demo` | Solidity vault; the owner can send the whole pool to themselves | HIGH, refused | owner-sweep, found in the verified source |
 | `reentrancy.demo` | Solidity bank that sends ether before zeroing the balance | MEDIUM, asks to confirm | reentrancy-risk |
 | `honeypot.demo` | Solidity token with blacklist, sell-fee and trading switches | MEDIUM, asks to confirm | blacklist-switch, adjustable-fee, trading-switch |
@@ -71,3 +72,6 @@ Keep the whole run under three minutes. Each scene has the exact thing to say or
 - Server running, agent wallet funded (check the balance on Sepolia), and the GUI pointed at the server.
 - Do the HIGH, MEDIUM and LOW runs once beforehand to warm up the connection, and record a backup take.
 - Each confirmation expires after 60 seconds. Say "yes" or "no" inside that window.
+
+
+**Which targets can receive a plain ETH send.** A send is a plain value transfer, and a contract with no way to receive plain ETH rejects it. Checked on 2026-11-08 with `server/scripts/check-eth-accept.ts` (read-only): only `drainer`, `clean`, `proxy`, `clone`, `weth`, `akul` and `origin` accept it. The other Solidity demos (`rugvault`, `vault`, `reentrancy`, `honeypot` and so on) reject it. Airlock now tells the user that the contract rejects it, with no gas spent, instead of "the send failed on the network". For a demo that actually sends money, use `akul.demo`.

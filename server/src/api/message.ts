@@ -52,6 +52,7 @@ const SEND_FAILURE: Record<string, string> = {
   "invalid-amount": "The send was stopped: the amount is not valid.",
   "over-cap": "The send was stopped: the amount is above the per-transfer cap.",
   "wrong-chain": "The send was stopped: the network is not Sepolia.",
+  reverted: "That address cannot receive a plain ETH transfer (the contract rejects it), so nothing was sent and no gas was spent. Try a wallet that accepts ETH, such as akul.demo.",
   "send-failed": "The send failed on the network. Nothing was confirmed. Try again.",
 };
 

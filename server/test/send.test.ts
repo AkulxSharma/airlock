@@ -80,6 +80,11 @@ describe("sendTestnet", () => {
     expect(await sendTestnet(consumed("0.001"), wallet)).toEqual({ ok: false, reason: "send-failed" });
   });
 
+  it("says reverted, not a network failure, when the contract rejects a plain ETH transfer", async () => {
+    const wallet = { getChainId: async () => 11155111, sendTransaction: async () => { throw new Error("Execution reverted for an unknown reason."); } };
+    expect(await sendTestnet(consumed("0.001"), wallet)).toEqual({ ok: false, reason: "reverted" });
+  });
+
   it("returns send-failed when reading the chain id throws", async () => {
     const wallet: WalletLike = {
       getChainId: async () => {
