@@ -1,0 +1,19 @@
+[Unit]
+Description=Airlock server (audits, gate, testnet send)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=airlock
+WorkingDirectory=/opt/airlock/server
+ExecStart=/usr/bin/npx tsx src/index.ts
+Restart=always
+RestartSec=3
+# Hardening: the server needs no special privileges.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/airlock
+
+[Install]
+WantedBy=multi-user.target

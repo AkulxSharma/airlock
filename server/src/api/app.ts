@@ -4,7 +4,8 @@ import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { MessageRequestSchema } from "../types.js";
 import type { MessageResponse } from "../types.js";
-import type { ActivityBus } from "./activity.js";
+import { timingSafeEqual } from "node:crypto";
+import { isIMessageSession, type ActivityBus } from "./activity.js";
 import type { StageBus } from "./stream.js";
 
 export type AppDeps = {
@@ -15,6 +16,14 @@ export type AppDeps = {
   wallets?(): Promise<unknown>;
   /** Live feed of iMessage activity for the website. Omit to leave the route off. */
   activity?: ActivityBus;
+  /** When set, a request for an "imessage:" session must carry it in the x-airlock-bridge header. On a public server this keeps strangers from posing as the iMessage bridge (forged confirmations, fake website feed). */
+  bridgeToken?: string;
+};
+
+const sameToken = (a: string, b: string): boolean => {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
 };
 
 export function parseAllowedOrigins(raw: string | undefined): string[] {
@@ -88,6 +97,9 @@ export function createApp(deps: AppDeps) {
     }
     const parsed = MessageRequestSchema.safeParse(body);
     if (!parsed.success) return c.json({ error: "invalid request" }, 400);
+    if (deps.bridgeToken && isIMessageSession(parsed.data.sessionId) && !sameToken(c.req.header("x-airlock-bridge") ?? "", deps.bridgeToken)) {
+      return c.json({ error: "iMessage sessions are only for the bridge" }, 403);
+    }
     return c.json(await deps.handle(parsed.data));
   });
 

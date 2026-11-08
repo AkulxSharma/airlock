@@ -1,0 +1,17 @@
+# Caddy gets and renews the HTTPS certificate for {{HOST}} by itself.
+{{HOST}} {
+	encode gzip
+
+	# These paths belong to the Airlock server. Everything else is the GUI (including its own
+	# /api/speak and /api/transcribe voice routes).
+	@server path /api/message /api/stream /api/wallets /api/activity /health
+	handle @server {
+		reverse_proxy 127.0.0.1:8787 {
+			# Live streams must not be buffered.
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
+}

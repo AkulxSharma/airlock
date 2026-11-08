@@ -41,3 +41,27 @@ describe("iMessage activity feed", () => {
     expect((await createApp({ handle, bus: stages, allowedOrigins: [] }).request("/api/activity")).status).toBe(404);
   });
 });
+
+describe("bridge token on a public server", () => {
+  const handle = async () => ({ reply: "hi", stages: [], needsConfirm: false });
+  const stages = { publish() {}, subscribe: () => () => {} };
+  const post = (app: ReturnType<typeof createApp>, sessionId: string, token?: string) =>
+    app.request("/api/message", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(token ? { "x-airlock-bridge": token } : {}) },
+      body: JSON.stringify({ sessionId, channel: "imessage", text: "hello" }),
+    });
+
+  it("an imessage: session needs the token; GUI sessions do not", async () => {
+    const app = createApp({ handle, bus: stages, allowedOrigins: [], bridgeToken: "s3cret-token" });
+    expect((await post(app, "imessage:+17165550100")).status).toBe(403);
+    expect((await post(app, "imessage:+17165550100", "wrong")).status).toBe(403);
+    expect((await post(app, "imessage:+17165550100", "s3cret-token")).status).toBe(200);
+    expect((await post(app, "gui-session-1")).status).toBe(200);
+  });
+
+  it("with no token configured (local use) nothing changes", async () => {
+    const app = createApp({ handle, bus: stages, allowedOrigins: [] });
+    expect((await post(app, "imessage:+17165550100")).status).toBe(200);
+  });
+});

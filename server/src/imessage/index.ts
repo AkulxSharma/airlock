@@ -38,7 +38,13 @@ try {
   process.exit(1);
 }
 
-const api = createHttpApi(`http://127.0.0.1:${Number(env.PORT) || 8787}`);
+// Local server by default. For a server on Vultr set AIRLOCK_SERVER_URL (https://...) and the shared AIRLOCK_BRIDGE_TOKEN.
+const api = createHttpApi(
+  env.AIRLOCK_SERVER_URL?.trim().replace(/\/$/, "") || `http://127.0.0.1:${Number(env.PORT) || 8787}`,
+  fetch,
+  45_000,
+  env.AIRLOCK_BRIDGE_TOKEN?.trim() || undefined,
+);
 const realSend = createOsascriptSender();
 const send = dryRun
   ? async (handle: string, text: string) => console.log(`[dry run] would reply (${text.length} characters):\n${text}\n`)

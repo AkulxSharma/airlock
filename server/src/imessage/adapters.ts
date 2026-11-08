@@ -183,11 +183,11 @@ export function createFileCursor(path: string): CursorStore {
 
 // --- talks to the local Airlock server ---------------------------------------------------
 
-export function createHttpApi(baseUrl: string, fetchImpl: typeof fetch = fetch, timeoutMs = 45_000): AirlockApi {
+export function createHttpApi(baseUrl: string, fetchImpl: typeof fetch = fetch, timeoutMs = 45_000, bridgeToken?: string): AirlockApi {
   return async (sessionId, text, channel = "imessage") => {
     const res = await fetchImpl(`${baseUrl}/api/message`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...(bridgeToken ? { "x-airlock-bridge": bridgeToken } : {}) },
       body: JSON.stringify({ sessionId, channel, text }),
       signal: AbortSignal.timeout(timeoutMs),
     });

@@ -103,7 +103,7 @@ const wallets = createWalletsService({
   agentAddress: wallet?.address,
 });
 
-const app = createApp({ handle, bus, allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS), wallets, activity });
+const app = createApp({ handle, bus, allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS), wallets, activity, bridgeToken: env.AIRLOCK_BRIDGE_TOKEN?.trim() || undefined });
 const port = Number(env.PORT) || 8787;
 serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   console.log(`Airlock server listening on http://127.0.0.1:${port}`);
