@@ -12,8 +12,11 @@ const ensNeverCalled: EnsClient = {
 describe("demo-targets.json", () => {
   const targets = loadDemoTargets();
 
-  it("lists the five targets with valid checksummed addresses and an expected verdict", () => {
-    expect(Object.keys(targets).sort()).toEqual(["clean.demo", "clone.demo", "drainer.demo", "proxy.demo", "weth.demo"]);
+  it("lists the ten targets with valid checksummed addresses and an expected verdict", () => {
+    expect(Object.keys(targets).sort()).toEqual([
+      "clean.demo", "clone.demo", "drainer.demo", "honeypot.demo", "proxy.demo",
+      "reentrancy.demo", "rugvault.demo", "selfkill.demo", "vault.demo", "weth.demo",
+    ]);
     for (const t of Object.values(targets)) {
       expect(isAddress(t.address, { strict: true })).toBe(true);
       expect(["LOW", "MEDIUM", "HIGH"]).toContain(t.expected);
@@ -26,6 +29,11 @@ describe("demo-targets.json", () => {
     expect(targets["weth.demo"].expected).toBe("LOW");
     expect(targets["proxy.demo"].expected).toBe("MEDIUM");
     expect(targets["clone.demo"].expected).toBe("MEDIUM");
+    expect(targets["rugvault.demo"].expected).toBe("HIGH");
+    expect(targets["selfkill.demo"].expected).toBe("HIGH");
+    expect(targets["vault.demo"].expected).toBe("LOW");
+    expect(targets["reentrancy.demo"].expected).toBe("MEDIUM");
+    expect(targets["honeypot.demo"].expected).toBe("MEDIUM");
   });
 
   it("has no duplicate addresses", () => {
