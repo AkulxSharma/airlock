@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;1,500&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
     <style>
-      :root { --ink: #1a1a1a; --paper: #f5f3ef; --muted: #b9b5ae; --line: #3a3a3a; --low: #4ade80; --medium: #fbbf24; --high: #f87171;
+      :root { --ink: #1a1a1a; --paper: #f5f3ef; --muted: #b9b5ae; --line: #3a3a3a; --card: #232323; --low: #4ade80; --medium: #fbbf24; --high: #f87171; --blue: #0a84ff;
         --font-display: "Playfair Display", Georgia, serif; --font-body: "Geist", system-ui, sans-serif; --font-mono: "Geist Mono", ui-monospace, monospace; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--ink); }
@@ -16,39 +16,85 @@
       .scene { position: absolute; inset: 0; width: 1920px; height: 1080px; }
       .abs { position: absolute; }
       .center { position: absolute; left: 0; right: 0; text-align: center; }
-      .vid { position: absolute; object-fit: cover; }
-      .frame { position: absolute; overflow: hidden; border: 3px solid var(--line); background: #000; }
+      .vid { position: absolute; object-fit: cover; z-index: 2; }
+      .frame { position: absolute; overflow: hidden; border: 3px solid var(--line); background: #000; border-radius: 24px; }
+      .mono { font-family: var(--font-mono); }
       .label { font-family: var(--font-mono); font-size: 30px; letter-spacing: 0.14em; color: var(--paper); }
-      .desc { font-size: 30px; color: var(--muted); line-height: 1.25; }
-      .cap { font-family: var(--font-display); font-size: 46px; line-height: 1.15; opacity: 0; }
-      .cap b { font-family: var(--font-mono); font-weight: 500; font-size: 40px; color: var(--paper); }
-      .tag { font-family: var(--font-mono); font-size: 40px; letter-spacing: 0.12em; }
+      .card { position: absolute; background: var(--card); border: 3px solid var(--line); border-radius: 30px; padding: 30px 34px; }
+      .card .k { font-family: var(--font-mono); font-size: 28px; color: var(--muted); letter-spacing: 0.1em; }
+      .card .h { font-family: var(--font-display); font-size: 62px; line-height: 1.05; margin-top: 10px; }
+      .card .s { font-size: 30px; color: var(--muted); margin-top: 12px; line-height: 1.2; }
+      .line { position: absolute; height: 6px; background: #8a8780; border-radius: 3px; }
+      #ex1 .h, #ex2 .h, #ex3 .h { font-size: 50px; }
+      #ex1 .s, #ex2 .s, #ex3 .s { font-size: 28px; }
+      .glyph { position: absolute; font-size: 64px; color: var(--muted); }
+      .cap { font-family: var(--font-display); font-size: 58px; line-height: 1.15; }
 
+      /* title */
       #t0 { top: 250px; font-family: var(--font-mono); font-size: 30px; letter-spacing: 0.3em; color: var(--muted); }
       #t1 { top: 360px; font-family: var(--font-display); font-style: italic; font-size: 150px; line-height: 1.05; }
       #t2 { top: 560px; font-size: 48px; color: var(--muted); opacity: 0; }
 
-      #lblPhone { left: 90px; top: 62px; } #dscPhone { left: 90px; top: 108px; width: 420px; }
-      #lblSite { left: 600px; top: 62px; } #dscSite { left: 600px; top: 108px; width: 1200px; }
-      #phoneFrame { left: 90px; top: 170px; width: 396px; height: 860px; border-radius: 44px; }
-      #siteFrame { left: 560px; top: 250px; width: 1286px; height: 700px; border-radius: 22px; }
-      .capS { left: 560px; width: 1286px; top: 972px; }
+      /* pop bubble */
+      #phLabel { left: 90px; top: 250px; }
+      #bub { left: 90px; top: 360px; width: 500px; background: var(--blue); color: #fff; border-radius: 48px 48px 48px 12px; padding: 40px 50px; font-size: 58px; font-weight: 500; line-height: 1.15; transform-origin: 0% 100%; }
+      #deliv { left: 90px; top: 760px; width: 500px; text-align: right; font-size: 30px; color: var(--muted); }
+      #bub2 { left: 330px; top: 600px; width: 260px; background: var(--blue); color: #fff; border-radius: 48px 48px 12px 48px; padding: 28px 50px; font-size: 58px; font-weight: 500; text-align: center; transform-origin: 100% 100%; }
+      #pulse { left: 600px; top: 500px; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 40px var(--blue); opacity: 0; }
+      #siteLabel { left: 660px; top: 120px; }
+      #zoomFrame { left: 640px; top: 180px; width: 1240px; height: 700px; }
+      #zoomNote { left: 640px; top: 905px; width: 1240px; font-family: var(--font-display); font-size: 52px; }
 
+      /* explainer part 1 */
+      #ex1 { left: 130px; top: 370px; width: 400px; height: 270px; opacity: 0; }
+      #ex2 { left: 760px; top: 370px; width: 400px; height: 270px; opacity: 0; }
+      #ex3 { left: 1390px; top: 370px; width: 400px; height: 270px; opacity: 0; }
+      #exL1 { left: 540px; top: 503px; width: 190px; }
+      #exL2 { left: 1170px; top: 503px; width: 190px; }
+      #exA1 { left: 704px; top: 472px; opacity: 0; }
+      #exA2 { left: 1334px; top: 472px; opacity: 0; }
+      #exQ { left: 1090px; top: 346px; width: 96px; height: 96px; border-radius: 50%; background: var(--high); color: var(--ink); font-family: var(--font-mono); font-size: 64px; font-weight: 600; text-align: center; line-height: 96px; opacity: 0; }
+      #exOk { left: 1090px; top: 346px; width: 96px; height: 96px; border-radius: 50%; background: var(--low); color: var(--ink); font-family: var(--font-mono); font-size: 56px; font-weight: 600; text-align: center; line-height: 96px; opacity: 0; }
+      #exShield { left: 760px; top: 120px; width: 400px; height: 150px; text-align: center; padding: 34px 0; border-color: var(--paper); opacity: 0; }
+      #exShield .h { font-style: italic; font-size: 64px; margin-top: 0; }
+      #exShieldLine { left: 957px; top: 270px; width: 6px; height: 120px; background: var(--paper); opacity: 0; }
+      .exCap { left: 130px; top: 760px; width: 1660px; opacity: 0; }
+
+      /* explainer part 2 */
+      #hd { left: 120px; top: 80px; font-family: var(--font-display); font-style: italic; font-size: 88px; opacity: 0; }
+      #chipB { left: 120px; top: 290px; width: 440px; height: 200px; opacity: 0; }
+      #chipS { left: 120px; top: 540px; width: 440px; height: 200px; opacity: 0; }
+      #arr1 { left: 585px; top: 517px; width: 120px; }
+      #score { left: 720px; top: 330px; width: 480px; height: 360px; opacity: 0; }
+      #track { left: 760px; top: 520px; width: 400px; height: 28px; background: #3a3a3a; border-radius: 14px; opacity: 0; }
+      #bar { left: 760px; top: 520px; width: 0; height: 28px; background: var(--high); border-radius: 14px; }
+      #sc60 { left: 760px; top: 436px; font-family: var(--font-mono); font-size: 46px; opacity: 0; }
+      #scHigh { left: 760px; top: 575px; font-family: var(--font-display); font-size: 96px; color: var(--high); opacity: 0; }
+      #arr2 { left: 1225px; top: 517px; width: 110px; }
+      #gateRef { left: 1350px; top: 300px; width: 480px; height: 190px; border-color: var(--high); opacity: 0; }
+      #gateRef .h { color: var(--high); }
+      #gateYes { left: 1350px; top: 540px; width: 480px; height: 190px; border-color: var(--medium); opacity: 0; }
+      #gateYes .h { color: var(--medium); }
+      #gateNote { top: 850px; font-family: var(--font-display); font-size: 62px; opacity: 0; }
+
+      /* walkthrough */
       #walkFrame { left: 160px; top: 38px; width: 1600px; height: 1004px; border-radius: 22px; }
-      .capW { left: 210px; width: 1500px; top: 985px; }
-      .tagL { left: 210px; top: 62px; } .tagR { left: 210px; width: 1500px; top: 70px; text-align: right; font-family: var(--font-mono); font-size: 34px; color: var(--muted); }
+      .wtag { position: absolute; right: 190px; top: 68px; z-index: 5; padding: 14px 28px; border-radius: 16px; font-family: var(--font-mono); font-size: 34px; letter-spacing: 0.1em; opacity: 0; }
+      #tagW1 { background: #3a1414; color: var(--high); border: 3px solid var(--high); }
+      #tagW2 { background: #14301c; color: var(--low); border: 3px solid var(--low); }
+      #tagW3 { background: #1c1c1c; color: var(--paper); border: 3px solid var(--paper); }
+      #tagW4 { background: #1c1c1c; color: var(--paper); border: 3px solid var(--paper); }
 
-      .hTitle { left: 160px; top: 110px; font-family: var(--font-display); font-style: italic; font-size: 96px; }
-      .node { position: absolute; top: 330px; width: 300px; height: 300px; border: 3px solid var(--line); border-radius: 28px; padding: 30px 26px; opacity: 0; background: #202020; }
-      .node .n { font-family: var(--font-mono); font-size: 30px; color: var(--muted); }
-      .node .h { font-family: var(--font-display); font-size: 60px; margin-top: 14px; line-height: 1.05; }
-      .node .s { font-size: 32px; color: var(--muted); margin-top: 14px; line-height: 1.2; }
-      .arrow { position: absolute; top: 450px; font-size: 56px; color: var(--muted); opacity: 0; }
-      #hLine { top: 760px; font-family: var(--font-display); font-size: 62px; line-height: 1.15; opacity: 0; padding: 0 140px; }
+      /* rules */
+      #ruTitle { left: 160px; top: 110px; font-family: var(--font-display); font-style: italic; font-size: 100px; opacity: 0; }
+      .rc { top: 330px; width: 520px; height: 400px; opacity: 0; }
+      #rc1 { left: 160px; border-color: var(--high); } #rc1 .k { color: var(--high); }
+      #rc2 { left: 700px; border-color: var(--medium); } #rc2 .k { color: var(--medium); }
+      #rc3 { left: 1240px; border-color: var(--low); } #rc3 .k { color: var(--low); }
+      .rc .h { font-size: 78px; margin-top: 28px; }
+      #ruNote { top: 840px; font-family: var(--font-display); font-size: 66px; opacity: 0; }
 
-      .rule { position: absolute; left: 160px; width: 1600px; font-family: var(--font-display); font-size: 70px; line-height: 1.12; opacity: 0; }
-      .rule i { font-family: var(--font-mono); font-style: normal; font-size: 44px; letter-spacing: 0.1em; margin-right: 26px; }
-
+      /* outro */
       #o1 { top: 330px; font-family: var(--font-display); font-style: italic; font-size: 120px; opacity: 0; }
       #o2 { top: 500px; font-family: var(--font-display); font-size: 100px; line-height: 1.12; opacity: 0; }
       #o3 { top: 800px; font-family: var(--font-mono); font-size: 52px; opacity: 0; }
@@ -56,83 +102,180 @@
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="116.88" data-width="1920" data-height="1080">
+    <div id="root" data-composition-id="main" data-start="0" data-duration="108.7" data-width="1920" data-height="1080">
 
-      <section id="sc0" class="scene clip" data-start="0" data-duration="2.73" data-track-index="0">
+      <section id="sc0" class="scene clip" data-start="0" data-duration="3.0" data-track-index="0">
         <div id="t0" class="center">AIRLOCK</div>
         <div id="t1" class="center">Text it. Watch it land.</div>
-        <div id="t2" class="center">iMessage left. Website right. Live.</div>
+        <div id="t2" class="center">A firewall for AI agents that move money.</div>
       </section>
 
-      <section id="scMain" class="scene clip" data-start="2.73" data-duration="18.55" data-track-index="0">
-        <div id="lblPhone" class="abs label">IMESSAGE</div>
-        <div id="dscPhone" class="abs desc">Your text and Airlock's reply.</div>
-        <div id="lblSite" class="abs label">AIRLOCK.INK</div>
-        <div id="dscSite" class="abs desc">The same messages, the audit stages and the verdict, as they happen.</div>
-        <div id="phoneFrame" class="frame"></div>
-        <div id="siteFrame" class="frame"></div>
-        <div id="capA" class="abs cap capS">1 &nbsp;Text <b>“Hey Airlock”</b>. It lands on the website.</div>
-        <div id="capB" class="abs cap capS">2 &nbsp;<b>“Send 0.00001 to akul.demo”</b>: audited, rated LOW.</div>
-        <div id="capC" class="abs cap capS">3 &nbsp;Reply <b>YES</b>: sent, and the site shows it.</div>
+      <section id="scPS" class="scene clip" data-start="3.0" data-duration="11.0" data-track-index="0">
+        <div id="phLabel" class="abs label">IMESSAGE</div>
+        <div id="bub" class="abs">Send 0.00001<br />to akul.demo</div>
+        <div id="bub2" class="abs">Yes</div>
+        <div id="deliv" class="abs">Delivered</div>
+        <div id="pulse" class="abs"></div>
+        <div id="siteLabel" class="abs label">AIRLOCK.INK</div>
+        <div id="zoomFrame" class="frame">
+        </div>
+        <div id="zoomNote" class="abs" style="opacity:0">The same message, live on the website.</div>
       </section>
 
-      <section id="scWalk" class="scene clip" data-start="21.28" data-duration="92.6" data-track-index="0">
+      <section id="scEX" class="scene clip" data-start="14.0" data-duration="34.4" data-track-index="0">
+        <div id="exPart1" class="scene">
+          <div id="ex1" class="card"><div class="k">1</div><div class="h">AI agent</div><div class="s">sends the money</div></div>
+          <div id="exL1" class="line"></div><div id="exA1" class="glyph">→</div>
+          <div id="ex2" class="card"><div class="k">2</div><div class="h">Smart contract</div><div class="s">money passes through</div></div>
+          <div id="exL2" class="line"></div><div id="exA2" class="glyph">→</div>
+          <div id="ex3" class="card"><div class="k">3</div><div class="h">Other wallet</div><div class="s">receives it</div></div>
+          <div id="exQ" class="abs">?</div>
+          <div id="exOk" class="abs">✓</div>
+          <div id="exShield" class="card"><div class="h">Airlock</div></div>
+          <div id="exShieldLine" class="abs"></div>
+          <div id="exCap1" class="abs cap exCap">An AI agent moves money through a smart contract.</div>
+          <div id="exCap2" class="abs cap exCap">Sometimes that contract is vulnerable.</div>
+          <div id="exCap3" class="abs cap exCap">Airlock checks it first.</div>
+        </div>
+
+        <div id="hd" class="abs">How Airlock decides</div>
+        <div id="chipB" class="card"><div class="k">LAYER 1</div><div class="h">Bytecode</div><div class="s">the compiled code</div></div>
+        <div id="chipS" class="card"><div class="k">LAYER 2</div><div class="h">Source</div><div class="s">the verified code</div></div>
+        <div id="arr1" class="line"></div>
+        <div id="score" class="card"><div class="k">RISK SCORE</div></div>
+        <div id="track" class="abs"></div><div id="bar" class="abs"></div>
+        <div id="sc60" class="abs">60 / 100</div>
+        <div id="scHigh" class="abs">HIGH</div>
+        <div id="arr2" class="line"></div>
+        <div id="gateRef" class="card"><div class="h">Refused</div><div class="s">HIGH, an error or a timeout</div></div>
+        <div id="gateYes" class="card"><div class="h">Asks for YES</div><div class="s">LOW or MEDIUM</div></div>
+        <div id="gateNote" class="center">Plain code decides. Never the AI.</div>
+      </section>
+
+      <section id="scWalk" class="scene clip" data-start="48.4" data-duration="47.0" data-track-index="0">
         <div id="walkFrame" class="frame"></div>
+        <div id="tagW1" class="wtag">REFUSED · HIGH</div>
+        <div id="tagW2" class="wtag">SAFER WALLET · ASKS FOR YES</div>
+        <div id="tagW3" class="wtag">THE REAL TRANSACTION</div>
+        <div id="tagW4" class="wtag">ALL DEMO WALLETS</div>
       </section>
 
-      <section id="sc5" class="scene clip" data-start="113.88" data-duration="3.0" data-track-index="0">
+      <section id="scRU" class="scene clip" data-start="95.4" data-duration="9.8" data-track-index="0">
+        <div id="ruTitle" class="abs">The rules</div>
+        <div id="rc1" class="card rc"><div class="k">HIGH RISK, AN ERROR OR A TIMEOUT</div><div class="h">Refused</div></div>
+        <div id="rc2" class="card rc"><div class="k">LOW OR MEDIUM</div><div class="h">Asks for YES</div><div class="s">within 60 seconds</div></div>
+        <div id="rc3" class="card rc"><div class="k">ALWAYS</div><div class="h">Testnet only</div><div class="s">Sepolia, with a cap on every transfer</div></div>
+        <div id="ruNote" class="center">A risk signal, not a guarantee.</div>
+      </section>
+
+      <section id="sc5" class="scene clip" data-start="105.2" data-duration="3.5" data-track-index="0">
         <div id="o1" class="center">Airlock</div>
         <div id="o2" class="center">Say it. Airlock checks it.<br />Then it moves.</div>
         <div id="o3" class="center">airlock.ink</div>
         <div id="o4" class="center">Sepolia testnet only. A risk signal, not a guarantee.</div>
       </section>
 
-            <video id="phA" class="clip vid" data-start="2.73" data-duration="5.46" data-media-start="14.4" data-has-audio="true" data-track-index="1" src="assets/media/phone.mp4" playsinline></video>
-      <video id="siA" class="clip vid" data-start="2.73" data-duration="5.46" data-media-start="16.6" data-track-index="2" src="assets/media/site.mp4" muted playsinline></video>
-      <video id="phB" class="clip vid" data-start="8.19" data-duration="7.1" data-media-start="28.4" data-has-audio="true" data-track-index="1" src="assets/media/phone.mp4" playsinline></video>
-      <video id="siB" class="clip vid" data-start="8.19" data-duration="7.1" data-media-start="30.6" data-track-index="2" src="assets/media/site.mp4" muted playsinline></video>
-      <video id="phC" class="clip vid" data-start="15.29" data-duration="5.99" data-media-start="36.0" data-has-audio="true" data-track-index="1" src="assets/media/phone.mp4" playsinline></video>
-      <video id="siC" class="clip vid" data-start="15.29" data-duration="5.99" data-media-start="38.2" data-track-index="2" src="assets/media/site.mp4" muted playsinline></video>
-      <video id="wk" class="clip vid" data-start="21.28" data-duration="92.6" data-media-start="9.6" data-has-audio="true" data-track-index="3" src="assets/media/walk.mp4" playsinline></video>
+      <video id="siZ" class="clip vid" data-start="7.4" data-duration="6.6" data-media-start="0" data-track-index="2" src="assets/media/sitezoom.mp4" muted playsinline></video>
+      <video id="w1" class="clip vid" data-start="48.4" data-duration="17.0" data-media-start="48.0" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
+      <video id="w2" class="clip vid" data-start="65.4" data-duration="14.0" data-media-start="69.5" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
+      <video id="w3" class="clip vid" data-start="79.4" data-duration="5.5" data-media-start="84.5" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
+      <video id="w4" class="clip vid" data-start="84.9" data-duration="10.5" data-media-start="90.5" data-track-index="3" src="assets/media/walk.mp4" muted playsinline></video>
 
-<audio id="music1" data-start="0" data-duration="21.28" data-track-index="5" data-volume="0.3" data-fade-in="0.3" data-fade-out="0.6" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
-      <audio id="music2" data-start="21.28" data-duration="95.6" data-media-start="21.28" data-track-index="5" data-volume="0.09" data-fade-in="0.6" data-fade-out="1.2" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
+      <audio id="music" data-start="0" data-duration="108.7" data-track-index="5" data-volume="0.11" data-fade-in="0.5" data-fade-out="1.6" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
+      <audio id="nar_n1" data-start="3.4" data-duration="9.48" data-track-index="7" data-volume="1" src="assets/narration/n1.mp3"></audio>
+      <audio id="nar_n2" data-start="14.4" data-duration="17.89" data-track-index="7" data-volume="1" src="assets/narration/n2.mp3"></audio>
+      <audio id="nar_n3" data-start="32.9" data-duration="15.04" data-track-index="7" data-volume="1" src="assets/narration/n3.mp3"></audio>
+      <audio id="nar_d1" data-start="48.8" data-duration="12.22" data-track-index="7" data-volume="1" src="assets/narration/d1.mp3"></audio>
+      <audio id="nar_d2" data-start="66.0" data-duration="7.68" data-track-index="7" data-volume="1" src="assets/narration/d2.mp3"></audio>
+      <audio id="nar_d3" data-start="79.8" data-duration="3.73" data-track-index="7" data-volume="1" src="assets/narration/d3.mp3"></audio>
+      <audio id="nar_d4" data-start="85.3" data-duration="7.81" data-track-index="7" data-volume="1" src="assets/narration/d4.mp3"></audio>
+      <audio id="nar_d5" data-start="95.8" data-duration="8.77" data-track-index="7" data-volume="1" src="assets/narration/d5.mp3"></audio>
+      <audio id="sfx_0" data-start="3.5" data-duration="0.18" data-track-index="6" data-volume="0.7" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_1" data-start="5.2" data-duration="0.18" data-track-index="6" data-volume="0.6" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_2" data-start="7.4" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_3" data-start="26.1" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_4" data-start="28.3" data-duration="1.5" data-track-index="6" data-volume="0.35" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
+      <audio id="sfx_5" data-start="38.9" data-duration="0.18" data-track-index="6" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_6" data-start="96.4" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_7" data-start="98.0" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_8" data-start="99.6" data-duration="0.18" data-track-index="6" data-volume="0.4" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx_9" data-start="105.2" data-duration="1.5" data-track-index="6" data-volume="0.35" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
     </div>
 
     <script>
-      // Place each recording inside its frame (fixed numbers, so it does not depend on layout timing).
-      const put = (ids, x, y, w, h, rad) => ids.forEach((id) => { const v = document.getElementById(id); v.style.left = (x + 3) + "px"; v.style.top = (y + 3) + "px"; v.style.width = (w - 6) + "px"; v.style.height = (h - 6) + "px"; v.style.borderRadius = (rad - 3) + "px"; });
-      put(["phA", "phB", "phC"], 90, 170, 396, 860, 44);
-      put(["siA", "siB", "siC"], 560, 250, 1286, 700, 22);
-      put(["wk"], 160, 38, 1600, 1004, 22);
+      // Place the walkthrough recordings inside their frame (fixed numbers, independent of layout timing).
+      ["w1", "w2", "w3", "w4"].forEach((id) => { const v = document.getElementById(id); v.style.left = "163px"; v.style.top = "41px"; v.style.width = "1594px"; v.style.height = "998px"; v.style.borderRadius = "19px"; });
+      { const z = document.getElementById("siZ"); z.style.left = "643px"; z.style.top = "183px"; z.style.width = "1234px"; z.style.height = "694px"; z.style.borderRadius = "21px"; }
 
       const tl = gsap.timeline({ paused: true });
-      const rise = { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" };
-      const cap = (id, at, off) => tl.fromTo(id, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, at).to(id, { opacity: 0, duration: 0.2 }, off);
-      const fadeOut = (id, at) => tl.to(id, { opacity: 0, duration: 0.2, ease: "power1.in" }, at);
-
-      // Title
       tl.fromTo("#t1", { y: 26 }, { y: 0, duration: 0.5, ease: "power3.out" }, 0);
-      tl.fromTo("#t2", { opacity: 0, y: 18 }, rise, 0.56);
-      fadeOut("#sc0", 2.53);
-
-      // iMessage + website, side by side
-      tl.fromTo("#phoneFrame, #siteFrame", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.73);
-      tl.fromTo("#lblPhone, #dscPhone, #lblSite, #dscSite", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 2.83);
-      cap("#capA", 2.83, 7.99);
-      cap("#capB", 8.29, 15.09);
-      cap("#capC", 15.39, 21.08);
-      fadeOut("#scMain", 21.08);
-
-      // Narrated walkthrough
-      tl.fromTo("#walkFrame", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 21.28);
-      fadeOut("#scWalk", 113.68);
-
-      // Outro
-      tl.fromTo("#o1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 113.88);
-      tl.fromTo("#o2", { opacity: 0, y: 22 }, rise, 114.0);
-      tl.to("#o3", { opacity: 1, duration: 0.35 }, 114.18);
-      tl.to("#o4", { opacity: 1, duration: 0.35 }, 114.28);
+      tl.fromTo("#t2", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.3);
+      tl.to("#sc0", { opacity: 0, duration: 0.25, ease: "power1.in" }, 2.75);
+      tl.fromTo("#phLabel", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 3.2);
+      tl.fromTo("#bub", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 3.5);
+      tl.fromTo("#bub2", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 5.2);
+      tl.fromTo("#deliv", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 6.2);
+      tl.fromTo("#pulse", { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.15 }, 6.6);
+      tl.to("#pulse", { x: 360, duration: 0.8, ease: "power2.inOut" }, 6.75);
+      tl.to("#pulse", { opacity: 0, duration: 0.15, ease: "power1.in" }, 7.5);
+      tl.fromTo("#siteLabel", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 7.4);
+      tl.fromTo("#zoomFrame", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 7.4);
+      tl.fromTo("#zoomNote", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 8.6);
+      tl.fromTo("#siZ", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 7.4);
+      tl.to("#scPS", { opacity: 0, duration: 0.25, ease: "power1.in" }, 13.75);
+      tl.fromTo("#ex1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 14.5);
+      tl.fromTo("#exA1", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 15.2);
+      tl.fromTo("#exL1", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.out", transformOrigin: "0 50%" }, 15.4);
+      tl.fromTo("#ex2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 16.0);
+      tl.fromTo("#exA2", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 17.0);
+      tl.fromTo("#exL2", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.out", transformOrigin: "0 50%" }, 17.2);
+      tl.fromTo("#ex3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 17.8);
+      tl.fromTo("#exCap1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 14.9);
+      tl.to("#exCap1", { opacity: 0, duration: 0.25, ease: "power1.in" }, 20.6);
+      tl.fromTo("#exCap2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 21.0);
+      tl.fromTo("#exQ", { opacity: 0, scale: 0.2 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 21.4);
+      tl.to("#exQ", { scale: 1.18, duration: 0.5, yoyo: true, repeat: 3, ease: "sine.inOut" }, 22.2);
+      tl.to("#exCap2", { opacity: 0, duration: 0.25, ease: "power1.in" }, 25.6);
+      tl.fromTo("#exCap3", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 26.0);
+      tl.fromTo("#exShield", { opacity: 0, y: -50 }, { opacity: 1, y: 0, duration: 0.7, ease: "bounce.out" }, 26.1);
+      tl.fromTo("#exShieldLine", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 27.0);
+      tl.set("#exQ", { opacity: 0 }, 28.3);
+      tl.fromTo("#exOk", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 28.3);
+      tl.to("#exPart1", { opacity: 0, duration: 0.25, ease: "power1.in" }, 32.0);
+      tl.fromTo("#hd", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 32.6);
+      tl.fromTo("#chipB", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 33.5);
+      tl.fromTo("#chipS", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 34.7);
+      tl.fromTo("#arr1", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out", transformOrigin: "0 50%" }, 35.7);
+      tl.fromTo("#score", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 36.1);
+      tl.to("#track", { opacity: 1, duration: 0.4 }, 36.4);
+      tl.fromTo("#bar", { width: 0 }, { width: 216, duration: 1.8, ease: "power2.out" }, 36.9);
+      tl.fromTo("#sc60", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 37.1);
+      tl.fromTo("#scHigh", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" }, 38.9);
+      tl.fromTo("#arr2", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out", transformOrigin: "0 50%" }, 39.8);
+      tl.fromTo("#gateRef", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 40.5);
+      tl.fromTo("#gateYes", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 42.1);
+      tl.fromTo("#gateNote", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 43.9);
+      tl.to("#scEX", { opacity: 0, duration: 0.25, ease: "power1.in" }, 48.15);
+      tl.fromTo("#tagW1", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 52.4);
+      tl.to("#tagW1", { opacity: 0, duration: 0.2, ease: "power1.in" }, 65.1);
+      tl.fromTo("#tagW2", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 65.8);
+      tl.to("#tagW2", { opacity: 0, duration: 0.2, ease: "power1.in" }, 79.1);
+      tl.fromTo("#tagW3", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 79.6);
+      tl.to("#tagW3", { opacity: 0, duration: 0.2, ease: "power1.in" }, 84.6);
+      tl.fromTo("#tagW4", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 85.1);
+      tl.to("#tagW4", { opacity: 0, duration: 0.2, ease: "power1.in" }, 95.1);
+      tl.fromTo("#walkFrame", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 48.4);
+      tl.to("#scWalk", { opacity: 0, duration: 0.25, ease: "power1.in" }, 95.15);
+      tl.fromTo("#ruTitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 95.7);
+      tl.fromTo("#rc1", { opacity: 0, scale: 0.6, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.8)" }, 96.4);
+      tl.fromTo("#rc2", { opacity: 0, scale: 0.6, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.8)" }, 98.0);
+      tl.fromTo("#rc3", { opacity: 0, scale: 0.6, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.8)" }, 99.6);
+      tl.fromTo("#ruNote", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 101.4);
+      tl.to("#scRU", { opacity: 0, duration: 0.25, ease: "power1.in" }, 104.95);
+      tl.fromTo("#o1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 105.2);
+      tl.fromTo("#o2", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 105.32);
+      tl.to("#o3", { opacity: 1, duration: 0.35 }, 105.6);
+      tl.to("#o4", { opacity: 1, duration: 0.35 }, 105.7);
 
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;
