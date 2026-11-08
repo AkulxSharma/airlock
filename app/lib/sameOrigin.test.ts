@@ -26,6 +26,27 @@ describe("isSameOriginRequest", () => {
     expect(isSameOriginRequest(req({ host: "localhost:3100", "sec-fetch-site": "same-site" }))).toBe(false);
   });
 
+  describe("on a public deployment", () => {
+    const env = { VERCEL_URL: "airlock-abc.vercel.app", VERCEL_PROJECT_PRODUCTION_URL: "airlock-gui.vercel.app" };
+    const page = { host: "airlock-abc.vercel.app", "sec-fetch-site": "same-origin", origin: "https://airlock-abc.vercel.app" };
+
+    it("accepts the page's own browser request on a deployed host", () => {
+      expect(isSameOriginRequest(req(page), env)).toBe(true);
+      expect(isSameOriginRequest(req({ ...page, host: "airlock-gui.vercel.app", origin: "https://airlock-gui.vercel.app" }), env)).toBe(true);
+    });
+    it("refuses a bare curl (no browser headers), another site, another host and a custom host nobody named", () => {
+      expect(isSameOriginRequest(req({ host: "airlock-abc.vercel.app" }), env)).toBe(false);
+      expect(isSameOriginRequest(req({ ...page, "sec-fetch-site": "cross-site" }), env)).toBe(false);
+      expect(isSameOriginRequest(req({ ...page, origin: "https://evil.example" }), env)).toBe(false);
+      expect(isSameOriginRequest(req({ ...page, host: "evil.vercel.app", origin: "https://evil.vercel.app" }), env)).toBe(false);
+      expect(isSameOriginRequest(req(page), {})).toBe(false); // no deployment variables: not a known host
+    });
+    it("AIRLOCK_PUBLIC_HOST names a custom domain", () => {
+      const r = req({ host: "airlock.example.com", "sec-fetch-site": "same-origin", origin: "https://airlock.example.com" });
+      expect(isSameOriginRequest(r, { AIRLOCK_PUBLIC_HOST: "airlock.example.com" })).toBe(true);
+    });
+  });
+
   it("refuses a malformed Origin and an Origin on a different port", () => {
     expect(isSameOriginRequest(req({ host: "localhost:3100", origin: "not a url" }))).toBe(false);
     expect(isSameOriginRequest(req({ host: "localhost:3100", origin: "http://localhost:4000" }))).toBe(false);
