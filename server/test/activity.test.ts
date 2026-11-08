@@ -80,3 +80,15 @@ describe("allowed origins with a wildcard", () => {
     expect(originAllowed(list, "https://xvercel.app")).toBe(false);
   });
 });
+
+describe("a new page does not see old chats", () => {
+  it("recent() returns only events from the last minute", () => {
+    let t = 0;
+    const bus = createActivityBus({ now: () => t });
+    bus.emit({ kind: "message", channel: "imessage", who: "***1", text: "old" });
+    t = 61_000;
+    bus.emit({ kind: "message", channel: "imessage", who: "***1", text: "fresh" });
+    expect(bus.recent().map((e) => (e as { text: string }).text)).toEqual(["fresh"]);
+    expect(bus.recent(120_000).map((e) => (e as { text: string }).text)).toEqual(["old", "fresh"]);
+  });
+});

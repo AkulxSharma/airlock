@@ -12,8 +12,8 @@ export type StoredActivity = { id: number; at: number } & ActivityEvent;
 export type ActivityBus = {
   emit(ev: ActivityEvent): void;
   subscribe(listener: (ev: StoredActivity) => void): () => void;
-  /** The most recent events, oldest first, so a page that opens late still sees what just happened. */
-  recent(): StoredActivity[];
+  /** Events from the last `maxAgeMs` (default 60 seconds), oldest first, so a page opened a moment late still sees what just happened but never old chats. */
+  recent(maxAgeMs?: number): StoredActivity[];
 };
 
 export function createActivityBus(opts: { max?: number; now?: () => number } = {}): ActivityBus {
@@ -33,7 +33,7 @@ export function createActivityBus(opts: { max?: number; now?: () => number } = {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    recent: () => [...buf],
+    recent: (maxAgeMs = 60_000) => buf.filter((e) => now() - e.at <= maxAgeMs),
   };
 }
 
