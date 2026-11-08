@@ -43,79 +43,19 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 
-// The structure of the project: the pipeline from docs/PLAN.md, drawn as boxes and arrows.
-function Box({ title, sub, tone = "", dashed = false, className = "" }: { title: string; sub?: string; tone?: string; dashed?: boolean; className?: string }) {
-  return (
-    <div className={`rounded-xl border-2 ${dashed ? "border-dashed" : ""} ${tone || "border-border"} bg-card/90 px-4 py-3 text-center ${className}`}>
-      <p className="text-sm font-semibold leading-tight">{title}</p>
-      {sub && <p className="mt-1 text-xs leading-snug text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
-
-function Down({ label }: { label?: string }) {
-  return (
-    <div aria-hidden className="flex flex-col items-center py-1 text-muted-foreground">
-      <span className="text-xl leading-none">↓</span>
-      {label && <span className="text-[11px] uppercase tracking-widest">{label}</span>}
-    </div>
-  );
-}
-
+// The structure of the project: the pipeline from docs/PLAN.md, drawn in the same box-and-arrow style as Otto's voice pipeline.
+// The picture is public/airlock-pipeline.png (made by video/diagram/make_pipeline_image.py).
 function Structure() {
   return (
     <section aria-label="The structure of the project" className="space-y-4">
-      <Label>The structure</Label>
-      <Card className="mx-auto w-full max-w-5xl">
-        <div className="flex flex-col items-center">
-          {/* three doors */}
-          <div className="grid w-full gap-3 sm:grid-cols-3">
-            <div className="flex flex-col items-center gap-1">
-              <Box title="GUI voice" sub="hold the mic, or say “Hey Airlock”" className="w-full" />
-              <Down />
-              <Box title="ElevenLabs Scribe" sub="speech to text" className="w-full" />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Box title="GUI text" sub="type in the console" className="w-full" />
-              <Down />
-              <div className="hidden flex-1 sm:block" />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Box title="iMessage" sub="text or voice note, on the Mac bridge" className="w-full" />
-              <Down />
-              <div className="hidden flex-1 sm:block" />
-            </div>
-          </div>
-          <Box title="Input router" sub="one text message and a channel tag, one session per sender" className="w-full max-w-xl" />
-          <Down label="POST /api/message" />
-          <Box title="Gemini: intent and function tools" sub="turns it into a transfer request. A rule-based parser is the fallback" className="w-full max-w-xl" />
-          <Down />
-
-          {/* the tools */}
-          <div className="grid w-full gap-3 sm:grid-cols-5">
-            <Box title="Resolve" sub="ENS name or address" />
-            <Box title="Contract auditor" sub="bytecode and source checks, our own code" tone="border-foreground" />
-            <Box title="Simulate" sub="transaction on a fork. Not built" dashed />
-            <Box title="Send" sub="Sepolia test ETH, with a cap" />
-            <Box title="Explain" sub="the findings, in plain words" />
-          </div>
-          <Down />
-          <Box title="RISK GATE: plain code, not the model" sub="HIGH, an error or a timeout: refuse.   LOW or MEDIUM: ask for YES, which expires" tone="border-high" className="w-full max-w-3xl" />
-          <Down />
-          <Box title="Context builder" sub="findings as JSON only" className="w-full max-w-xl" />
-          <Down />
-          <Box title="Gemini response" sub="may only cite findings that are really there" className="w-full max-w-xl" />
-          <Down />
-          <Box title="Output router" className="w-full max-w-md" />
-          <Down />
-          <div className="grid w-full max-w-3xl gap-3 sm:grid-cols-2">
-            <Box title="GUI" sub="text, and the reply spoken by ElevenLabs" />
-            <Box title="iMessage" sub="text reply" />
-          </div>
-          <Down label="in parallel" />
-          <Box title="Live event log" sub="the audit stages stream to the dashboard as they happen (GET /api/stream)" className="w-full max-w-xl" />
-        </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">Drawn from docs/PLAN.md. The model never decides whether money moves; the gate does.</p>
+      <div className="flex items-end justify-between">
+        <Label>The structure</Label>
+        <a href="/airlock-pipeline.png" download="Airlock pipeline.png" className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-accent">Download the picture</a>
+      </div>
+      <Card className="mx-auto w-full max-w-3xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/airlock-pipeline.png" alt="The Airlock pipeline: voice, text or iMessage input goes through the input router to Gemini, then to five tools (resolve, contract auditor, simulate, send, explain), then to the risk gate, the context builder, Gemini's response and the output router, which answers in the GUI or by iMessage." className="h-auto w-full rounded-lg" />
+        <p className="mt-4 text-center text-xs text-muted-foreground">Drawn from docs/PLAN.md. The model never decides whether money moves; the gate does. Simulate is the one box that was not built.</p>
       </Card>
     </section>
   );
