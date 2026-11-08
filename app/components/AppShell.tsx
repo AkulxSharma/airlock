@@ -59,7 +59,7 @@ export function AppShell() {
         {air.online && !air.streamUp && (
           <div className="border-b border-medium/40 bg-medium/10 px-6 py-1.5 text-xs text-medium">Live stream reconnecting…</div>
         )}
-        <div className="mx-auto max-w-4xl px-8 py-12">
+        <div className={`mx-auto px-8 py-12 ${view === "how" ? "max-w-7xl" : "max-w-4xl"}`}>
           {view === "console" && (
             <Console
               messages={air.messages} stages={air.stages} log={air.log} verdict={air.verdict} pending={air.pending}
