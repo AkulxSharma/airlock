@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, checkHealth, sendMessage, streamUrl, type Stage } from "./api";
+import { activityUrl, ApiError, checkHealth, sendMessage, streamUrl, type Stage, type StoredActivity } from "./api";
 import { parseResponse, resolveExpiry, type ParsedReply } from "./parseReply";
 import { createStagePacer } from "./stagePacer";
 
@@ -9,7 +9,9 @@ export interface ChatMessage {
   id: number;
   from: "you" | "airlock";
   text: string;
-  channel?: "gui" | "voice";
+  channel?: "gui" | "voice" | "imessage";
+  /** Masked sender, for messages that came in over iMessage. */
+  who?: string;
   parsed?: ParsedReply;
 }
 export interface LogEntry { id: number; at: number; kind: "stage" | "message" | "system"; text: string }
@@ -76,6 +78,32 @@ export function useAirlock() {
     es.onerror = () => { setStreamUp(false); };
     return () => es.close();
   }, [sessionId, addLog, pacer]);
+
+  // What happens on the iMessage line: show each text, the live stages and Airlock's reply here too.
+  // The server replays its latest events on connect, so ids already seen are skipped.
+  useEffect(() => {
+    const es = new EventSource(activityUrl());
+    let lastId = 0;
+    es.addEventListener("activity", (e) => {
+      try {
+        const ev = JSON.parse((e as MessageEvent).data) as StoredActivity;
+        if (ev.id <= lastId) return;
+        lastId = ev.id;
+        if (ev.kind === "message") {
+          setMessages((m) => [...m, { id: nextId(), from: "you", text: ev.text, channel: "imessage", who: ev.who }]);
+          addLog("message", `iMessage from ${ev.who}${ev.channel === "voice" ? " (voice note)" : ""}: ${ev.text}`);
+        } else if (ev.kind === "stage") {
+          pacer.push(ev.stage);
+          addLog("stage", `iMessage ${ev.who} · ${ev.stage.name}: ${ev.stage.status}${ev.stage.detail ? ` (${ev.stage.detail})` : ""}`);
+        } else if (ev.kind === "reply") {
+          const parsed = parseResponse(ev.response);
+          setMessages((m) => [...m, { id: nextId(), from: "airlock", text: ev.response.reply, channel: "imessage", who: ev.who, parsed }]);
+          addLog("message", `Airlock replied to ${ev.who}: ${ev.response.reply.split("\n")[0]}`);
+        }
+      } catch { /* ignore a malformed event */ }
+    });
+    return () => es.close();
+  }, [addLog, pacer]);
 
   // Drop the confirm state when its time is up (the server enforces the real expiry).
   useEffect(() => {

@@ -6,8 +6,9 @@ import { mainnet, sepolia } from "viem/chains";
 import { createExplainer, createGeminiAgent, createGeminiClient, describeGeminiError, modelFromEnv, withCooldown } from "./agent/gemini.js";
 import { auditAddress, auditTimeoutFromEnv, readerFromEnv } from "./auditor/chain.js";
 import { createSourcifyFetcher } from "./auditor/source.js";
+import { createActivityBus, handleOf, isIMessageSession } from "./api/activity.js";
 import { createApp, parseAllowedOrigins } from "./api/app.js";
-import { isAllowed, parseAllowlist } from "./imessage/text.js";
+import { isAllowed, maskHandle, parseAllowlist } from "./imessage/text.js";
 import { createMessageHandler } from "./api/message.js";
 import { resolveTarget, type EnsClient } from "./api/resolve.js";
 import { createStageBus } from "./api/stream.js";
@@ -59,7 +60,10 @@ const confirmRestricted = confirmList.handles.size > 0 && !confirmList.anyone;
 console.log(confirmRestricted ? `Confirm allowlist: ${confirmList.handles.size} iMessage sender(s)` : "Confirm allowlist: off (any iMessage sender may confirm a send)");
 const dailyCapEth = env.DAILY_CAP_ETH?.trim() || "0.05";
 const bus = createStageBus();
-const handle = createMessageHandler({
+// What happens on the iMessage line, shown live on the website (sender masked).
+const activity = createActivityBus();
+const who = (sessionId: string) => maskHandle(handleOf(sessionId));
+const handleMessage = createMessageHandler({
   resolve: (input) => resolveTarget(input, ensClient, demoAliases),
   audit: (address) => auditAddress(address, reader, auditTimeoutMs, fetchSource),
   store: createConfirmStore(),
@@ -71,10 +75,21 @@ const handle = createMessageHandler({
     ? (sid) => !sid.startsWith("imessage:") || isAllowed(confirmList, sid.slice("imessage:".length))
     : undefined,
   ttlMs: Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds * 1000 : DEFAULT_TTL_MS,
-  publish: bus.publish,
+  publish: (sessionId, stage) => {
+    bus.publish(sessionId, stage);
+    if (isIMessageSession(sessionId)) activity.emit({ kind: "stage", who: who(sessionId), stage });
+  },
   agent: gemini ? createGeminiAgent(gemini) : undefined,
   explain: gemini ? createExplainer(gemini) : undefined,
 });
+
+const handle: typeof handleMessage = async (req) => {
+  if (!isIMessageSession(req.sessionId)) return handleMessage(req);
+  activity.emit({ kind: "message", channel: req.channel === "voice" ? "voice" : "imessage", who: who(req.sessionId), text: req.text });
+  const response = await handleMessage(req);
+  activity.emit({ kind: "reply", who: who(req.sessionId), response });
+  return response;
+};
 
 const sepoliaClient = createPublicClient({
   chain: sepolia,
@@ -88,7 +103,7 @@ const wallets = createWalletsService({
   agentAddress: wallet?.address,
 });
 
-const app = createApp({ handle, bus, allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS), wallets });
+const app = createApp({ handle, bus, allowedOrigins: parseAllowedOrigins(env.ALLOWED_ORIGINS), wallets, activity });
 const port = Number(env.PORT) || 8787;
 serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   console.log(`Airlock server listening on http://127.0.0.1:${port}`);

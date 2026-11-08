@@ -70,6 +70,7 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
           <div key={m.id} className={`animate-fade-in-up flex ${m.from === "you" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm ${m.from === "you" ? "bg-foreground text-background" : "border border-border bg-card/80 text-foreground backdrop-blur"}`}>
               {m.channel === "voice" && <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-70">heard by voice</span>}
+              {m.channel === "imessage" && <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-70">iMessage {m.from === "you" ? `from ${m.who ?? "someone"}` : `reply to ${m.who ?? "someone"}`}</span>}
               {m.text}
             </div>
           </div>

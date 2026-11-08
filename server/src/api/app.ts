@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { MessageRequestSchema } from "../types.js";
 import type { MessageResponse } from "../types.js";
+import type { ActivityBus } from "./activity.js";
 import type { StageBus } from "./stream.js";
 
 export type AppDeps = {
@@ -12,6 +13,8 @@ export type AppDeps = {
   allowedOrigins: string[];
   /** Agent wallet and demo contract balances for the GUI. Omit to leave the route off. */
   wallets?(): Promise<unknown>;
+  /** Live feed of iMessage activity for the website. Omit to leave the route off. */
+  activity?: ActivityBus;
 };
 
 export function parseAllowedOrigins(raw: string | undefined): string[] {
@@ -52,6 +55,20 @@ export function createApp(deps: AppDeps) {
     } catch {
       return c.json({ error: "could not read balances" }, 502);
     }
+  });
+
+  app.get("/api/activity", (c) => {
+    const feed = deps.activity;
+    if (!feed) return c.json({ error: "not available" }, 404);
+    return streamSSE(c, async (stream) => {
+      const send = (ev: { id: number }) => stream.writeSSE({ event: "activity", id: String(ev.id), data: JSON.stringify(ev) });
+      const unsubscribe = feed.subscribe((ev) => void send(ev));
+      stream.onAbort(unsubscribe);
+      await stream.writeSSE({ event: "ready", data: "ok" });
+      for (const ev of feed.recent()) await send(ev);
+      while (!stream.aborted) await stream.sleep(15_000);
+      unsubscribe();
+    });
   });
 
   // The largest legitimate request is a few hundred bytes. Refuse anything big before it is read.

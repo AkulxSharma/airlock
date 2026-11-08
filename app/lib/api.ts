@@ -1,6 +1,7 @@
+import type { StoredActivity } from "../../server/src/api/activity";
 import type { MessageResponse, Stage } from "../../server/src/types";
 
-export type { MessageResponse, Stage };
+export type { MessageResponse, Stage, StoredActivity };
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 
 export class ApiError extends Error {}
@@ -31,4 +32,8 @@ export async function checkHealth(): Promise<boolean> {
 
 export function streamUrl(sessionId: string): string {
   return `${API_URL}/api/stream?sessionId=${encodeURIComponent(sessionId)}`;
+}
+
+export function activityUrl(): string {
+  return `${API_URL}/api/activity`;
 }
