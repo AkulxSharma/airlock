@@ -31,31 +31,120 @@
       "address": "0x4f996B50a1448C8AA87a5AC6A7Bc73d4Ec215a7F",
       "expected": "HIGH",
       "why": "owner can sweep the whole pool (owner-sweep)",
-      "contract": "RugVault"
+      "contract": "RugVault",
+      "verified": true
     },
     "reentrancy.demo": {
       "address": "0x197a03179F9115A3BD355d801d3F43B740251716",
       "expected": "MEDIUM",
       "why": "sends ether before updating balances (reentrancy-risk)",
-      "contract": "ReentrancyBank"
+      "contract": "ReentrancyBank",
+      "verified": true
     },
     "honeypot.demo": {
       "address": "0x5caE09aCc98A86c6956EE18eAf24ff5E0A4e77F1",
       "expected": "MEDIUM",
       "why": "blacklist, sell-fee and trading switches",
-      "contract": "HoneypotToken"
+      "contract": "HoneypotToken",
+      "verified": true
     },
     "selfkill.demo": {
       "address": "0x0C7Caa6629Af7601eBd347F5f867D1979D091e93",
       "expected": "HIGH",
       "why": "anyone can SELFDESTRUCT it",
-      "contract": "UnprotectedKill"
+      "contract": "UnprotectedKill",
+      "verified": true
     },
     "vault.demo": {
       "address": "0xE5ce5ee5A8dC8D44c7cBcF3b6F51f4bef6b55CC6",
       "expected": "LOW",
       "why": "user-only vault, source verified, nothing flagged",
-      "contract": "CleanVault"
+      "contract": "CleanVault",
+      "verified": true
+    },
+    "origin.demo": {
+      "address": "0x20291a4dbE9189cB3f752DB4e370F7580B98bA22",
+      "expected": "MEDIUM",
+      "why": "authorizes with tx.origin (tx-origin)",
+      "contract": "OriginWallet",
+      "verified": true
+    },
+    "unchecked.demo": {
+      "address": "0x9d7807d1d1da5683b6D84ac419E96d02ACbA7B0B",
+      "expected": "MEDIUM",
+      "why": "ignores whether a send succeeded (unchecked-call)",
+      "contract": "UncheckedSend",
+      "verified": true
+    },
+    "init.demo": {
+      "address": "0xB37703A20F49f811DB1E19cC00FFF3c31FeF7859",
+      "expected": "HIGH",
+      "why": "anyone can call initialize() and become owner (unprotected-init)",
+      "contract": "UnprotectedInit",
+      "verified": true
+    },
+    "delegate.demo": {
+      "address": "0x318DbEB33Df90E0A3bCf1425eA394bC977095322",
+      "expected": "MEDIUM",
+      "why": "delegatecall to a caller-chosen address",
+      "contract": "DelegateToUser",
+      "verified": true
+    },
+    "lottery.demo": {
+      "address": "0xbd248Dfc9c65B782CD3967A01C63fd36eDAD81ee",
+      "expected": "MEDIUM",
+      "why": "block values used as randomness (weak-randomness)",
+      "contract": "WeakRandomLottery",
+      "verified": true
+    },
+    "strictbalance.demo": {
+      "address": "0xec82950cF249a4f1E5cC419Ff49348d76AD5a130",
+      "expected": "LOW",
+      "why": "exact balance comparison, forced-ether risk (strict-balance)",
+      "contract": "StrictBalanceGame",
+      "verified": true
+    },
+    "dos.demo": {
+      "address": "0x7ADBB5e23c3659136fCb2806806A969DBc95C371",
+      "expected": "MEDIUM",
+      "why": "pays everyone in one loop (dos-loop-payment)",
+      "contract": "DosRefund",
+      "verified": true
+    },
+    "replay.demo": {
+      "address": "0x21384dF33FFd7D6EfC894EC059Ae22f7d8523448",
+      "expected": "MEDIUM",
+      "why": "signature has no replay protection (signature-replay)",
+      "contract": "SignatureReplay",
+      "verified": true
+    },
+    "backdoor.demo": {
+      "address": "0x86Ad609ebC796200dF23Bf3a0110648D079037Ac",
+      "expected": "HIGH",
+      "why": "owner can move anyone's tokens (owner-seize)",
+      "contract": "BackdoorToken",
+      "verified": true
+    },
+    "approval.demo": {
+      "address": "0xAC1230e61fB76Fc46699Acce4684De87818C5746",
+      "expected": "HIGH",
+      "why": "owner pulls approved tokens out of wallets (owner-seize)",
+      "contract": "ApprovalDrainer",
+      "verified": true
+    },
+    "math.demo": {
+      "address": "0x98CdDbE43939901970F2001faFBF5E3BAb2d490B",
+      "expected": "MEDIUM",
+      "why": "balance math in an unchecked block (unchecked-math)",
+      "contract": "UncheckedMath",
+      "verified": true
+    },
+    "oracle.demo": {
+      "address": "0x28aE79d10A85c2Fd6f98d511246b2252dB9F961B",
+      "expected": "LOW",
+      "why": "flash-loan price manipulation: NOT detected, a known gap",
+      "contract": "SpotOracleLender",
+      "verified": true
     }
   }
 }

@@ -14,6 +14,7 @@ const compilerVersion = compiled.solc.replace(/\.Emscripten.*$/, "");
 for (const [name, t] of Object.entries<any>(fixture.targets)) {
   if (!t.contract) continue;
   t.address = getAddress(t.address);
+  if (t.verified) continue; // already an exact match on Sourcify
   const art = compiled.contracts[t.contract];
   const res = await fetch(`${BASE}/v2/verify/${fixture.chainId}/${t.address}`, {
     method: "POST",
@@ -28,6 +29,7 @@ for (const [name, t] of Object.entries<any>(fixture.targets)) {
       const j: any = await (await fetch(`${BASE}/v2/verify/${body.verificationId}`)).json();
       if (j.isJobCompleted) {
         console.log("  ->", j.contract?.match ?? "no match", j.error ? JSON.stringify(j.error).slice(0, 200) : "");
+        if (j.contract?.match === "exact_match" || j.contract?.match === "match") t.verified = true;
         break;
       }
     }

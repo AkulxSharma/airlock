@@ -1,4 +1,4 @@
-// Deploys five of the compiled Solidity demo contracts to Sepolia (test ETH only) and merges them
+// Deploys the compiled Solidity demo contracts to Sepolia (test ETH only) and merges them
 // into src/demo/demo-targets.json. Run compile-demo-contracts.ts first.
 // Run: npx tsx scripts/deploy-solidity-demos.ts   (skips names already recorded; --force redeploys)
 import { readFileSync, writeFileSync } from "node:fs";
@@ -16,6 +16,18 @@ const PLAN: Array<{ name: string; contract: string; expected: "LOW" | "MEDIUM" |
   { name: "honeypot.demo", contract: "HoneypotToken", expected: "MEDIUM", why: "blacklist, sell-fee and trading switches" },
   { name: "selfkill.demo", contract: "UnprotectedKill", expected: "HIGH", why: "anyone can SELFDESTRUCT it" },
   { name: "vault.demo", contract: "CleanVault", expected: "LOW", why: "user-only vault, source verified, nothing flagged" },
+  { name: "origin.demo", contract: "OriginWallet", expected: "MEDIUM", why: "authorizes with tx.origin (tx-origin)" },
+  { name: "unchecked.demo", contract: "UncheckedSend", expected: "MEDIUM", why: "ignores whether a send succeeded (unchecked-call)" },
+  { name: "init.demo", contract: "UnprotectedInit", expected: "HIGH", why: "anyone can call initialize() and become owner (unprotected-init)" },
+  { name: "delegate.demo", contract: "DelegateToUser", expected: "MEDIUM", why: "delegatecall to a caller-chosen address" },
+  { name: "lottery.demo", contract: "WeakRandomLottery", expected: "MEDIUM", why: "block values used as randomness (weak-randomness)" },
+  { name: "strictbalance.demo", contract: "StrictBalanceGame", expected: "LOW", why: "exact balance comparison, forced-ether risk (strict-balance)" },
+  { name: "dos.demo", contract: "DosRefund", expected: "MEDIUM", why: "pays everyone in one loop (dos-loop-payment)" },
+  { name: "replay.demo", contract: "SignatureReplay", expected: "MEDIUM", why: "signature has no replay protection (signature-replay)" },
+  { name: "backdoor.demo", contract: "BackdoorToken", expected: "HIGH", why: "owner can move anyone's tokens (owner-seize)" },
+  { name: "approval.demo", contract: "ApprovalDrainer", expected: "HIGH", why: "owner pulls approved tokens out of wallets (owner-seize)" },
+  { name: "math.demo", contract: "UncheckedMath", expected: "MEDIUM", why: "balance math in an unchecked block (unchecked-math)" },
+  { name: "oracle.demo", contract: "SpotOracleLender", expected: "LOW", why: "flash-loan price manipulation: NOT detected, a known gap" },
 ];
 
 const FILE = fileURLToPath(new URL("../src/demo/demo-targets.json", import.meta.url));

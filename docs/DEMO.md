@@ -18,8 +18,20 @@ Type or paste these names instead of addresses. They end in `.demo` so they can 
 | `honeypot.demo` | Solidity token with blacklist, sell-fee and trading switches | MEDIUM, asks to confirm | blacklist-switch, adjustable-fee, trading-switch |
 | `selfkill.demo` | Solidity contract anyone can SELFDESTRUCT | HIGH, refused | selfdestruct |
 | `vault.demo` | Solidity vault, you can only withdraw your own deposit; source verified | LOW, asks to confirm | nothing flagged |
+| `origin.demo` | wallet that checks tx.origin | MEDIUM, confirm | tx-origin |
+| `unchecked.demo` | ignores whether a payment succeeded | MEDIUM, confirm | unchecked-call |
+| `init.demo` | initialize() open to anyone, who becomes owner | HIGH, refused | unprotected-init |
+| `delegate.demo` | delegatecall to a caller-chosen address | MEDIUM, confirm | delegatecall |
+| `lottery.demo` | block.timestamp used as randomness | MEDIUM, confirm | weak-randomness |
+| `strictbalance.demo` | exact balance check, forced-ether risk | LOW, confirm | strict-balance |
+| `dos.demo` | pays all backers in one loop | MEDIUM, confirm | dos-loop-payment |
+| `replay.demo` | signed withdrawal with no replay protection | MEDIUM, confirm | signature-replay |
+| `backdoor.demo` | owner can move anyone's tokens | HIGH, refused | owner-seize |
+| `approval.demo` | owner pulls approved tokens from wallets | HIGH, refused | owner-seize |
+| `math.demo` | balance math in an unchecked block | MEDIUM, confirm | unchecked-math |
+| `oracle.demo` | price from its own live reserves (flash-loan manipulable) | LOW, confirm | NOT detected: a known gap |
 
-The five Solidity demos are in `server/contracts/` (13 contracts in all, one per vulnerability class), compiled by `server/scripts/compile-demo-contracts.ts`, deployed by `deploy-solidity-demos.ts` and verified on Sourcify by `verify-solidity-demos.ts` (all five exact matches). `server/scripts/audit-demo-names.ts` audits every name against the live chain and Sourcify and prints any mismatch; on 2026-11-07 all ten matched. Restart the server after pulling so it loads the new names.
+The seventeen Solidity demos are in `server/contracts/` (plus the interface they share; one per vulnerability class), compiled by `server/scripts/compile-demo-contracts.ts`, deployed by `deploy-solidity-demos.ts` and verified on Sourcify by `verify-solidity-demos.ts` (all seventeen exact matches). `server/scripts/audit-demo-names.ts` audits every name against the live chain and Sourcify and prints any mismatch; on 2026-11-07 all twenty-two matched. Restart the server after pulling so it loads the new names.
 
 Addresses (checksummed):
 
