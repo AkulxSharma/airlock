@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { guardVoiceInput } from "../../../voice/guard.js";
-import { normalizeTranscript } from "../../../voice/normalize.js";
+import { canonicalizeCommand, normalizeTranscript } from "../../../voice/normalize.js";
 import type { ExplainContext } from "../agent/gemini.js";
 import { ruleBasedAgent, type Agent } from "../agent/parse.js";
 import { HELP_REPLY, smallTalkReply, type SmallTalk } from "../agent/smalltalk.js";
@@ -54,6 +54,23 @@ function findingLines(findings: Finding[]): string {
   return findings.map((f) => `- [${f.severity}] ${f.message}`).join("\n");
 }
 
+/**
+ * Typed (gui) and texted (imessage) messages get the same synonym mapping as voice ("pay 0.01 ETH
+ * over to Vitalik.eth" -> send, "go ahead" -> yes), but without the full voice normalizer: that
+ * lowercases everything and would lose the checksum casing of a pasted address. Matching runs on
+ * a lowercase copy; a rewritten send takes its destination back from the original text.
+ */
+export function canonicalizeTyped(text: string): string {
+  const lower = text.trim().toLowerCase().replace(/[.,;:!?]+(?=\s|$)/g, "").replace(/\s+/g, " ");
+  const canon = canonicalizeCommand(lower);
+  if (canon === lower) return text; // nothing to map: leave the user's text untouched
+  if (canon === "yes" || canon === "no") return canon;
+  const m = /^send (\S+) eth to (\S+)$/.exec(canon);
+  if (!m) return text;
+  const orig = text.split(/\s+/).map((w) => w.replace(/[.,;:!?]+$/, "")).find((w) => w.toLowerCase() === m[2]);
+  return `send ${m[1]} eth to ${orig ?? m[2]}`;
+}
+
 export function createMessageHandler(deps: MessageDeps) {
   const agent = deps.agent ?? ruleBasedAgent;
   const ttlMs = deps.ttlMs ?? DEFAULT_TTL_MS;
@@ -98,6 +115,8 @@ export function createMessageHandler(deps: MessageDeps) {
       if (!guard.ok) return done(guard.reason);
       // The shared normalizer knows "dot eth"; demo names (.demo) are handled here.
       text = normalizeTranscript(text).replace(/\s+dot\s+demo\b/gi, ".demo");
+    } else {
+      text = canonicalizeTyped(text);
     }
 
     // Greetings and simple questions get a polite canned reply with no model call (see agent/smalltalk.ts).

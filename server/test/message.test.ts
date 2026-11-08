@@ -506,3 +506,21 @@ describe("help text by channel", () => {
     expect(t.store.peek("s")).toBeUndefined();
   });
 });
+
+import { canonicalizeTyped } from "../src/api/message.js";
+
+describe("canonicalizeTyped (synonyms on typed and texted messages)", () => {
+  it("maps send and yes synonyms and keeps the destination's casing", () => {
+    expect(canonicalizeTyped("Pay 0.01 ETH to Vitalik.eth")).toBe("send 0.01 eth to Vitalik.eth");
+    expect(canonicalizeTyped("Go ahead")).toBe("yes");
+    expect(canonicalizeTyped("Go ahead!")).toBe("yes");
+    expect(canonicalizeTyped("never mind")).toBe("no");
+    const addr = "0xAbC1230000000000000000000000000000000dEf";
+    expect(canonicalizeTyped(`pay 0.01 eth to ${addr}`)).toBe(`send 0.01 eth to ${addr}`);
+  });
+  it("does not turn ok or sure into yes, and leaves other text alone", () => {
+    expect(canonicalizeTyped("ok")).toBe("ok");
+    expect(canonicalizeTyped("Sure")).toBe("Sure");
+    expect(canonicalizeTyped("What is Airlock?")).toBe("What is Airlock?");
+  });
+});

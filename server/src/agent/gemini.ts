@@ -146,12 +146,38 @@ export function createGeminiAgent(client: GeminiClient): Agent {
 
 const BANNED = /\b(safe|safely|secure|secured|trusted|trustworthy|legit|legitimate)\b/i;
 
+// Permission and recommendation wording. Only the code gate may decide whether money moves,
+// so an explanation must never nudge the user either way.
+const PERMISSION =
+  /\b(proceed|proceeding|go ahead|go for it|fine|ok|okay|no problem|no worries|all clear|looks good|looks great|good to go|passed|passes|nothing to worry|don'?t worry|you can (send|go|continue|safely)|you should (send|go|continue)|feel free|recommend\w*|approve\w*|advise\w*)\b/i;
+
+// Fixed, in-code description for each finding id. The model gets these instead of the
+// finding message, because the message can contain names chosen by the contract's author.
+const FINDING_TEXT: Record<(typeof FINDING_IDS)[number], string> = {
+  "no-code": "the address has no contract code",
+  selfdestruct: "the contract can destroy itself and send out its funds",
+  delegatecall: "the contract runs other code with its own storage and funds (delegatecall)",
+  callcode: "the contract uses the deprecated callcode instruction",
+  "minimal-proxy": "the contract is a minimal proxy, so its real logic lives elsewhere",
+  "upgradeable-proxy": "the contract is an upgradeable proxy, so its logic can be swapped",
+  "tiny-code": "the contract code is unusually small",
+  "unverified-source": "the contract source code is not published and verified",
+  "source-unavailable": "the contract source could not be fetched for checking",
+  "tx-origin": "the contract checks tx.origin for authorization",
+  "owner-sweep": "an owner-only function can move the contract's whole balance out",
+  "owner-mint": "an owner-only function can create new tokens",
+  "adjustable-fee": "the owner can change a fee",
+  "blacklist-switch": "the owner can block specific addresses",
+  "pause-switch": "the owner can pause the contract",
+};
+
 // Returns the cleaned text, or null if it breaks a rule. The caller then shows only the
 // fixed template reply, so a bad model answer can never reach the user.
 export function validateExplanation(raw: string, findings: Finding[]): string | null {
   const text = raw.replace(/\s+/g, " ").trim();
   if (text === "" || text.length > 400) return null;
   if (BANNED.test(text)) return null;
+  if (PERMISSION.test(text)) return null; // no go-ahead or recommendation wording
   if (/0x[0-9a-f]{4,}/i.test(text)) return null; // no addresses
   if (/https?:\/\//i.test(text)) return null; // no links
   const present = new Set(findings.map((f) => f.id));
@@ -184,7 +210,12 @@ export function createExplainer(client: GeminiClient) {
         verdict: ctx.verdict,
         riskScore: ctx.riskScore,
         decision: ctx.decision,
-        findings: ctx.findings.map((f) => ({ id: f.id, severity: f.severity, message: f.message })),
+        // id, severity and a fixed description from this file only: never contract-derived text.
+        findings: ctx.findings.map((f) => ({
+          id: f.id,
+          severity: f.severity,
+          meaning: (FINDING_TEXT as Record<string, string>)[f.id] ?? "a risk signal",
+        })),
       });
       const r = await client.generate({ system: EXPLAIN_SYSTEM, user, withTransferTool: false });
       const valid = validateExplanation(r.text, ctx.findings);
