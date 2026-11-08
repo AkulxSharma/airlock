@@ -14,6 +14,24 @@ import { MicButton, type VoiceControls } from "./VoicePanel";
 // Only Etherscan transaction links on the Sepolia testnet become a "View invoice" link. Anything else stays plain text.
 const TX_LINK = /(https:\/\/sepolia\.etherscan\.io\/tx\/0x[0-9a-fA-F]{64})/g;
 
+const FINDING = /^- \[(low|medium|high)\] (.+)$/;
+const SEVERITY_TEXT = { low: "text-low", medium: "text-medium", high: "text-high" } as const;
+
+// A finding line "- [high] contract code ..." drops the "- [high]" prefix, starts with a capital letter,
+// is bold, and is coloured by its severity. Other lines stay as they are.
+function renderReply(text: string) {
+  const lines = text.split("\n");
+  return lines.map((line, i) => {
+    const f = FINDING.exec(line);
+    if (f) {
+      const sev = f[1] as keyof typeof SEVERITY_TEXT;
+      return <span key={i} className={`block font-bold ${SEVERITY_TEXT[sev]}`}>{f[2].charAt(0).toUpperCase() + f[2].slice(1)}</span>;
+    }
+    const nextIsPlain = i < lines.length - 1 && !FINDING.test(lines[i + 1]);
+    return <span key={i}>{withInvoiceLinks(line)}{nextIsPlain ? "\n" : ""}</span>;
+  });
+}
+
 function withInvoiceLinks(text: string) {
   return text.split(TX_LINK).map((part, i) =>
     i % 2 === 1 ? (
@@ -92,7 +110,7 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
             <div className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm ${m.from === "you" ? "bg-foreground text-background" : "border border-border bg-card/80 text-foreground backdrop-blur"}`}>
               {m.channel === "voice" && <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-70">heard by voice</span>}
               {m.channel === "imessage" && <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-70">iMessage {m.from === "you" ? `from ${m.who ?? "someone"}` : `reply to ${m.who ?? "someone"}`}</span>}
-              {m.from === "you" ? m.text : withInvoiceLinks(m.text)}
+              {m.from === "you" ? m.text : renderReply(m.text)}
             </div>
           </div>
         ))}
