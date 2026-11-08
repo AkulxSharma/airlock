@@ -11,6 +11,21 @@ import { StageRows } from "./StageRows";
 import { VerdictCard } from "./VerdictCard";
 import { MicButton, type VoiceControls } from "./VoicePanel";
 
+// Only Etherscan transaction links on the Sepolia testnet become a "View invoice" link. Anything else stays plain text.
+const TX_LINK = /(https:\/\/sepolia\.etherscan\.io\/tx\/0x[0-9a-fA-F]{64})/g;
+
+function withInvoiceLinks(text: string) {
+  return text.split(TX_LINK).map((part, i) =>
+    i % 2 === 1 ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+        View invoice
+      </a>
+    ) : (
+      part
+    ),
+  );
+}
+
 interface Props {
   messages: ChatMessage[];
   stages: Partial<Record<Stage["name"], Stage>>;
@@ -77,7 +92,7 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
             <div className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm ${m.from === "you" ? "bg-foreground text-background" : "border border-border bg-card/80 text-foreground backdrop-blur"}`}>
               {m.channel === "voice" && <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-70">heard by voice</span>}
               {m.channel === "imessage" && <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-70">iMessage {m.from === "you" ? `from ${m.who ?? "someone"}` : `reply to ${m.who ?? "someone"}`}</span>}
-              {m.text}
+              {m.from === "you" ? m.text : withInvoiceLinks(m.text)}
             </div>
           </div>
         ))}
