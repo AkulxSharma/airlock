@@ -90,7 +90,7 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
         setAwaiting(false);
         const cmd = extractWakeCommand(text).command || text;
         setHeard(normalizeTranscript(cmd) || cmd);
-        say(`hands-free command: “${cmd}”`);
+        say(`hands-free command: “${normalizeTranscript(cmd) || cmd}”`);
         commandRef.current(cmd);
         return;
       }
@@ -98,7 +98,7 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
       if (!wake.woke) { say("hands-free: heard speech without “Hey Airlock”, ignored and not kept"); return; }
       if (wake.command) {
         setHeard(normalizeTranscript(wake.command) || wake.command);
-        say(`hands-free command: “${wake.command}”`);
+        say(`hands-free command: “${normalizeTranscript(wake.command) || wake.command}”`);
         commandRef.current(wake.command);
       } else {
         setHeard("");
