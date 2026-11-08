@@ -94,7 +94,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 9. Synonyms only work on the voice path
 
-- [ ] Fixed
+- [x] Fixed in 281ca29
 
 **Where:** `server/src/api/message.ts`, the `req.channel === "voice"` block that calls `normalizeTranscript`.
 
@@ -106,7 +106,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 10. Contract-controlled text reaches the explainer model (prompt injection)
 
-- [ ] Fixed
+- [x] Fixed in 281ca29
 
 **Where:** `server/src/agent/gemini.ts`, `createExplainer` (the `user` JSON it sends), and `server/src/auditor/source.ts`, `quoted()`.
 
@@ -118,7 +118,7 @@ Reading order for the rule that matters most: `server/src/gate/decide.ts` and `s
 
 ## 11. The explainer's output check only bans a few words
 
-- [ ] Fixed
+- [x] Fixed in 281ca29
 
 **Where:** `server/src/agent/gemini.ts`, `validateExplanation`.
 
