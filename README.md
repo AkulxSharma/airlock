@@ -4,6 +4,18 @@ Say it. Airlock checks it. Then it moves.
 
 Airlock is a voice and iMessage agent that checks a crypto transaction before it goes out. You tell it to send funds, it screens the destination address and contract, and a rule in plain code decides whether the transfer is refused or asked for confirmation. It is built for UB Hacking 2026 (deep-space theme): nothing passes the airlock until the check clears.
 
+## Demo
+
+- **Video (1:31):** [demo/airlock-demo.mp4](demo/airlock-demo.mp4). A YouTube link will be added here.
+- **Live site:** https://airlock.ink. Open **How we work** in the sidebar for the pipeline diagram and how the auditor checks a contract. Try `backdoor.demo` (refused) and `akul.demo` (asks for YES, then sends).
+- **Text it:** iMessage works too. Say "Hey Airlock" once to start a session, then just type; "End Airlock" closes it (see `docs/IMESSAGE.md`).
+
+## How it works
+
+Airlock is a safety check for AI agents that move money. You tell it, by voice, by typing or over iMessage, to send test ETH. Before anything moves, our own auditor reads the destination contract two ways: its bytecode (SELFDESTRUCT, DELEGATECALL, proxies and upgradeable proxies), and, when the source is verified, 16 pattern checks for rug-pull and bug signals such as owner-only sweeps, hidden backdoors that move other people's tokens, reentrancy, tx.origin authorization and honeypot switches. The findings become a risk signal, and a rule in plain code decides: HIGH risk, an error or a timeout is refused, while LOW or MEDIUM asks for a YES within 60 seconds. Gemini only turns speech into a structured request and writes a short explanation that code checks before it is shown. ElevenLabs handles the voice in and out. Everything runs on Sepolia with a per-transfer cap, and we deployed 22 vulnerable and safe demo contracts, verified on Sourcify, so you can try both the refusal and the approval yourself. It is a risk signal, not a guarantee: the source checks are heuristics, and we document what they miss.
+
+The full explanation (the pipeline, what each audit layer checks, how findings become a verdict, and what it does not do) is in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md), with the pipeline drawn in [docs/airlock-pipeline.png](docs/airlock-pipeline.png).
+
 ## Team
 
 - Akul Sharma: contract auditor, risk gate, Gemini agent, iMessage bridge, testnet send, Devpost writeup.
@@ -36,7 +48,7 @@ Airlock is a voice and iMessage agent that checks a crypto transaction before it
 
 ## Status
 
-Backend in progress (auditor, risk gate, address resolve, chain client, testnet send and the API are in `server/`). A demo GUI with voice is in `app/`, and the voice helpers are in `voice/`. See `docs/START_HERE.md` for the progress checklist.
+Built and running for UB Hacking 2026: the auditor (25 checks), the risk gate, address resolve, the Gemini agent, testnet send and the API in `server/`; the website with voice, the wallets page and the live iMessage feed in `app/`; the iMessage bridge; and 22 demo contracts on Sepolia (17 of them Solidity written for this project and verified on Sourcify, see `docs/DEMO.md`). The demo video source is in `video/`. See `docs/HOW_IT_WORKS.md` for how it all fits together.
 
 ## Scope and known limits
 
