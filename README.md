@@ -6,7 +6,8 @@ Airlock is a voice and iMessage agent that checks a crypto transaction before it
 
 ## Demo
 
-- **Video (1:31):** [demo/airlock-demo.mp4](demo/airlock-demo.mp4). A YouTube link will be added here.
+- **Video (1:31):** [on YouTube](https://www.youtube.com/watch?v=q7XWYmazCgc), or the file itself in this repo: [demo/airlock-demo.mp4](demo/airlock-demo.mp4).
+- **Devpost:** https://devpost.com/software/airlock-uw5of6
 - **Live site:** https://airlock.ink. Open **How we work** in the sidebar for the pipeline diagram and how the auditor checks a contract. Try `backdoor.demo` (refused) and `akul.demo` (asks for YES, then sends).
 - **Text it:** iMessage works too. Say "Hey Airlock" once to start a session, then just type; "End Airlock" closes it (see `docs/IMESSAGE.md`).
 
