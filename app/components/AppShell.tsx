@@ -25,8 +25,14 @@ export function AppShell() {
   const handleVoiceText = useRef<(t: string, source: "hold" | "hands-free") => void>(() => {});
   const voice = useVoice((t) => handleVoiceText.current(t, "hold"));
   const air = useAirlock();
-  // Hands-free: pause while Airlock is speaking, recording, or busy so it never hears itself.
-  const wake = useWakeWord((t) => handleVoiceText.current(t, "hands-free"), voice.state !== "idle" || air.busy, air.note);
+  // Hands-free: pause while Airlock records or is busy. While it speaks the mic stays live only to catch you talking over it (barge-in), never to transcribe its own voice.
+  const speaking = voice.state === "speaking";
+  const wake = useWakeWord(
+    (t) => handleVoiceText.current(t, "hands-free"),
+    (voice.state !== "idle" && !speaking) || air.busy,
+    air.note,
+    { speaking, onInterrupt: voice.stopSpeaking }, // talking over Airlock stops it
+  );
 
   // Keep the latest handler in the ref after each render (refs must not be written during render).
   useEffect(() => {
@@ -37,7 +43,7 @@ export function AppShell() {
     };
   });
 
-  const sendTyped = async (text: string) => { setView("console"); await air.send(text, "gui"); };
+  const sendTyped = async (text: string) => { voice.stopSpeaking(); setView("console"); await air.send(text, "gui"); };
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-background text-foreground transition-colors duration-200">

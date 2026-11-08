@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { extractWakeCommand } from "../../voice/wake";
+import { createBargeInDetector } from "./bargeIn";
 import { createVad } from "./vad";
 import { encodeWav, resample } from "./wav";
 
@@ -38,7 +39,16 @@ export interface WakeControls {
   toggle: () => void;
 }
 
-export function useWakeWord(onCommand: (text: string) => void, paused: boolean, onEvent?: (message: string) => void): WakeControls {
+// While Airlock is speaking, `barge.speaking` is true and the microphone stays live (the browser's echo
+// cancellation removes most of Airlock's own voice). If the person talks over it, `barge.onInterrupt`
+// is called so the reply stops, and the first moments of what they said are kept, so "Hey Airlock, ..." is not clipped.
+export interface BargeInControls {
+  speaking: boolean;
+  onInterrupt: () => void;
+}
+const RECENT_FRAMES = 6; // about half a second of audio kept while Airlock speaks
+
+export function useWakeWord(onCommand: (text: string) => void, paused: boolean, onEvent?: (message: string) => void, barge?: BargeInControls): WakeControls {
   const supported = useSyncExternalStore(() => () => {}, canCapture, () => false);
   const [enabled, setEnabled] = useState(true); // on by default; the browser still asks for mic permission first
   const [live, setLive] = useState(false);
@@ -47,11 +57,13 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
   const [error, setError] = useState<string | null>(null);
   const awaitUntil = useRef(0);
   const pausedRef = useRef(paused);
+  const speakingRef = useRef(barge?.speaking ?? false);
+  const interruptRef = useRef(barge?.onInterrupt);
   const commandRef = useRef(onCommand);
   const eventRef = useRef(onEvent);
   const inFlight = useRef(false);
   const sentAt = useRef<number[]>([]);
-  useEffect(() => { pausedRef.current = paused; commandRef.current = onCommand; eventRef.current = onEvent; });
+  useEffect(() => { pausedRef.current = paused; commandRef.current = onCommand; eventRef.current = onEvent; speakingRef.current = barge?.speaking ?? false; interruptRef.current = barge?.onInterrupt; });
 
   useEffect(() => {
     if (!enabled) return;
@@ -145,9 +157,33 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
       const silent = audio.createGain();
       silent.gain.value = 0; // the processor must be connected to run; this keeps the speakers quiet
       const vad = createVad({ frameMs: (FRAME_SAMPLES / audio.sampleRate) * 1000 });
+      const detector = createBargeInDetector();
+      let recent: Float32Array[] = [];
+      let wasSpeaking = false;
       processor.onaudioprocess = (e) => {
-        if (pausedRef.current) { vad.reset(); return; } // drop audio while Airlock speaks, records or works
-        const clip = vad.feed(e.inputBuffer.getChannelData(0));
+        const samples = e.inputBuffer.getChannelData(0);
+        if (speakingRef.current && !pausedRef.current) {
+          // Airlock is talking. Do not transcribe its own voice, but listen for the person talking over it.
+          if (!wasSpeaking) { wasSpeaking = true; detector.reset(); recent = []; vad.reset(); }
+          recent.push(samples.slice());
+          if (recent.length > RECENT_FRAMES) recent.shift();
+          if (detector.feed(samples)) {
+            say("hands-free: you talked over Airlock, so it stopped");
+            const kept = recent;
+            recent = [];
+            wasSpeaking = false;
+            interruptRef.current?.();
+            // Hand the start of the interruption to the speech detector, so the first word is not lost.
+            for (const f of kept) {
+              const clip = vad.feed(f);
+              if (clip) void handleClip(clip, audio.sampleRate);
+            }
+          }
+          return;
+        }
+        wasSpeaking = false;
+        if (pausedRef.current) { vad.reset(); return; } // drop audio while Airlock records or works
+        const clip = vad.feed(samples);
         if (clip) void handleClip(clip, audio.sampleRate);
       };
       source.connect(processor);

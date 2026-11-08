@@ -20,6 +20,14 @@ export function useVoice(onTranscript: (text: string) => void) {
   const starting = useRef(false); // true while getUserMedia is pending (the permission prompt)
   const wantStop = useRef(false); // button released before the recorder was ready
 
+  /** Stop Airlock mid-sentence (the person interrupted, started talking, or sent something new). */
+  const stopSpeaking = useCallback(() => {
+    const el = audio.current;
+    audio.current = null;
+    if (el) { el.pause(); el.onended = el.onerror = null; try { URL.revokeObjectURL(el.src); } catch { /* already gone */ } }
+    setState((s) => (s === "speaking" ? "idle" : s));
+  }, []);
+
   const fail = useCallback((msg: string) => { setError(msg); setState("error"); }, []);
 
   const startListening = useCallback(async () => {
@@ -28,7 +36,7 @@ export function useVoice(onTranscript: (text: string) => void) {
     wantStop.current = false;
     setError(null);
     stopped.current = false;
-    audio.current?.pause();
+    stopSpeaking(); // talking over Airlock cuts it off
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       const rec = new MediaRecorder(stream);
@@ -62,7 +70,7 @@ export function useVoice(onTranscript: (text: string) => void) {
       starting.current = false;
       fail("Microphone blocked. Allow it in the browser to use voice.");
     }
-  }, [fail, onTranscript]);
+  }, [fail, onTranscript, stopSpeaking]);
 
   const stopListening = useCallback(() => {
     if (starting.current) { wantStop.current = true; return; }
@@ -72,23 +80,24 @@ export function useVoice(onTranscript: (text: string) => void) {
 
   const say = useCallback(async (text: string) => {
     if (!speakReplies || !text.trim()) return;
+    stopSpeaking(); // a new reply replaces one still playing
     try {
       const res = await fetch("/api/speak", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
       if (!res.ok) return; // voice is a bonus; the screen already shows the reply
       const url = URL.createObjectURL(await res.blob());
       const el = new Audio(url);
       audio.current = el;
-      el.onended = el.onerror = () => { URL.revokeObjectURL(url); setState((s) => (s === "speaking" ? "idle" : s)); };
+      el.onended = el.onerror = () => { URL.revokeObjectURL(url); if (audio.current === el) audio.current = null; setState((s) => (s === "speaking" ? "idle" : s)); };
       setState("speaking");
       await el.play();
     } catch { setState((s) => (s === "speaking" ? "idle" : s)); }
-  }, [speakReplies]);
+  }, [speakReplies, stopSpeaking]);
 
   const toggleSpeak = useCallback(() => {
-    setSpeakReplies((v) => { if (v) { audio.current?.pause(); setState((s) => (s === "speaking" ? "idle" : s)); } return !v; });
-  }, []);
+    setSpeakReplies((v) => { if (v) stopSpeaking(); return !v; });
+  }, [stopSpeaking]);
 
   useEffect(() => () => { audio.current?.pause(); recorder.current?.stream.getTracks().forEach((t) => t.stop()); }, []);
 
-  return { state, error, lastHeard, speakReplies, startListening, stopListening, say, toggleSpeak };
+  return { state, error, lastHeard, speakReplies, startListening, stopListening, stopSpeaking, say, toggleSpeak };
 }
