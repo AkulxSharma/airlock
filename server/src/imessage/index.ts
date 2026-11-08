@@ -58,13 +58,14 @@ console.log(
     : "Voice notes: off (set ELEVENLABS_API_KEY in airlock/.env to turn on)",
 );
 
-// Spoken replies: only to people who sent a voice note, after the text reply. A dry run prints
-// what it would say and spends no speech credits.
-const repliesOn = voiceOn && env.IMESSAGE_VOICE_REPLIES !== "off";
+// Spoken replies are OFF by default: a script cannot send a real iMessage voice message (only the Messages app
+// can), so replies to voice notes are text only. Set IMESSAGE_VOICE_REPLIES=on to also send a spoken copy as a plain
+// audio file, to people who sent a voice note. A dry run prints what it would say and spends no speech credits.
+const repliesOn = voiceOn && env.IMESSAGE_VOICE_REPLIES === "on";
 console.log(
   repliesOn
     ? `Spoken replies: on (to voice notes only, after the text reply; format ${env.IMESSAGE_VOICE_FORMAT === "caf" ? "caf" : "mp3"})`
-    : "Spoken replies: off",
+    : "Spoken replies: off (replies to voice notes are text; set IMESSAGE_VOICE_REPLIES=on for an audio-file copy)",
 );
 const logLine = (line: string) => console.log(`${new Date().toISOString()} ${line}`);
 const voiceReply = !repliesOn
@@ -93,7 +94,7 @@ if (testAt !== -1) {
     process.exit(1);
   }
   if (!voiceReply || dryRun) {
-    console.error("Spoken replies are off (needs ELEVENLABS_API_KEY, IMESSAGE_VOICE and IMESSAGE_VOICE_REPLIES not off, and no --dry-run).");
+    console.error("Spoken replies are off (they need ELEVENLABS_API_KEY, IMESSAGE_VOICE_REPLIES=on and no --dry-run).");
     process.exit(1);
   }
   console.log("Sending a spoken test message. Watch the phone.");
