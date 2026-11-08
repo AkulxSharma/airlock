@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { normalizeTranscript } from "../../voice/normalize";
 import { extractWakeCommand } from "../../voice/wake";
 import { createBargeInDetector } from "./bargeIn";
 import { createVad } from "./vad";
@@ -88,7 +89,7 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
         awaitUntil.current = 0;
         setAwaiting(false);
         const cmd = extractWakeCommand(text).command || text;
-        setHeard(cmd);
+        setHeard(normalizeTranscript(cmd) || cmd);
         say(`hands-free command: “${cmd}”`);
         commandRef.current(cmd);
         return;
@@ -96,7 +97,7 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
       const wake = extractWakeCommand(text);
       if (!wake.woke) { say("hands-free: heard speech without “Hey Airlock”, ignored and not kept"); return; }
       if (wake.command) {
-        setHeard(wake.command);
+        setHeard(normalizeTranscript(wake.command) || wake.command);
         say(`hands-free command: “${wake.command}”`);
         commandRef.current(wake.command);
       } else {

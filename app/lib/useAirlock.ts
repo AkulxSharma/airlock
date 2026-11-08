@@ -5,6 +5,7 @@ import { activityUrl, ApiError, checkHealth, sendMessage, streamUrl, type Stage,
 import { parseResponse, resolveExpiry, type ParsedReply } from "./parseReply";
 import { createStagePacer } from "./stagePacer";
 import { openEventStream } from "./sse";
+import { normalizeTranscript } from "../../voice/normalize";
 
 export interface ChatMessage {
   id: number;
@@ -125,8 +126,10 @@ export function useAirlock() {
     setPending(null);
     pacer.reset();
     setStages({});
-    setMessages((m) => [...m, { id: nextId(), from: "you", text: clean, channel }]);
-    addLog("message", `you (${channel}): ${clean}`);
+    // What the person sees is the normalised text: "zero point zero one" shows as 0.01, "vitalik dot eth" as vitalik.eth.
+    const shown = channel === "voice" ? normalizeTranscript(clean) || clean : clean;
+    setMessages((m) => [...m, { id: nextId(), from: "you", text: shown, channel }]);
+    addLog("message", `you (${channel}): ${shown}`);
     try {
       const res = await sendMessage({ sessionId, channel, text: clean, ...(source ? { source } : {}) });
       const parsed = parseResponse(res);

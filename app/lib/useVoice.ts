@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { normalizeTranscript } from "../../voice/normalize";
 
 export type VoiceState = "idle" | "listening" | "transcribing" | "speaking" | "error";
 
@@ -55,7 +56,7 @@ export function useVoice(onTranscript: (text: string) => void) {
           const res = await fetch("/api/transcribe", { method: "POST", body: form });
           const data = (await res.json()) as { text?: string; error?: string };
           if (!res.ok || typeof data.text !== "string") return fail(data.error ?? "Could not transcribe that.");
-          setLastHeard(data.text);
+          setLastHeard(normalizeTranscript(data.text) || data.text);
           setState("idle");
           if (data.text.trim()) onTranscript(data.text);
         } catch { fail("Could not reach the voice service."); }
