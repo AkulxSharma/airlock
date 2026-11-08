@@ -13,6 +13,7 @@ type Opts = {
   send?: (h: string, t: string) => Promise<void>;
   max?: number;
   maxGlobal?: number;
+  sessionIdleMs?: number;
 };
 
 function setup(opts: Opts = {}) {
@@ -34,6 +35,7 @@ function setup(opts: Opts = {}) {
     log: (l) => logs.push(l),
     maxPerMinute: opts.max,
     maxGlobalPerMinute: opts.maxGlobal,
+    sessionIdleMs: opts.sessionIdleMs ?? 0, // sessions off unless a test asks for them
   });
   return { bridge, api, send, getCursor: () => saved, tick: (ms: number) => { t += ms; }, logs, messages };
 }
@@ -252,7 +254,7 @@ describe("voice notes", () => {
     const api = vi.fn(opts.api ?? (async (_s: string, t: string, _c?: "imessage" | "voice") => ({ reply: `reply to: ${t}`, needsConfirm: false })));
     const send = vi.fn(async () => {});
     const logs: string[] = [];
-    const bridge = createBridge({
+    const bridge = createBridge({ sessionIdleMs: 0,
       source: { maxRowId: () => 0, since: (r) => messages.filter((x) => x.rowid > r) },
       cursor: { load: () => saved, save: (n) => { saved = n; } },
       api, send,
@@ -334,7 +336,7 @@ describe("spoken replies", () => {
     const order: string[] = [];
     const send = vi.fn(async () => { order.push("text"); });
     const voiceReply = vi.fn(opts.voiceReply ?? (async () => { order.push("voice"); }));
-    const bridge = createBridge({
+    const bridge = createBridge({ sessionIdleMs: 0,
       source: { maxRowId: () => 0, since: (r) => opts.messages.filter((x) => x.rowid > r) },
       cursor: { load: () => 1, save: () => {} },
       api: async (_s, t) => ({ reply: `reply to: ${t}`, needsConfirm: false }),
@@ -398,7 +400,7 @@ describe("just the name, end to end with the real handler", () => {
     });
     for (const text of ["Hey airlock", "HEY AIRLOCK!", "airlock", "Airlock?", "hey, airlock."]) {
       const sent: string[] = [];
-      const bridge = createBridge({
+      const bridge = createBridge({ sessionIdleMs: 0,
         source: { maxRowId: () => 0, since: (r) => (r < 2 ? [{ rowid: 2, handle: ME, text }] : []) },
         cursor: { load: () => 1, save: () => {} },
         api: async (sessionId, t, channel) => {
@@ -420,7 +422,7 @@ describe("voice note logging (what happened, never what was said)", () => {
   const voice = (rowid: number): InboundMessage => ({ rowid, handle: ME, text: "", audioPath: `/a/${rowid}.caf` });
   function lsetup(transcript: string | null, withTranscriber = true) {
     const logs: string[] = [];
-    const bridge = createBridge({
+    const bridge = createBridge({ sessionIdleMs: 0,
       source: { maxRowId: () => 0, since: (r) => (r < 2 ? [voice(2)] : []) },
       cursor: { load: () => 1, save: () => {} },
       api: async (_s, t) => ({ reply: `r:${t}`, needsConfirm: false }),
@@ -464,7 +466,7 @@ describe("debug transcripts (opt-in)", () => {
   const voice: InboundMessage = { rowid: 2, handle: ME, text: "", audioPath: "/a/2.caf" };
   const run = async (debug: boolean | undefined, transcript: string) => {
     const logs: string[] = [];
-    const bridge = createBridge({
+    const bridge = createBridge({ sessionIdleMs: 0,
       source: { maxRowId: () => 0, since: (r) => (r < 2 ? [voice] : []) },
       cursor: { load: () => 1, save: () => {} },
       api: async () => ({ reply: "r", needsConfirm: false }),
@@ -495,7 +497,7 @@ describe("debug transcripts (opt-in)", () => {
 describe("misspelled name: voice notes are forgiving, typed texts are not", () => {
   function run(msg: InboundMessage, transcript: string) {
     const calls: string[] = [];
-    const bridge = createBridge({
+    const bridge = createBridge({ sessionIdleMs: 0,
       source: { maxRowId: () => 0, since: (r) => (r < 2 ? [msg] : []) },
       cursor: { load: () => 1, save: () => {} },
       api: async (_s, t, c) => { calls.push(`${c}:${t}`); return { reply: "r", needsConfirm: false }; },
@@ -518,5 +520,74 @@ describe("misspelled name: voice notes are forgiving, typed texts are not", () =
   it("a typed 'Hey Erlak' is not answered", async () => {
     const t = run({ rowid: 2, handle: ME, text: "Hey Erlak send 0.01 to a.eth" }, "");
     expect(await t.bridge.poll()).toBe(0);
+  });
+});
+
+describe("sessions: Hey Airlock opens one, End Airlock closes it", () => {
+  const S = 30 * 60_000;
+
+  it("after Hey Airlock, later texts go to Airlock without the name", async () => {
+    const t = setup({ messages: [m(2, ME, "Hey Airlock"), m(3, ME, "send 0.001 to vault.demo"), m(4, ME, "what does it do")], cursor: 1, sessionIdleMs: S });
+    expect(await t.bridge.poll()).toBe(3);
+    expect(t.api.mock.calls.map((c) => c[1])).toEqual(["help", "send 0.001 to vault.demo", "what does it do"]);
+    expect(t.logs.join("\n")).toMatch(/session with \*\*\*0100 started/);
+  });
+
+  it("End Airlock closes it: nothing after that is read, and the sender is told", async () => {
+    const t = setup({ messages: [m(2, ME, "Hey Airlock"), m(3, ME, "End Airlock"), m(4, ME, "send 0.001 to vault.demo"), m(5, ME, "lol")], cursor: 1, sessionIdleMs: S });
+    await t.bridge.poll();
+    expect(t.api.mock.calls.map((c) => c[1])).toEqual(["help"]); // "End Airlock" is not forwarded
+    expect(t.send).toHaveBeenLastCalledWith(ME, expect.stringMatching(/session ended/i));
+    expect(t.send).toHaveBeenCalledTimes(2); // the help reply and the goodbye; the later texts get nothing
+  });
+
+  it("works for other wordings and for a voice note's transcript", async () => {
+    for (const end of ["end airlock", "Stop Airlock", "bye airlock", "Hey Airlock, end airlock"]) {
+      const t = setup({ messages: [m(2, ME, "Hey Airlock"), m(3, ME, end), m(4, ME, "send 1 to a.eth")], cursor: 1, sessionIdleMs: S });
+      await t.bridge.poll();
+      expect(t.api).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("only the person who started it is in the session", async () => {
+    const t = setup({ messages: [m(2, ME, "Hey Airlock"), m(3, STRANGER, "send 0.001 to vault.demo")], cursor: 1, sessionIdleMs: S });
+    await t.bridge.poll();
+    expect(t.api).toHaveBeenCalledTimes(1);
+  });
+
+  it("goes quiet after the idle timeout, and the next message needs the name again", async () => {
+    const msgs = [m(2, ME, "Hey Airlock")];
+    const t = setup({ messages: msgs, cursor: 1, sessionIdleMs: S });
+    await t.bridge.poll();
+    t.tick(S + 1);
+    msgs.push(m(3, ME, "send 0.001 to vault.demo"));
+    await t.bridge.poll();
+    expect(t.api).toHaveBeenCalledTimes(1);
+    expect(t.logs.join("\n")).toMatch(/timed out/);
+  });
+
+  it("each message in the session keeps it alive", async () => {
+    const msgs = [m(2, ME, "Hey Airlock")];
+    const t = setup({ messages: msgs, cursor: 1, sessionIdleMs: S });
+    await t.bridge.poll();
+    t.tick(S - 1000);
+    msgs.push(m(3, ME, "hello"));
+    await t.bridge.poll();
+    t.tick(S - 1000);
+    msgs.push(m(4, ME, "send 0.001 to vault.demo"));
+    await t.bridge.poll();
+    expect(t.api).toHaveBeenCalledTimes(3);
+  });
+
+  it("ending the session cancels an open confirmation", async () => {
+    const t = setup({ messages: [m(2, ME, "Hey Airlock send 0.001 to vault.demo"), m(3, ME, "end airlock")], cursor: 1, sessionIdleMs: S, api: asks() });
+    await t.bridge.poll();
+    expect(t.api.mock.calls.map((c) => c[1])).toEqual(["send 0.001 to vault.demo", "no"]);
+  });
+
+  it("End Airlock without an open session does nothing", async () => {
+    const t = setup({ messages: [m(2, ME, "end airlock")], cursor: 1, sessionIdleMs: S });
+    expect(await t.bridge.poll()).toBe(0);
+    expect(t.send).not.toHaveBeenCalled();
   });
 });

@@ -109,6 +109,7 @@ const bridge = createBridge({
   maxPerMinute: Number(env.IMESSAGE_MAX_PER_MINUTE) || 8,
   maxGlobalPerMinute: Number(env.IMESSAGE_MAX_GLOBAL_PER_MINUTE) || 20,
   maxVoicePerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
+  sessionIdleMs: (Number(env.IMESSAGE_SESSION_MINUTES) || 30) * 60_000,
   voiceReply,
   debugTranscripts: env.IMESSAGE_DEBUG_TRANSCRIPTS === "1",
   maxSpokenRepliesPerMinute: Number(env.IMESSAGE_MAX_VOICE_PER_MINUTE) || 6,
