@@ -12,8 +12,11 @@ const ensNeverCalled: EnsClient = {
 describe("demo-targets.json", () => {
   const targets = loadDemoTargets();
 
-  it("lists the five targets with valid checksummed addresses and an expected verdict", () => {
-    expect(Object.keys(targets).sort()).toEqual(["clean.demo", "clone.demo", "drainer.demo", "proxy.demo", "weth.demo"]);
+  it("lists the ten targets with valid checksummed addresses and an expected verdict", () => {
+    expect(Object.keys(targets).sort()).toEqual([
+      "clean.demo", "clone.demo", "drainer.demo", "honeypot.demo", "proxy.demo",
+      "reentrancy.demo", "rugvault.demo", "selfkill.demo", "vault.demo", "weth.demo",
+    ]);
     for (const t of Object.values(targets)) {
       expect(isAddress(t.address, { strict: true })).toBe(true);
       expect(["LOW", "MEDIUM", "HIGH"]).toContain(t.expected);
