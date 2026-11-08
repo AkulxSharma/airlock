@@ -38,7 +38,7 @@ describe("Gemini agent: intent", () => {
 
   it("loose phrasing becomes a send when amount and target appear in the text", async () => {
     const t = fake(transfer("0.01", "vitalik.eth"));
-    const r = await createGeminiAgent(t.client).handle("yo can u pls send 0.01 eth over to vitalik.eth thx");
+    const r = await createGeminiAgent(t.client).handle("vitalik.eth should get 0.01 eth from me");
     expect(r).toEqual({ kind: "send", amountEth: "0.01", target: "vitalik.eth" });
     expect(t.generate).toHaveBeenCalledTimes(1);
   });
@@ -260,8 +260,9 @@ describe("withCooldown", () => {
       throw new Error("429");
     });
     const agent = createGeminiAgent(withCooldown({ generate }));
-    expect(await agent.handle("could you send 0.01 to vitalik.eth please")).toEqual({ kind: "help" });
-    expect(await agent.handle("could you send 0.01 to vitalik.eth please")).toEqual({ kind: "help" });
+    // Phrasing the rule parser cannot read, so the model is the only way to understand it.
+    expect(await agent.handle("vitalik.eth should get 0.01 eth from me")).toEqual({ kind: "help" });
+    expect(await agent.handle("vitalik.eth should get 0.01 eth from me")).toEqual({ kind: "help" });
     expect(generate).toHaveBeenCalledTimes(1);
   });
 });
@@ -307,11 +308,11 @@ describe("whole-token matching (the model may only restate what the user wrote)"
 
   it("the agent now rejects a model that turns 0.015 into 0.01 or extends a name", async () => {
     const swapped = fake(transfer("0.01", "vitalik.eth"));
-    expect(await createGeminiAgent(swapped.client).handle("could you send 0.015 eth to vitalik.eth please")).toEqual({ kind: "help" });
+    expect(await createGeminiAgent(swapped.client).handle("vitalik.eth should get 0.015 eth from me")).toEqual({ kind: "help" });
     const longer = fake(transfer("0.01", "vitalik.eth"));
-    expect(await createGeminiAgent(longer.client).handle("could you send 0.01 eth to vitalik.eth.evil.example please")).toEqual({ kind: "help" });
+    expect(await createGeminiAgent(longer.client).handle("vitalik.eth.evil.example should get 0.01 eth from me")).toEqual({ kind: "help" });
     const exact = fake(transfer("0.01", "vitalik.eth"));
-    expect(await createGeminiAgent(exact.client).handle("could you send 0.01 eth to vitalik.eth please")).toEqual({
+    expect(await createGeminiAgent(exact.client).handle("vitalik.eth should get 0.01 eth from me")).toEqual({
       kind: "send",
       amountEth: "0.01",
       target: "vitalik.eth",
@@ -331,7 +332,7 @@ describe("plain greetings never reach the model", () => {
 
   it("a longer message that merely starts with a greeting still goes to the model", async () => {
     const t = fake(transfer("0.01", "vitalik.eth"));
-    const r = await createGeminiAgent(t.client).handle("hey could you send 0.01 eth to vitalik.eth");
+    const r = await createGeminiAgent(t.client).handle("hey, vitalik.eth should get 0.01 eth from me");
     expect(r).toEqual({ kind: "send", amountEth: "0.01", target: "vitalik.eth" });
     expect(t.generate).toHaveBeenCalledTimes(1);
   });

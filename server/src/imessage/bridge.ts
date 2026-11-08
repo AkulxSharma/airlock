@@ -176,7 +176,7 @@ export function createBridge(deps: BridgeDeps) {
         awaiting.delete(msg.handle);
         if (hadOpen) {
           try {
-            await deps.api(`imessage:${msg.handle}`, "no", "imessage"); // cancel an open confirmation
+            await deps.api(`imessage:${msg.handle.toLowerCase()}`, "no", "imessage"); // cancel an open confirmation
           } catch {
             /* the server expires it on its own */
           }
@@ -221,7 +221,7 @@ export function createBridge(deps: BridgeDeps) {
 
       let reply: string;
       try {
-        const r = await deps.api(`imessage:${msg.handle}`, text, spoken ? "voice" : "imessage");
+        const r = await deps.api(`imessage:${msg.handle.toLowerCase()}`, text, spoken ? "voice" : "imessage");
         reply = r.reply;
         if (r.needsConfirm) awaiting.set(msg.handle, now() + confirmWindowMs);
         else awaiting.delete(msg.handle);
