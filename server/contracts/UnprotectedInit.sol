@@ -3,6 +3,9 @@ pragma solidity ^0.8.24;
 
 // DEMO ONLY. Access control: initialize() has no guard, so anyone can call it and become the owner.
 contract UnprotectedInit {
+    // Accepts a plain ETH transfer, so the only thing that can stop money reaching this demo contract is Airlock's own gate.
+    receive() external payable {}
+
     address public owner;
     mapping(address => uint256) public balances;
 

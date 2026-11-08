@@ -3,6 +3,9 @@ pragma solidity ^0.8.24;
 
 // DEMO ONLY (Sepolia, test ETH). A vault that looks normal, but the owner can take everyone's deposits.
 contract RugVault {
+    // Accepts a plain ETH transfer, so the only thing that can stop money reaching this demo contract is Airlock's own gate.
+    receive() external payable {}
+
     address public owner;
     mapping(address => uint256) public balances;
 

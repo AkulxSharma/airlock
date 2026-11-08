@@ -1,6 +1,7 @@
 // Deploys the compiled Solidity demo contracts to Sepolia (test ETH only) and merges them
 // into src/demo/demo-targets.json. Run compile-demo-contracts.ts first.
-// Run: npx tsx scripts/deploy-solidity-demos.ts   (skips names already recorded; --force redeploys)
+// Run: npx tsx scripts/deploy-solidity-demos.ts   (skips names already recorded)
+//      --force redeploys them; --only=a.demo,b.demo limits it to those names (with --force).
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
@@ -42,7 +43,9 @@ const pub = createPublicClient({ chain: sepolia, transport });
 if ((await pub.getChainId()) !== 11155111) throw new Error("not Sepolia");
 console.log("deployer", account.address, "balance", formatEther(await pub.getBalance({ address: account.address })), "SepETH");
 
+const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",").filter(Boolean);
 for (const p of PLAN) {
+  if (only && !only.includes(p.name)) continue;
   if (fixture.targets[p.name] && !process.argv.includes("--force")) {
     console.log("skip", p.name, "(already recorded)");
     continue;
@@ -51,7 +54,7 @@ for (const p of PLAN) {
   const r = await pub.waitForTransactionReceipt({ hash, timeout: 120_000 });
   if (r.status !== "success" || !r.contractAddress) throw new Error(`${p.contract} deploy failed`);
   console.log(`${p.name}: ${r.contractAddress}  tx ${hash}`);
-  fixture.targets[p.name] = { address: r.contractAddress, expected: p.expected, why: p.why, contract: p.contract };
+  fixture.targets[p.name] = { address: r.contractAddress, expected: p.expected, why: p.why, contract: p.contract }; // verified is set by verify-solidity-demos.ts
   writeFileSync(FILE, JSON.stringify(fixture, null, 2) + "\n"); // save after each, so a later failure loses nothing
 }
 console.log("done");

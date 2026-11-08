@@ -3,6 +3,9 @@ pragma solidity ^0.8.24;
 
 // DEMO ONLY. Oracle manipulation: collateral is priced from this pool's own live reserves, which a flash loan can move in one transaction.
 contract SpotOracleLender {
+    // Accepts a plain ETH transfer, so the only thing that can stop money reaching this demo contract is Airlock's own gate.
+    receive() external payable {}
+
     uint256 public reserveEth;
     uint256 public reserveToken;
     mapping(address => uint256) public collateralToken;

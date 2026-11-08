@@ -7,7 +7,7 @@ import { scoreFindings, verdictFor } from "../src/auditor/score.js";
 // The four Solidity demo contracts, compiled by scripts/compile-demo-contracts.ts. This runs the
 // real compiled bytecode and the real source through the auditor, the same two layers a live
 // audit uses, and checks the verdict each demo contract is supposed to get.
-type Art = { file: string; runtime: string };
+type Art = { file: string; runtime: string; abi: Array<{ type: string }> };
 const compiled = JSON.parse(readFileSync(new URL("../src/demo/compiled.json", import.meta.url), "utf8")) as {
   input: { sources: Record<string, { content: string }> };
   contracts: Record<string, Art>;
@@ -80,4 +80,15 @@ describe("one demo contract per vulnerability class", () => {
       expect(r.verdict).toBe(verdict);
     });
   }
+});
+
+describe("every demo contract can receive a plain ETH transfer", () => {
+  // The only thing that should stop money reaching a demo contract is Airlock's own gate, never the
+  // contract itself. A contract with no receive() function rejects a plain send.
+  it("has a receive() function (the shared IERC20 interface has no code)", () => {
+    for (const [name, art] of Object.entries(compiled.contracts)) {
+      if (name === "IERC20") continue;
+      expect(art.abi.some((e) => e.type === "receive"), `${name} must have receive()`).toBe(true);
+    }
+  });
 });

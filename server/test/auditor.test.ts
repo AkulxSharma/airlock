@@ -109,3 +109,36 @@ describe("scoring", () => {
     expect(scoreFindings([f("high"), f("high"), f("high")])).toBe(100);
   });
 });
+
+import { stripMetadata, scanOpcodes as scan } from "../src/auditor/opcodes.js";
+
+describe("compiler metadata is data, not code", () => {
+  // a2 64 "ipfs" 58 22 <34 bytes> 64 "solc" 43 <3 bytes> 00 33  (the shape solc 0.8 appends)
+  const cbor = (hashByte: number) => [
+    0xa2, 0x64, 0x69, 0x70, 0x66, 0x73, 0x58, 0x22, ...Array(34).fill(hashByte),
+    0x64, 0x73, 0x6f, 0x6c, 0x63, 0x43, 0x00, 0x08, 0x1c, 0x00, 0x33,
+  ];
+  const body = [0x60, 0x80, 0x60, 0x40, 0x52, 0x00]; // PUSH1 80 PUSH1 40 MSTORE STOP
+
+  it("a hash that happens to contain ff, f2 and f4 does not read as selfdestruct, callcode or delegatecall", () => {
+    for (const b of [0xff, 0xf2, 0xf4]) {
+      const ops = scan(Uint8Array.from([...body, ...cbor(b)]));
+      expect(ops.has(0xff) || ops.has(0xf2) || ops.has(0xf4)).toBe(false);
+    }
+  });
+
+  it("a real SELFDESTRUCT in the code is still found when metadata follows", () => {
+    expect(scan(Uint8Array.from([0x33, 0xff, ...cbor(0x11)])).has(0xff)).toBe(true);
+  });
+
+  it("trailing bytes that only look like a length are left alone", () => {
+    const odd = Uint8Array.from([...body, 0xff, 0x00, 0x04]);
+    expect(stripMetadata(odd)).toEqual(odd);
+    expect(scan(odd).has(0xff)).toBe(true);
+  });
+
+  it("code with no metadata is unchanged", () => {
+    const plain = Uint8Array.from(body);
+    expect(stripMetadata(plain)).toEqual(plain);
+  });
+});

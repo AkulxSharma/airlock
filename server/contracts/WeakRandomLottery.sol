@@ -3,6 +3,9 @@ pragma solidity ^0.8.24;
 
 // DEMO ONLY. Weak randomness: the "random" winner comes from block.timestamp, which a validator or a same-block contract can predict.
 contract WeakRandomLottery {
+    // Accepts a plain ETH transfer, so the only thing that can stop money reaching this demo contract is Airlock's own gate.
+    receive() external payable {}
+
     address[] public players;
 
     function enter() external payable {

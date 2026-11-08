@@ -3,6 +3,9 @@ pragma solidity ^0.8.24;
 
 // DEMO ONLY (Sepolia, test tokens). A token that lets you buy but gives the owner the switches to stop you selling.
 contract HoneypotToken {
+    // Accepts a plain ETH transfer, so the only thing that can stop money reaching this demo contract is Airlock's own gate.
+    receive() external payable {}
+
     string public name = "Honey Demo";
     string public symbol = "HNY";
     uint8 public decimals = 18;
