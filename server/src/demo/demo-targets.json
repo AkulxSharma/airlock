@@ -28,35 +28,35 @@
       "why": "real Sepolia WETH9, verified on Sourcify, nothing flagged"
     },
     "rugvault.demo": {
-      "address": "0x4f996B50a1448C8AA87a5AC6A7Bc73d4Ec215a7F",
+      "address": "0xDA9f5F4CFf18CDd417fECdF92E45e522e81fC960",
       "expected": "HIGH",
       "why": "owner can sweep the whole pool (owner-sweep)",
       "contract": "RugVault",
       "verified": true
     },
     "reentrancy.demo": {
-      "address": "0x197a03179F9115A3BD355d801d3F43B740251716",
+      "address": "0xb2937D6e9656bE37fA811197da8E50C6Bfd2D157",
       "expected": "MEDIUM",
       "why": "sends ether before updating balances (reentrancy-risk)",
       "contract": "ReentrancyBank",
       "verified": true
     },
     "honeypot.demo": {
-      "address": "0x5caE09aCc98A86c6956EE18eAf24ff5E0A4e77F1",
+      "address": "0x0e272B33061Da91a3bE72F73E819A566f1F9822C",
       "expected": "MEDIUM",
       "why": "blacklist, sell-fee and trading switches",
       "contract": "HoneypotToken",
       "verified": true
     },
     "selfkill.demo": {
-      "address": "0x0C7Caa6629Af7601eBd347F5f867D1979D091e93",
+      "address": "0xAAC958571D84fec430a6A399744ff3da55E2fc86",
       "expected": "HIGH",
       "why": "anyone can SELFDESTRUCT it",
       "contract": "UnprotectedKill",
       "verified": true
     },
     "vault.demo": {
-      "address": "0xE5ce5ee5A8dC8D44c7cBcF3b6F51f4bef6b55CC6",
+      "address": "0x9d3D0fDEcb763071FCb07a735229094f205f3c60",
       "expected": "LOW",
       "why": "user-only vault, source verified, nothing flagged",
       "contract": "CleanVault",
@@ -70,77 +70,77 @@
       "verified": true
     },
     "unchecked.demo": {
-      "address": "0x9d7807d1d1da5683b6D84ac419E96d02ACbA7B0B",
+      "address": "0xcCd45c29585B3939598b17091688e80aD5827933",
       "expected": "MEDIUM",
       "why": "ignores whether a send succeeded (unchecked-call)",
       "contract": "UncheckedSend",
       "verified": true
     },
     "init.demo": {
-      "address": "0xB37703A20F49f811DB1E19cC00FFF3c31FeF7859",
+      "address": "0x109a2fC7Ad6e8FA965a7D1aFcA07eebbfdDa6a7E",
       "expected": "HIGH",
       "why": "anyone can call initialize() and become owner (unprotected-init)",
       "contract": "UnprotectedInit",
       "verified": true
     },
     "delegate.demo": {
-      "address": "0x318DbEB33Df90E0A3bCf1425eA394bC977095322",
+      "address": "0x7ae375e9609Cc94B6b87Ea10Fc60fd9Ad245BC1e",
       "expected": "MEDIUM",
       "why": "delegatecall to a caller-chosen address",
       "contract": "DelegateToUser",
       "verified": true
     },
     "lottery.demo": {
-      "address": "0xbd248Dfc9c65B782CD3967A01C63fd36eDAD81ee",
+      "address": "0x40B42584A26db85DB967Ff2ddDf11823F5131D04",
       "expected": "MEDIUM",
       "why": "block values used as randomness (weak-randomness)",
       "contract": "WeakRandomLottery",
       "verified": true
     },
     "strictbalance.demo": {
-      "address": "0xec82950cF249a4f1E5cC419Ff49348d76AD5a130",
+      "address": "0x55BDCe3cC08BC0b4657deF9614e01E3bB6eB609a",
       "expected": "LOW",
       "why": "exact balance comparison, forced-ether risk (strict-balance)",
       "contract": "StrictBalanceGame",
       "verified": true
     },
     "dos.demo": {
-      "address": "0x7ADBB5e23c3659136fCb2806806A969DBc95C371",
+      "address": "0xa26CEB51C2BEFD9D14a8b2CC03Cad0bA8E60B157",
       "expected": "MEDIUM",
       "why": "pays everyone in one loop (dos-loop-payment)",
       "contract": "DosRefund",
       "verified": true
     },
     "replay.demo": {
-      "address": "0x21384dF33FFd7D6EfC894EC059Ae22f7d8523448",
+      "address": "0xef6132367215bB8BBfd426269AF27F3d94Bcb821",
       "expected": "MEDIUM",
       "why": "signature has no replay protection (signature-replay)",
       "contract": "SignatureReplay",
       "verified": true
     },
     "backdoor.demo": {
-      "address": "0x86Ad609ebC796200dF23Bf3a0110648D079037Ac",
+      "address": "0xA69A7ed1320B9C656F76d1D987f950D54BD1a386",
       "expected": "HIGH",
       "why": "owner can move anyone's tokens (owner-seize)",
       "contract": "BackdoorToken",
       "verified": true
     },
     "approval.demo": {
-      "address": "0xAC1230e61fB76Fc46699Acce4684De87818C5746",
+      "address": "0x400761a96fa050Be27a3b0B37Be0135f63Dc15f0",
       "expected": "HIGH",
       "why": "owner pulls approved tokens out of wallets (owner-seize)",
       "contract": "ApprovalDrainer",
       "verified": true
     },
     "math.demo": {
-      "address": "0x98CdDbE43939901970F2001faFBF5E3BAb2d490B",
+      "address": "0xD3F18a3B6230Cd742F2Fe6498dc52534Fb43b55C",
       "expected": "MEDIUM",
       "why": "balance math in an unchecked block (unchecked-math)",
       "contract": "UncheckedMath",
       "verified": true
     },
     "oracle.demo": {
-      "address": "0x28aE79d10A85c2Fd6f98d511246b2252dB9F961B",
+      "address": "0xEBa70a0f89E718c19CB89E3e7832dF3eb09FCC9d",
       "expected": "LOW",
       "why": "flash-loan price manipulation: NOT detected, a known gap",
       "contract": "SpotOracleLender",
