@@ -61,7 +61,13 @@ export const CRYPTO_TERMS = [
 ];
 
 /** Names. */
-export const NAMES = ["Airlock", "Hey Airlock", "vitalik"];
+export const NAMES = ["Airlock", "Hey Airlock", "ElevenLabs", "vitalik"];
+
+/**
+ * The demo contract names (spoken as "drainer dot demo", written drainer.demo). A test in server/test
+ * checks this list matches server/src/demo/demo-targets.json, so a new demo target cannot be forgotten.
+ */
+export const DEMO_NAMES = ["drainer", "clean", "proxy", "clone", "weth", "rugvault", "reentrancy", "honeypot", "selfkill", "vault", "origin", "unchecked", "init", "delegate", "lottery", "strictbalance", "dos", "replay", "backdoor", "approval", "math", "oracle"];
 
 /**
  * Words sent to ElevenLabs Scribe as keyterms: only the rare ones, because common words like "yes"
@@ -73,6 +79,9 @@ export const KEYTERMS = [
   "Airlock", "Hey Airlock", "vitalik", "Sepolia", "testnet", "ETH", "ENS", "gwei", "wei", "Etherscan",
   "Sourcify", "selfdestruct", "delegatecall", "callcode", "bytecode", "reentrancy", "honeypot", "upgradeable",
   "proxy", "blacklist", "tx origin", "minimal proxy", "unverified", "mainnet", "faucet", "nonce",
+  "ElevenLabs", "dot eth", "dot demo",
+  // demo contract names; proxy, reentrancy and honeypot are already listed above
+  "drainer", "clean", "clone", "weth", "rugvault", "selfkill", "vault", "origin", "unchecked", "init", "delegate", "lottery", "strictbalance", "dos", "replay", "backdoor", "approval", "math", "oracle",
 ];
 
 /** A compact text block for the Gemini system prompt, so the model matches related words. */
@@ -99,5 +108,6 @@ export function transferVocabularyForPrompt(): string {
     `Words for the coin (all mean ETH): ${CURRENCY_WORDS.join(", ")}.`,
     `Words that mean "to" before the destination: to, ${CONNECTORS.join(", ")}.`,
     `Polite openers to ignore: ${POLITE_OPENERS.join(", ")}.`,
+    `Destinations Airlock knows by name: vitalik.eth and ${DEMO_NAMES.map((n) => `${n}.demo`).join(", ")}. Speech is often misheard, so if a word is close to one of these, use it. Spoken "dot eth" or "dot demo" is the suffix ".eth" or ".demo".`,
   ].join("\n");
 }

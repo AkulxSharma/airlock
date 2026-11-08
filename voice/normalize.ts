@@ -124,6 +124,7 @@ export function normalizeTranscript(input: string): string {
   s = s.replace(/[.,;:!?]+(?=\s|$)/g, ""); // trailing punctuation, keeps 0.01 and 11,155,111
   s = s.replace(/\bzero\s?x(?=\s|[0-9a-f])/g, "0x");
   s = s.replace(/\s+dot\s+eth\b/g, ".eth");
+  s = s.replace(/\s+dot\s+demo\b/g, ".demo");
   s = s.replace(/(\d),(?=\d{3}\b)/g, "$1"); // thousands separators
   let tokens = s.split(/\s+/).filter(Boolean);
   tokens = joinHexAfter0x(wordsToNumbers(tokens));

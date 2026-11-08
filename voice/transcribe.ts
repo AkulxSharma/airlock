@@ -7,6 +7,9 @@ export const KEYTERMS = [
   "Airlock", "Hey Airlock", "vitalik", "Sepolia", "testnet", "ETH", "ENS", "gwei", "wei", "Etherscan",
   "Sourcify", "selfdestruct", "delegatecall", "callcode", "bytecode", "reentrancy", "honeypot", "upgradeable",
   "proxy", "blacklist", "tx origin", "minimal proxy", "unverified", "mainnet", "faucet", "nonce",
+  "ElevenLabs", "dot eth", "dot demo",
+  // demo contract names; proxy, reentrancy and honeypot are already listed above
+  "drainer", "clean", "clone", "weth", "rugvault", "selfkill", "vault", "origin", "unchecked", "init", "delegate", "lottery", "strictbalance", "dos", "replay", "backdoor", "approval", "math", "oracle",
 ];
 const DEFAULT_STT_MODEL = "scribe_v2";
 export const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB, far above a spoken command

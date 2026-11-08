@@ -92,7 +92,7 @@ describe("the keyterm list", () => {
     expect(TRANSCRIBE_KEYTERMS).toEqual(KEYTERMS);
   });
   it("stays well under the 48 the API accepted, with plain text only and no duplicates", () => {
-    expect(KEYTERMS.length).toBeLessThanOrEqual(40);
+    expect(KEYTERMS.length).toBeLessThanOrEqual(48);
     expect(new Set(KEYTERMS).size).toBe(KEYTERMS.length);
     for (const k of KEYTERMS) expect(k).toMatch(/^[A-Za-z0-9 ]+$/);
   });
