@@ -15,9 +15,9 @@ export const AuditResultSchema = z.object({
 });
 
 export const MessageRequestSchema = z.object({
-  sessionId: z.string().min(1),
+  sessionId: z.string().min(1).max(200), // a browser makes a UUID; 200 leaves room for "imessage:+1..." style ids
   channel: z.enum(["gui", "imessage", "voice"]),
-  text: z.string().min(1),
+  text: z.string().min(1).max(2000), // a command or a spoken sentence, never a document
   // Voice only. "hands-free" = the always-listening mic (anyone nearby can speak), "hold" = push-to-talk.
   // A spoken YES from hands-free is refused: confirm with the on-screen button instead.
   source: z.enum(["hold", "hands-free"]).optional(),
