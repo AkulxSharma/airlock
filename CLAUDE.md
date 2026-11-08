@@ -2,17 +2,7 @@
 
 > **Backend review (2026-11-07): all 8 issues from `docs/ISSUES_FOR_AKUL.md` are handled** (items 1 to 4 fixed in code with tests, 5 to 8 decided or documented in the README). The list stays in `docs/ISSUES_FOR_AKUL.md` with what changed.
 >
-> ## ⚠️ NEW OPEN ISSUES FOR AKUL'S CLAUDE (items 9 to 13 in `docs/ISSUES_FOR_AKUL.md`)
->
-> Found by probing the real code on 2026-11-07. The rule parser and the gate are solid (injection strings all parse as help), but:
->
-> - **Item 10, prompt injection:** a malicious contract's function names are copied into the finding text that goes to the Gemini explainer (verified with a 35-character name). Send the model only `id` and `severity`.
-> - **Item 11:** the explainer's output check accepts "looks fine, you can go ahead and proceed". Reject permission and recommendation wording in code.
-> - **Item 12, abuse:** with `IMESSAGE_ALLOWLIST=*`, anyone can text "Airlock send 0.01 to their-name.eth" then "yes" and Airlock sends test ETH, repeatedly. Require an allowlisted sender to confirm, and add a rate limit and a daily cap.
-> - **Item 13:** a spoken "Hey Airlock, yes" from anyone in the room confirms a transfer (Muhammad and Akul to choose the policy).
-> - **Item 9:** the synonym mapping (pay, go ahead, never mind) only works on the voice path.
->
-> Tick each box in that file with the commit hash when it is fixed, and pull and merge before every push.
+> **Items 9 to 13 in `docs/ISSUES_FOR_AKUL.md` are fixed too** (synonyms on every channel, the explainer no longer sees contract text, permission wording is rejected, a confirm allowlist and a daily cap exist, and a spoken YES from the hands-free mic never confirms). That file lists the commit for each.
 
 > **After you pull, run `npm run setup`** (installs `server/`, `voice/` and `app/`), or `npm install` in each folder whose `package.json` changed.
 
