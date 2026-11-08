@@ -1,6 +1,6 @@
 # Devpost submission text
 
-Paste the paragraph into the "About the project" box on the Devpost submission page (a short heading such as "What it does" above it works well).
+The full story, with this paragraph merged in, is `docs/DEVPOST_STORY.md`; paste that into the "About the project" box. This shorter paragraph can go anywhere a short summary is asked for. If only one box is available, paste the paragraph into the "About the project" box on the Devpost submission page (a short heading such as "What it does" above it works well).
 
 ## Paragraph
 
