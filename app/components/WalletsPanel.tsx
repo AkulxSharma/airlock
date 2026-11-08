@@ -27,6 +27,8 @@ export function WalletsPanel({ onPick }: { onPick: (text: string) => void }) {
   }, []);
 
   useEffect(() => {
+    // The first read sets state after the await, which is the point of the effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
     const t = setInterval(() => void load(), 20_000);
     return () => clearInterval(t);
