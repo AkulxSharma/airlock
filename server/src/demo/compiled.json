@@ -3,8 +3,20 @@
   "input": {
     "language": "Solidity",
     "sources": {
+      "ApprovalDrainer.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\ninterface IERC20 {\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\n    function balanceOf(address who) external view returns (uint256);\n}\n\n// DEMO ONLY. Approval phishing: tells users to \"approve\" a token for it, then the owner pulls the approved tokens out of their wallets.\ncontract ApprovalDrainer {\n    address public owner = msg.sender;\n\n    function harvest(IERC20 token, address victim) external {\n        require(msg.sender == owner, \"not owner\");\n        token.transferFrom(victim, owner, token.balanceOf(victim));\n    }\n}\n"
+      },
+      "BackdoorToken.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Hidden backdoor: looks like an ordinary token, but the owner can move anyone's tokens to themselves.\ncontract BackdoorToken {\n    string public name = \"Friendly Demo\";\n    address public owner = msg.sender;\n    mapping(address => uint256) public balanceOf;\n\n    constructor() {\n        balanceOf[msg.sender] = 1_000_000 ether;\n    }\n\n    function transfer(address to, uint256 v) external returns (bool) {\n        balanceOf[msg.sender] -= v;\n        balanceOf[to] += v;\n        return true;\n    }\n\n    function forceTransfer(address from, address to, uint256 v) external {\n        require(msg.sender == owner, \"not owner\");\n        balanceOf[from] -= v;\n        balanceOf[to] += v;\n    }\n}\n"
+      },
       "CleanVault.sol": {
         "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY (Sepolia, test ETH). A plain vault: you can only ever withdraw your own deposit. No owner, no admin, no switches.\ncontract CleanVault {\n    mapping(address => uint256) public balances;\n    bool private locked;\n\n    function deposit() external payable {\n        balances[msg.sender] += msg.value;\n    }\n\n    function withdraw(uint256 amount) external {\n        require(!locked, \"busy\");\n        locked = true;\n        balances[msg.sender] -= amount;\n        (bool ok, ) = msg.sender.call{value: amount}(\"\");\n        require(ok, \"send failed\");\n        locked = false;\n    }\n}\n"
+      },
+      "DelegateToUser.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Dangerous delegatecall: runs code at an address chosen by the caller, in this contract's storage and with its funds.\ncontract DelegateToUser {\n    address public owner = msg.sender;\n\n    function execute(address target, bytes calldata data) external returns (bytes memory) {\n        (bool ok, bytes memory ret) = target.delegatecall(data);\n        require(ok, \"call failed\");\n        return ret;\n    }\n}\n"
+      },
+      "DosRefund.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Denial of service: pays every backer in one loop, so a single backer that rejects ether (or a long list) blocks everyone's refund.\ncontract DosRefund {\n    address[] public backers;\n    mapping(address => uint256) public pledged;\n\n    function pledge() external payable {\n        if (pledged[msg.sender] == 0) backers.push(msg.sender);\n        pledged[msg.sender] += msg.value;\n    }\n\n    function refundAll() external {\n        for (uint256 i = 0; i < backers.length; i++) {\n            payable(backers[i]).transfer(pledged[backers[i]]);\n        }\n    }\n}\n"
       },
       "HoneypotToken.sol": {
         "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY (Sepolia, test tokens). A token that lets you buy but gives the owner the switches to stop you selling.\ncontract HoneypotToken {\n    string public name = \"Honey Demo\";\n    string public symbol = \"HNY\";\n    uint8 public decimals = 18;\n    uint256 public totalSupply;\n    address public owner;\n    uint256 public sellFee = 1;\n    bool public tradingEnabled = true;\n    mapping(address => uint256) public balanceOf;\n    mapping(address => bool) public blacklisted;\n\n    constructor() {\n        owner = msg.sender;\n        totalSupply = 1_000_000 ether;\n        balanceOf[msg.sender] = totalSupply;\n    }\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"not owner\");\n        _;\n    }\n\n    // The traps: block any address, raise the fee to 100%, or close trading.\n    function addToBlacklist(address a) external onlyOwner {\n        blacklisted[a] = true;\n    }\n\n    function setSellFee(uint256 f) external onlyOwner {\n        sellFee = f;\n    }\n\n    function enableTrading(bool on) external onlyOwner {\n        tradingEnabled = on;\n    }\n\n    function transfer(address to, uint256 v) external returns (bool) {\n        require(tradingEnabled || msg.sender == owner, \"trading closed\");\n        require(!blacklisted[msg.sender], \"blocked\");\n        balanceOf[msg.sender] -= v;\n        balanceOf[to] += v;\n        return true;\n    }\n}\n"
@@ -12,8 +24,35 @@
       "OriginWallet.sol": {
         "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY (Sepolia, test ETH). A wallet that checks tx.origin, so a malicious contract the owner calls can spend from it.\ncontract OriginWallet {\n    address public owner;\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    receive() external payable {}\n\n    function sendTo(address payable to, uint256 amount) external {\n        require(tx.origin == owner, \"not owner\");\n        to.transfer(amount);\n    }\n}\n"
       },
+      "ReentrancyBank.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Reentrancy: sends ether BEFORE zeroing the balance, so a contract can re-enter withdraw() and drain the bank.\ncontract ReentrancyBank {\n    mapping(address => uint256) public balances;\n\n    function deposit() external payable {\n        balances[msg.sender] += msg.value;\n    }\n\n    function withdraw() external {\n        uint256 amount = balances[msg.sender];\n        (bool ok, ) = msg.sender.call{value: amount}(\"\");\n        require(ok, \"send failed\");\n        balances[msg.sender] = 0;\n    }\n}\n"
+      },
       "RugVault.sol": {
         "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY (Sepolia, test ETH). A vault that looks normal, but the owner can take everyone's deposits.\ncontract RugVault {\n    address public owner;\n    mapping(address => uint256) public balances;\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    function deposit() external payable {\n        balances[msg.sender] += msg.value;\n    }\n\n    function withdraw(uint256 amount) external {\n        balances[msg.sender] -= amount;\n        payable(msg.sender).transfer(amount);\n    }\n\n    // The trap: the owner can send the whole pool to themselves at any time.\n    function rescueFunds() external {\n        require(msg.sender == owner, \"not owner\");\n        payable(owner).transfer(address(this).balance);\n    }\n}\n"
+      },
+      "SignatureReplay.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Signature replay: a signed withdrawal is checked with ecrecover but never marked used, so the same signature can be replayed until the vault is empty.\ncontract SignatureReplay {\n    address public signer = msg.sender;\n\n    function deposit() external payable {}\n\n    function withdrawWithSig(address payable to, uint256 amount, uint8 v, bytes32 r, bytes32 s) external {\n        bytes32 digest = keccak256(abi.encodePacked(to, amount));\n        require(ecrecover(digest, v, r, s) == signer, \"bad signature\");\n        to.transfer(amount);\n    }\n}\n"
+      },
+      "SpotOracleLender.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Oracle manipulation: collateral is priced from this pool's own live reserves, which a flash loan can move in one transaction.\ncontract SpotOracleLender {\n    uint256 public reserveEth;\n    uint256 public reserveToken;\n    mapping(address => uint256) public collateralToken;\n\n    function price() public view returns (uint256) {\n        return (reserveEth * 1e18) / reserveToken;\n    }\n\n    function addLiquidity(uint256 tokens) external payable {\n        reserveEth += msg.value;\n        reserveToken += tokens;\n    }\n\n    function borrow(uint256 tokens) external {\n        collateralToken[msg.sender] += tokens;\n        uint256 loan = (tokens * price()) / 1e18;\n        payable(msg.sender).transfer(loan);\n    }\n}\n"
+      },
+      "StrictBalanceGame.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Forced ether: the game requires the balance to be exactly 1 ether, so anyone can lock it forever by sending a little ether through selfdestruct.\ncontract StrictBalanceGame {\n    address public winner;\n\n    function play() external payable {\n        require(msg.value == 0.1 ether, \"bet\");\n        require(address(this).balance <= 1 ether, \"over\");\n        if (address(this).balance == 1 ether) {\n            winner = msg.sender;\n            payable(msg.sender).transfer(address(this).balance);\n        }\n    }\n}\n"
+      },
+      "UncheckedMath.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Unchecked arithmetic: the balance update is inside unchecked{}, so a large withdraw wraps the balance around to a huge number instead of reverting.\ncontract UncheckedMath {\n    mapping(address => uint256) public balances;\n\n    function deposit() external payable {\n        balances[msg.sender] += msg.value;\n    }\n\n    function withdraw(uint256 amount) external {\n        unchecked {\n            balances[msg.sender] -= amount;\n        }\n        payable(msg.sender).transfer(amount);\n    }\n}\n"
+      },
+      "UncheckedSend.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Unchecked call: the return value of send() is ignored, so a failed payout still marks the user as paid.\ncontract UncheckedSend {\n    mapping(address => uint256) public owed;\n    mapping(address => bool) public paid;\n\n    function credit(address to) external payable {\n        owed[to] += msg.value;\n    }\n\n    function claim() external {\n        paid[msg.sender] = true;\n        payable(msg.sender).send(owed[msg.sender]);\n        owed[msg.sender] = 0;\n    }\n}\n"
+      },
+      "UnprotectedInit.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Access control: initialize() has no guard, so anyone can call it and become the owner.\ncontract UnprotectedInit {\n    address public owner;\n    mapping(address => uint256) public balances;\n\n    function initialize(address newOwner) external {\n        owner = newOwner;\n    }\n\n    function deposit() external payable {\n        balances[msg.sender] += msg.value;\n    }\n}\n"
+      },
+      "UnprotectedKill.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Access control: anyone can call kill() and destroy the contract, sending its funds to themselves.\ncontract UnprotectedKill {\n    function deposit() external payable {}\n\n    function kill() external {\n        selfdestruct(payable(msg.sender));\n    }\n}\n"
+      },
+      "WeakRandomLottery.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n// DEMO ONLY. Weak randomness: the \"random\" winner comes from block.timestamp, which a validator or a same-block contract can predict.\ncontract WeakRandomLottery {\n    address[] public players;\n\n    function enter() external payable {\n        require(msg.value == 0.01 ether, \"entry fee\");\n        players.push(msg.sender);\n    }\n\n    function draw() external {\n        require(players.length > 0, \"empty\");\n        uint256 winner = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))) % players.length;\n        payable(players[winner]).transfer(address(this).balance);\n        delete players;\n    }\n}\n"
       }
     },
     "settings": {
@@ -34,6 +73,203 @@
     }
   },
   "contracts": {
+    "ApprovalDrainer": {
+      "file": "ApprovalDrainer.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "contract IERC20",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "victim",
+              "type": "address"
+            }
+          ],
+          "name": "harvest",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052600080546001600160a01b03191633179055348015602157600080fd5b5061028b806100316000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c806366cc18571461003b5780638da5cb5b14610050575b600080fd5b61004e6100493660046101da565b61007f565b005b600054610063906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b6000546001600160a01b031633146100c95760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b6000546040516370a0823160e01b81526001600160a01b038381166004830152848116926323b872dd9285929091169084906370a0823190602401602060405180830381865afa158015610121573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101459190610213565b6040516001600160e01b031960e086901b1681526001600160a01b03938416600482015292909116602483015260448201526064016020604051808303816000875af1158015610199573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101bd919061022c565b505050565b6001600160a01b03811681146101d757600080fd5b50565b600080604083850312156101ed57600080fd5b82356101f8816101c2565b91506020830135610208816101c2565b809150509250929050565b60006020828403121561022557600080fd5b5051919050565b60006020828403121561023e57600080fd5b8151801515811461024e57600080fd5b939250505056fea264697066735822122021a8aa3c209efecc84d8cf32f13fc691ebc678c0edc95bb1fcf4d0a67fea437164736f6c634300081c0033",
+      "runtime": "0x608060405234801561001057600080fd5b50600436106100365760003560e01c806366cc18571461003b5780638da5cb5b14610050575b600080fd5b61004e6100493660046101da565b61007f565b005b600054610063906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b6000546001600160a01b031633146100c95760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b6000546040516370a0823160e01b81526001600160a01b038381166004830152848116926323b872dd9285929091169084906370a0823190602401602060405180830381865afa158015610121573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101459190610213565b6040516001600160e01b031960e086901b1681526001600160a01b03938416600482015292909116602483015260448201526064016020604051808303816000875af1158015610199573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101bd919061022c565b505050565b6001600160a01b03811681146101d757600080fd5b50565b600080604083850312156101ed57600080fd5b82356101f8816101c2565b91506020830135610208816101c2565b809150509250929050565b60006020828403121561022557600080fd5b5051919050565b60006020828403121561023e57600080fd5b8151801515811461024e57600080fd5b939250505056fea264697066735822122021a8aa3c209efecc84d8cf32f13fc691ebc678c0edc95bb1fcf4d0a67fea437164736f6c634300081c0033"
+    },
+    "IERC20": {
+      "file": "ApprovalDrainer.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "who",
+              "type": "address"
+            }
+          ],
+          "name": "balanceOf",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "transferFrom",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "creation": "0x",
+      "runtime": "0x"
+    },
+    "BackdoorToken": {
+      "file": "BackdoorToken.sol",
+      "abi": [
+        {
+          "inputs": [],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "balanceOf",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "v",
+              "type": "uint256"
+            }
+          ],
+          "name": "forceTransfer",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "name",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "v",
+              "type": "uint256"
+            }
+          ],
+          "name": "transfer",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "creation": "0x60c0604052600d60809081526c467269656e646c792044656d6f60981b60a05260009061002c908261010c565b50600180546001600160a01b0319163317905534801561004b57600080fd5b5033600090815260026020526040902069d3c21bcecceda100000090556101ca565b634e487b7160e01b600052604160045260246000fd5b600181811c9082168061009757607f821691505b6020821081036100b757634e487b7160e01b600052602260045260246000fd5b50919050565b601f82111561010757806000526020600020601f840160051c810160208510156100e45750805b601f840160051c820191505b8181101561010457600081556001016100f0565b50505b505050565b81516001600160401b038111156101255761012561006d565b610139816101338454610083565b846100bd565b6020601f82116001811461016d57600083156101555750848201515b600019600385901b1c1916600184901b178455610104565b600084815260208120601f198516915b8281101561019d578785015182556020948501946001909201910161017d565b50848210156101bb5786840151600019600387901b60f8161c191681555b50505050600190811b01905550565b61043f806101d96000396000f3fe608060405234801561001057600080fd5b50600436106100575760003560e01c806306fdde031461005c57806333bebb771461007a57806370a082311461008f5780638da5cb5b146100bd578063a9059cbb146100e8575b600080fd5b61006461010b565b60405161007191906102a0565b60405180910390f35b61008d61008836600461030a565b610199565b005b6100af61009d366004610347565b60026020526000908152604090205481565b604051908152602001610071565b6001546100d0906001600160a01b031681565b6040516001600160a01b039091168152602001610071565b6100fb6100f6366004610369565b610242565b6040519015158152602001610071565b6000805461011890610393565b80601f016020809104026020016040519081016040528092919081815260200182805461014490610393565b80156101915780601f1061016657610100808354040283529160200191610191565b820191906000526020600020905b81548152906001019060200180831161017457829003601f168201915b505050505081565b6001546001600160a01b031633146101e35760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b6001600160a01b0383166000908152600260205260408120805483929061020b9084906103e3565b90915550506001600160a01b038216600090815260026020526040812080548392906102389084906103f6565b9091555050505050565b336000908152600260205260408120805483919083906102639084906103e3565b90915550506001600160a01b038316600090815260026020526040812080548492906102909084906103f6565b9091555060019150505b92915050565b602081526000825180602084015260005b818110156102ce57602081860181015160408684010152016102b1565b506000604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b038116811461030557600080fd5b919050565b60008060006060848603121561031f57600080fd5b610328846102ee565b9250610336602085016102ee565b929592945050506040919091013590565b60006020828403121561035957600080fd5b610362826102ee565b9392505050565b6000806040838503121561037c57600080fd5b610385836102ee565b946020939093013593505050565b600181811c908216806103a757607f821691505b6020821081036103c757634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052601160045260246000fd5b8181038181111561029a5761029a6103cd565b8082018082111561029a5761029a6103cd56fea26469706673582212208e8e005123e248de76670681f133757deb4ef54645e47b0948497016c684ae5c64736f6c634300081c0033",
+      "runtime": "0x608060405234801561001057600080fd5b50600436106100575760003560e01c806306fdde031461005c57806333bebb771461007a57806370a082311461008f5780638da5cb5b146100bd578063a9059cbb146100e8575b600080fd5b61006461010b565b60405161007191906102a0565b60405180910390f35b61008d61008836600461030a565b610199565b005b6100af61009d366004610347565b60026020526000908152604090205481565b604051908152602001610071565b6001546100d0906001600160a01b031681565b6040516001600160a01b039091168152602001610071565b6100fb6100f6366004610369565b610242565b6040519015158152602001610071565b6000805461011890610393565b80601f016020809104026020016040519081016040528092919081815260200182805461014490610393565b80156101915780601f1061016657610100808354040283529160200191610191565b820191906000526020600020905b81548152906001019060200180831161017457829003601f168201915b505050505081565b6001546001600160a01b031633146101e35760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b6001600160a01b0383166000908152600260205260408120805483929061020b9084906103e3565b90915550506001600160a01b038216600090815260026020526040812080548392906102389084906103f6565b9091555050505050565b336000908152600260205260408120805483919083906102639084906103e3565b90915550506001600160a01b038316600090815260026020526040812080548492906102909084906103f6565b9091555060019150505b92915050565b602081526000825180602084015260005b818110156102ce57602081860181015160408684010152016102b1565b506000604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b038116811461030557600080fd5b919050565b60008060006060848603121561031f57600080fd5b610328846102ee565b9250610336602085016102ee565b929592945050506040919091013590565b60006020828403121561035957600080fd5b610362826102ee565b9392505050565b6000806040838503121561037c57600080fd5b610385836102ee565b946020939093013593505050565b600181811c908216806103a757607f821691505b6020821081036103c757634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052601160045260246000fd5b8181038181111561029a5761029a6103cd565b8082018082111561029a5761029a6103cd56fea26469706673582212208e8e005123e248de76670681f133757deb4ef54645e47b0948497016c684ae5c64736f6c634300081c0033"
+    },
     "CleanVault": {
       "file": "CleanVault.sol",
       "abi": [
@@ -79,6 +315,109 @@
       ],
       "creation": "0x6080604052348015600f57600080fd5b506102928061001f6000396000f3fe6080604052600436106100345760003560e01c806327e235e3146100395780632e1a7d4d14610078578063d0e30db01461009a575b600080fd5b34801561004557600080fd5b506100666100543660046101d1565b60006020819052908152604090205481565b60405190815260200160405180910390f35b34801561008457600080fd5b50610098610093366004610201565b6100a2565b005b6100986101ab565b60015460ff16156100e75760405162461bcd60e51b81526004016100de906020808252600490820152636275737960e01b604082015260600190565b60405180910390fd5b6001805460ff1916811790553360009081526020819052604081208054839290610112908490610230565b9091555050604051600090339083908381818185875af1925050503d8060008114610159576040519150601f19603f3d011682016040523d82523d6000602084013e61015e565b606091505b505090508061019d5760405162461bcd60e51b815260206004820152600b60248201526a1cd95b990819985a5b195960aa1b60448201526064016100de565b50506001805460ff19169055565b33600090815260208190526040812080543492906101ca908490610249565b9091555050565b6000602082840312156101e357600080fd5b81356001600160a01b03811681146101fa57600080fd5b9392505050565b60006020828403121561021357600080fd5b5035919050565b634e487b7160e01b600052601160045260246000fd5b818103818111156102435761024361021a565b92915050565b808201808211156102435761024361021a56fea26469706673582212205d6b2ed5b6d59e30f38c72fce50933fb84eae9f87b9e491e4fcc034d713f59f164736f6c634300081c0033",
       "runtime": "0x6080604052600436106100345760003560e01c806327e235e3146100395780632e1a7d4d14610078578063d0e30db01461009a575b600080fd5b34801561004557600080fd5b506100666100543660046101d1565b60006020819052908152604090205481565b60405190815260200160405180910390f35b34801561008457600080fd5b50610098610093366004610201565b6100a2565b005b6100986101ab565b60015460ff16156100e75760405162461bcd60e51b81526004016100de906020808252600490820152636275737960e01b604082015260600190565b60405180910390fd5b6001805460ff1916811790553360009081526020819052604081208054839290610112908490610230565b9091555050604051600090339083908381818185875af1925050503d8060008114610159576040519150601f19603f3d011682016040523d82523d6000602084013e61015e565b606091505b505090508061019d5760405162461bcd60e51b815260206004820152600b60248201526a1cd95b990819985a5b195960aa1b60448201526064016100de565b50506001805460ff19169055565b33600090815260208190526040812080543492906101ca908490610249565b9091555050565b6000602082840312156101e357600080fd5b81356001600160a01b03811681146101fa57600080fd5b9392505050565b60006020828403121561021357600080fd5b5035919050565b634e487b7160e01b600052601160045260246000fd5b818103818111156102435761024361021a565b92915050565b808201808211156102435761024361021a56fea26469706673582212205d6b2ed5b6d59e30f38c72fce50933fb84eae9f87b9e491e4fcc034d713f59f164736f6c634300081c0033"
+    },
+    "DelegateToUser": {
+      "file": "DelegateToUser.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "target",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "name": "execute",
+          "outputs": [
+            {
+              "internalType": "bytes",
+              "name": "",
+              "type": "bytes"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052600080546001600160a01b03191633179055348015602157600080fd5b50610262806100316000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80631cff79cd1461003b5780638da5cb5b14610064575b600080fd5b61004e61004936600461013b565b61008f565b60405161005b91906101ce565b60405180910390f35b600054610077906001600160a01b031681565b6040516001600160a01b03909116815260200161005b565b6060600080856001600160a01b031685856040516100ae92919061021c565b600060405180830381855af49150503d80600081146100e9576040519150601f19603f3d011682016040523d82523d6000602084013e6100ee565b606091505b5091509150816101325760405162461bcd60e51b815260206004820152600b60248201526a18d85b1b0819985a5b195960aa1b604482015260640160405180910390fd5b95945050505050565b60008060006040848603121561015057600080fd5b83356001600160a01b038116811461016757600080fd5b9250602084013567ffffffffffffffff81111561018357600080fd5b8401601f8101861361019457600080fd5b803567ffffffffffffffff8111156101ab57600080fd5b8660208284010111156101bd57600080fd5b939660209190910195509293505050565b602081526000825180602084015260005b818110156101fc57602081860181015160408684010152016101df565b506000604082850101526040601f19601f83011684010191505092915050565b818382376000910190815291905056fea2646970667358221220ec6ff6892b06e75b0ad67718b623b245a4bae97a7313033aa773e2519fb16d5264736f6c634300081c0033",
+      "runtime": "0x608060405234801561001057600080fd5b50600436106100365760003560e01c80631cff79cd1461003b5780638da5cb5b14610064575b600080fd5b61004e61004936600461013b565b61008f565b60405161005b91906101ce565b60405180910390f35b600054610077906001600160a01b031681565b6040516001600160a01b03909116815260200161005b565b6060600080856001600160a01b031685856040516100ae92919061021c565b600060405180830381855af49150503d80600081146100e9576040519150601f19603f3d011682016040523d82523d6000602084013e6100ee565b606091505b5091509150816101325760405162461bcd60e51b815260206004820152600b60248201526a18d85b1b0819985a5b195960aa1b604482015260640160405180910390fd5b95945050505050565b60008060006040848603121561015057600080fd5b83356001600160a01b038116811461016757600080fd5b9250602084013567ffffffffffffffff81111561018357600080fd5b8401601f8101861361019457600080fd5b803567ffffffffffffffff8111156101ab57600080fd5b8660208284010111156101bd57600080fd5b939660209190910195509293505050565b602081526000825180602084015260005b818110156101fc57602081860181015160408684010152016101df565b506000604082850101526040601f19601f83011684010191505092915050565b818382376000910190815291905056fea2646970667358221220ec6ff6892b06e75b0ad67718b623b245a4bae97a7313033aa773e2519fb16d5264736f6c634300081c0033"
+    },
+    "DosRefund": {
+      "file": "DosRefund.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "backers",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "pledge",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "pledged",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "refundAll",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506102ea8061001f6000396000f3fe60806040526004361061003f5760003560e01c806338e771ab146100445780636b81e11b1461005b57806388ffe8671461009b578063e9d80020146100a3575b600080fd5b34801561005057600080fd5b506100596100db565b005b34801561006757600080fd5b5061008861007636600461022e565b60016020526000908152604090205481565b6040519081526020015b60405180910390f35b610059610188565b3480156100af57600080fd5b506100c36100be36600461025e565b610204565b6040516001600160a01b039091168152602001610092565b60005b60005481101561018557600081815481106100fb576100fb610277565b600091825260208220015481546001600160a01b03909116916108fc916001919081908690811061012e5761012e610277565b60009182526020808320909101546001600160a01b03168352820192909252604090810182205490518115909302929091818181858888f1935050505015801561017c573d6000803e3d6000fd5b506001016100de565b50565b3360009081526001602052604081205490036101de57600080546001810182559080527f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e5630180546001600160a01b031916331790555b33600090815260016020526040812080543492906101fd90849061028d565b9091555050565b6000818154811061021457600080fd5b6000918252602090912001546001600160a01b0316905081565b60006020828403121561024057600080fd5b81356001600160a01b038116811461025757600080fd5b9392505050565b60006020828403121561027057600080fd5b5035919050565b634e487b7160e01b600052603260045260246000fd5b808201808211156102ae57634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220f8c20e2d390cace1496a6e14197ff0b4e3b2daa29914a4064803702b2320708d64736f6c634300081c0033",
+      "runtime": "0x60806040526004361061003f5760003560e01c806338e771ab146100445780636b81e11b1461005b57806388ffe8671461009b578063e9d80020146100a3575b600080fd5b34801561005057600080fd5b506100596100db565b005b34801561006757600080fd5b5061008861007636600461022e565b60016020526000908152604090205481565b6040519081526020015b60405180910390f35b610059610188565b3480156100af57600080fd5b506100c36100be36600461025e565b610204565b6040516001600160a01b039091168152602001610092565b60005b60005481101561018557600081815481106100fb576100fb610277565b600091825260208220015481546001600160a01b03909116916108fc916001919081908690811061012e5761012e610277565b60009182526020808320909101546001600160a01b03168352820192909252604090810182205490518115909302929091818181858888f1935050505015801561017c573d6000803e3d6000fd5b506001016100de565b50565b3360009081526001602052604081205490036101de57600080546001810182559080527f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e5630180546001600160a01b031916331790555b33600090815260016020526040812080543492906101fd90849061028d565b9091555050565b6000818154811061021457600080fd5b6000918252602090912001546001600160a01b0316905081565b60006020828403121561024057600080fd5b81356001600160a01b038116811461025757600080fd5b9392505050565b60006020828403121561027057600080fd5b5035919050565b634e487b7160e01b600052603260045260246000fd5b808201808211156102ae57634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220f8c20e2d390cace1496a6e14197ff0b4e3b2daa29914a4064803702b2320708d64736f6c634300081c0033"
     },
     "HoneypotToken": {
       "file": "HoneypotToken.sol",
@@ -331,6 +670,46 @@
       "creation": "0x6080604052348015600f57600080fd5b50600080546001600160a01b0319163317905561018a806100316000396000f3fe60806040526004361061002d5760003560e01c80638da5cb5b146100395780639e1a00aa1461007557600080fd5b3661003457005b600080fd5b34801561004557600080fd5b50600054610059906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b34801561008157600080fd5b5061009561009036600461011c565b610097565b005b6000546001600160a01b031632146100e15760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b6040516001600160a01b0383169082156108fc029083906000818181858888f19350505050158015610117573d6000803e3d6000fd5b505050565b6000806040838503121561012f57600080fd5b82356001600160a01b038116811461014657600080fd5b94602093909301359350505056fea26469706673582212204ba70652d6752946a621a35d0c3371a66b52ca014c802cdd59c0d54d31793e0f64736f6c634300081c0033",
       "runtime": "0x60806040526004361061002d5760003560e01c80638da5cb5b146100395780639e1a00aa1461007557600080fd5b3661003457005b600080fd5b34801561004557600080fd5b50600054610059906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b34801561008157600080fd5b5061009561009036600461011c565b610097565b005b6000546001600160a01b031632146100e15760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b6040516001600160a01b0383169082156108fc029083906000818181858888f19350505050158015610117573d6000803e3d6000fd5b505050565b6000806040838503121561012f57600080fd5b82356001600160a01b038116811461014657600080fd5b94602093909301359350505056fea26469706673582212204ba70652d6752946a621a35d0c3371a66b52ca014c802cdd59c0d54d31793e0f64736f6c634300081c0033"
     },
+    "ReentrancyBank": {
+      "file": "ReentrancyBank.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "balances",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "deposit",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "withdraw",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506101f68061001f6000396000f3fe6080604052600436106100345760003560e01c806327e235e3146100395780633ccfd60b14610078578063d0e30db01461008f575b600080fd5b34801561004557600080fd5b50610066610054366004610169565b60006020819052908152604090205481565b60405190815260200160405180910390f35b34801561008457600080fd5b5061008d610097565b005b61008d610143565b3360008181526020819052604080822054905190929083908381818185875af1925050503d80600081146100e7576040519150601f19603f3d011682016040523d82523d6000602084013e6100ec565b606091505b505090508061012f5760405162461bcd60e51b815260206004820152600b60248201526a1cd95b990819985a5b195960aa1b604482015260640160405180910390fd5b505033600090815260208190526040812055565b3360009081526020819052604081208054349290610162908490610199565b9091555050565b60006020828403121561017b57600080fd5b81356001600160a01b038116811461019257600080fd5b9392505050565b808201808211156101ba57634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220d0bba889d4dbdf4e6180544de189125abc60fb22f3d24d8a61f527a86e2b964c64736f6c634300081c0033",
+      "runtime": "0x6080604052600436106100345760003560e01c806327e235e3146100395780633ccfd60b14610078578063d0e30db01461008f575b600080fd5b34801561004557600080fd5b50610066610054366004610169565b60006020819052908152604090205481565b60405190815260200160405180910390f35b34801561008457600080fd5b5061008d610097565b005b61008d610143565b3360008181526020819052604080822054905190929083908381818185875af1925050503d80600081146100e7576040519150601f19603f3d011682016040523d82523d6000602084013e6100ec565b606091505b505090508061012f5760405162461bcd60e51b815260206004820152600b60248201526a1cd95b990819985a5b195960aa1b604482015260640160405180910390fd5b505033600090815260208190526040812055565b3360009081526020819052604081208054349290610162908490610199565b9091555050565b60006020828403121561017b57600080fd5b81356001600160a01b038116811461019257600080fd5b9392505050565b808201808211156101ba57634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220d0bba889d4dbdf4e6180544de189125abc60fb22f3d24d8a61f527a86e2b964c64736f6c634300081c0033"
+    },
     "RugVault": {
       "file": "RugVault.sol",
       "abi": [
@@ -401,6 +780,415 @@
       ],
       "creation": "0x6080604052348015600f57600080fd5b50600080546001600160a01b031916331790556102c9806100316000396000f3fe60806040526004361061004a5760003560e01c806327e235e31461004f5780632e1a7d4d1461008f5780638da5cb5b146100b1578063d0e30db0146100e9578063e6b2603b146100f1575b600080fd5b34801561005b57600080fd5b5061007c61006a366004610208565b60016020526000908152604090205481565b6040519081526020015b60405180910390f35b34801561009b57600080fd5b506100af6100aa366004610238565b610106565b005b3480156100bd57600080fd5b506000546100d1906001600160a01b031681565b6040516001600160a01b039091168152602001610086565b6100af61015b565b3480156100fd57600080fd5b506100af610181565b3360009081526001602052604081208054839290610125908490610267565b9091555050604051339082156108fc029083906000818181858888f19350505050158015610157573d6000803e3d6000fd5b5050565b336000908152600160205260408120805434929061017a908490610280565b9091555050565b6000546001600160a01b031633146101cb5760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b600080546040516001600160a01b03909116914780156108fc02929091818181858888f19350505050158015610205573d6000803e3d6000fd5b50565b60006020828403121561021a57600080fd5b81356001600160a01b038116811461023157600080fd5b9392505050565b60006020828403121561024a57600080fd5b5035919050565b634e487b7160e01b600052601160045260246000fd5b8181038181111561027a5761027a610251565b92915050565b8082018082111561027a5761027a61025156fea264697066735822122011d48b62e5ee907bb115fd10f114d86a70635b674a5548a442f54b78b90a62d964736f6c634300081c0033",
       "runtime": "0x60806040526004361061004a5760003560e01c806327e235e31461004f5780632e1a7d4d1461008f5780638da5cb5b146100b1578063d0e30db0146100e9578063e6b2603b146100f1575b600080fd5b34801561005b57600080fd5b5061007c61006a366004610208565b60016020526000908152604090205481565b6040519081526020015b60405180910390f35b34801561009b57600080fd5b506100af6100aa366004610238565b610106565b005b3480156100bd57600080fd5b506000546100d1906001600160a01b031681565b6040516001600160a01b039091168152602001610086565b6100af61015b565b3480156100fd57600080fd5b506100af610181565b3360009081526001602052604081208054839290610125908490610267565b9091555050604051339082156108fc029083906000818181858888f19350505050158015610157573d6000803e3d6000fd5b5050565b336000908152600160205260408120805434929061017a908490610280565b9091555050565b6000546001600160a01b031633146101cb5760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b604482015260640160405180910390fd5b600080546040516001600160a01b03909116914780156108fc02929091818181858888f19350505050158015610205573d6000803e3d6000fd5b50565b60006020828403121561021a57600080fd5b81356001600160a01b038116811461023157600080fd5b9392505050565b60006020828403121561024a57600080fd5b5035919050565b634e487b7160e01b600052601160045260246000fd5b8181038181111561027a5761027a610251565b92915050565b8082018082111561027a5761027a61025156fea264697066735822122011d48b62e5ee907bb115fd10f114d86a70635b674a5548a442f54b78b90a62d964736f6c634300081c0033"
+    },
+    "SignatureReplay": {
+      "file": "SignatureReplay.sol",
+      "abi": [
+        {
+          "inputs": [],
+          "name": "deposit",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "signer",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address payable",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "v",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "r",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "s",
+              "type": "bytes32"
+            }
+          ],
+          "name": "withdrawWithSig",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052600080546001600160a01b03191633179055348015602157600080fd5b5061025e806100316000396000f3fe6080604052600436106100345760003560e01c8063238ac93314610039578063d0e30db014610075578063db4a0e8c14610077575b600080fd5b34801561004557600080fd5b50600054610059906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b005b34801561008357600080fd5b506100756100923660046101c4565b6040516bffffffffffffffffffffffff19606087901b1660208201526034810185905260009060540160408051808303601f1901815282825280516020918201206000805490855291840180845281905260ff88169284019290925260608301869052608083018590529092506001600160a01b03169060019060a0016020604051602081039080840390855afa158015610131573d6000803e3d6000fd5b505050602060405103516001600160a01b0316146101855760405162461bcd60e51b815260206004820152600d60248201526c626164207369676e617475726560981b604482015260640160405180910390fd5b6040516001600160a01b0387169086156108fc029087906000818181858888f193505050501580156101bb573d6000803e3d6000fd5b50505050505050565b600080600080600060a086880312156101dc57600080fd5b85356001600160a01b03811681146101f357600080fd5b945060208601359350604086013560ff8116811461021057600080fd5b9497939650939460608101359450608001359291505056fea2646970667358221220a8d3a7edb81f226cc0cecf9542bcc1183a5b02f741482e2fea35e38832eb850d64736f6c634300081c0033",
+      "runtime": "0x6080604052600436106100345760003560e01c8063238ac93314610039578063d0e30db014610075578063db4a0e8c14610077575b600080fd5b34801561004557600080fd5b50600054610059906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b005b34801561008357600080fd5b506100756100923660046101c4565b6040516bffffffffffffffffffffffff19606087901b1660208201526034810185905260009060540160408051808303601f1901815282825280516020918201206000805490855291840180845281905260ff88169284019290925260608301869052608083018590529092506001600160a01b03169060019060a0016020604051602081039080840390855afa158015610131573d6000803e3d6000fd5b505050602060405103516001600160a01b0316146101855760405162461bcd60e51b815260206004820152600d60248201526c626164207369676e617475726560981b604482015260640160405180910390fd5b6040516001600160a01b0387169086156108fc029087906000818181858888f193505050501580156101bb573d6000803e3d6000fd5b50505050505050565b600080600080600060a086880312156101dc57600080fd5b85356001600160a01b03811681146101f357600080fd5b945060208601359350604086013560ff8116811461021057600080fd5b9497939650939460608101359450608001359291505056fea2646970667358221220a8d3a7edb81f226cc0cecf9542bcc1183a5b02f741482e2fea35e38832eb850d64736f6c634300081c0033"
+    },
+    "SpotOracleLender": {
+      "file": "SpotOracleLender.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokens",
+              "type": "uint256"
+            }
+          ],
+          "name": "addLiquidity",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokens",
+              "type": "uint256"
+            }
+          ],
+          "name": "borrow",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "collateralToken",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "price",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "reserveEth",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "reserveToken",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506102d38061001f6000396000f3fe6080604052600436106100555760003560e01c806351c6590a1461005a578063899b15281461006f578063a035b1fe14610097578063c5ebeaec146100ac578063e7176885146100cc578063f4325d67146100f9575b600080fd5b61006d6100683660046101ec565b61010f565b005b34801561007b57600080fd5b5061008560005481565b60405190815260200160405180910390f35b3480156100a357600080fd5b50610085610141565b3480156100b857600080fd5b5061006d6100c73660046101ec565b61016b565b3480156100d857600080fd5b506100856100e7366004610205565b60026020526000908152604090205481565b34801561010557600080fd5b5061008560015481565b34600080828254610120919061024b565b925050819055508060016000828254610139919061024b565b909155505050565b6000600154600054670de0b6b3a764000061015c9190610264565b610166919061027b565b905090565b336000908152600260205260408120805483929061018a90849061024b565b9091555060009050670de0b6b3a76400006101a3610141565b6101ad9084610264565b6101b7919061027b565b604051909150339082156108fc029083906000818181858888f193505050501580156101e7573d6000803e3d6000fd5b505050565b6000602082840312156101fe57600080fd5b5035919050565b60006020828403121561021757600080fd5b81356001600160a01b038116811461022e57600080fd5b9392505050565b634e487b7160e01b600052601160045260246000fd5b8082018082111561025e5761025e610235565b92915050565b808202811582820484141761025e5761025e610235565b60008261029857634e487b7160e01b600052601260045260246000fd5b50049056fea2646970667358221220f7eb00678fc250b751a6d54d8da46974a42f11090004b544c66425702f8355ce64736f6c634300081c0033",
+      "runtime": "0x6080604052600436106100555760003560e01c806351c6590a1461005a578063899b15281461006f578063a035b1fe14610097578063c5ebeaec146100ac578063e7176885146100cc578063f4325d67146100f9575b600080fd5b61006d6100683660046101ec565b61010f565b005b34801561007b57600080fd5b5061008560005481565b60405190815260200160405180910390f35b3480156100a357600080fd5b50610085610141565b3480156100b857600080fd5b5061006d6100c73660046101ec565b61016b565b3480156100d857600080fd5b506100856100e7366004610205565b60026020526000908152604090205481565b34801561010557600080fd5b5061008560015481565b34600080828254610120919061024b565b925050819055508060016000828254610139919061024b565b909155505050565b6000600154600054670de0b6b3a764000061015c9190610264565b610166919061027b565b905090565b336000908152600260205260408120805483929061018a90849061024b565b9091555060009050670de0b6b3a76400006101a3610141565b6101ad9084610264565b6101b7919061027b565b604051909150339082156108fc029083906000818181858888f193505050501580156101e7573d6000803e3d6000fd5b505050565b6000602082840312156101fe57600080fd5b5035919050565b60006020828403121561021757600080fd5b81356001600160a01b038116811461022e57600080fd5b9392505050565b634e487b7160e01b600052601160045260246000fd5b8082018082111561025e5761025e610235565b92915050565b808202811582820484141761025e5761025e610235565b60008261029857634e487b7160e01b600052601260045260246000fd5b50049056fea2646970667358221220f7eb00678fc250b751a6d54d8da46974a42f11090004b544c66425702f8355ce64736f6c634300081c0033"
+    },
+    "StrictBalanceGame": {
+      "file": "StrictBalanceGame.sol",
+      "abi": [
+        {
+          "inputs": [],
+          "name": "play",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "winner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506101808061001f6000396000f3fe6080604052600436106100295760003560e01c806393e84cd91461002e578063dfbf53ae14610038575b600080fd5b610036610074565b005b34801561004457600080fd5b50600054610058906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b3467016345785d8a0000146100b65760405162461bcd60e51b815260206004820152600360248201526218995d60ea1b60448201526064015b60405180910390fd5b670de0b6b3a76400004711156100f75760405162461bcd60e51b81526004016100ad9060208082526004908201526337bb32b960e11b604082015260600190565b47670de0b6b3a76400000361014857600080546001600160a01b03191633908117825560405190914780156108fc02929091818181858888f19350505050158015610146573d6000803e3d6000fd5b505b56fea264697066735822122087d62d14437692750afb9d199fbf6a4446a419e5aeebd58372c4bc28af87aef364736f6c634300081c0033",
+      "runtime": "0x6080604052600436106100295760003560e01c806393e84cd91461002e578063dfbf53ae14610038575b600080fd5b610036610074565b005b34801561004457600080fd5b50600054610058906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b3467016345785d8a0000146100b65760405162461bcd60e51b815260206004820152600360248201526218995d60ea1b60448201526064015b60405180910390fd5b670de0b6b3a76400004711156100f75760405162461bcd60e51b81526004016100ad9060208082526004908201526337bb32b960e11b604082015260600190565b47670de0b6b3a76400000361014857600080546001600160a01b03191633908117825560405190914780156108fc02929091818181858888f19350505050158015610146573d6000803e3d6000fd5b505b56fea264697066735822122087d62d14437692750afb9d199fbf6a4446a419e5aeebd58372c4bc28af87aef364736f6c634300081c0033"
+    },
+    "UncheckedMath": {
+      "file": "UncheckedMath.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "balances",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "deposit",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "withdraw",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506101b18061001f6000396000f3fe6080604052600436106100345760003560e01c806327e235e3146100395780632e1a7d4d14610078578063d0e30db01461009a575b600080fd5b34801561004557600080fd5b5061006661005436600461010b565b60006020819052908152604090205481565b60405190815260200160405180910390f35b34801561008457600080fd5b5061009861009336600461013b565b6100a2565b005b6100986100e5565b33600081815260208190526040808220805485900390555183156108fc0291849190818181858888f193505050501580156100e1573d6000803e3d6000fd5b5050565b3360009081526020819052604081208054349290610104908490610154565b9091555050565b60006020828403121561011d57600080fd5b81356001600160a01b038116811461013457600080fd5b9392505050565b60006020828403121561014d57600080fd5b5035919050565b8082018082111561017557634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220213b53e586232a76ded92b7414187d3b31f7a520b31fa8e67e94626219249a5964736f6c634300081c0033",
+      "runtime": "0x6080604052600436106100345760003560e01c806327e235e3146100395780632e1a7d4d14610078578063d0e30db01461009a575b600080fd5b34801561004557600080fd5b5061006661005436600461010b565b60006020819052908152604090205481565b60405190815260200160405180910390f35b34801561008457600080fd5b5061009861009336600461013b565b6100a2565b005b6100986100e5565b33600081815260208190526040808220805485900390555183156108fc0291849190818181858888f193505050501580156100e1573d6000803e3d6000fd5b5050565b3360009081526020819052604081208054349290610104908490610154565b9091555050565b60006020828403121561011d57600080fd5b81356001600160a01b038116811461013457600080fd5b9392505050565b60006020828403121561014d57600080fd5b5035919050565b8082018082111561017557634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220213b53e586232a76ded92b7414187d3b31f7a520b31fa8e67e94626219249a5964736f6c634300081c0033"
+    },
+    "UncheckedSend": {
+      "file": "UncheckedSend.sol",
+      "abi": [
+        {
+          "inputs": [],
+          "name": "claim",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            }
+          ],
+          "name": "credit",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "owed",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "paid",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506101f78061001f6000396000f3fe60806040526004361061003f5760003560e01c80634e71d92d14610044578063a340cf791461005b578063d5d44d80146100a0578063df18e047146100b3575b600080fd5b34801561005057600080fd5b506100596100ee565b005b34801561006757600080fd5b5061008b61007636600461016a565b60016020526000908152604090205460ff1681565b60405190151581526020015b60405180910390f35b6100596100ae36600461016a565b61013a565b3480156100bf57600080fd5b506100e06100ce36600461016a565b60006020819052908152604090205481565b604051908152602001610097565b336000818152600160208181526040808420805460ff191690931790925582905280822054905181156108fc0292818181858888f1505033600090815260208190526040812055505050565b6001600160a01b0381166000908152602081905260408120805434929061016290849061019a565b909155505050565b60006020828403121561017c57600080fd5b81356001600160a01b038116811461019357600080fd5b9392505050565b808201808211156101bb57634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220bf624f473f0e0208efe55bd74460364c0d7326a562a33e16e2604f482e212c5d64736f6c634300081c0033",
+      "runtime": "0x60806040526004361061003f5760003560e01c80634e71d92d14610044578063a340cf791461005b578063d5d44d80146100a0578063df18e047146100b3575b600080fd5b34801561005057600080fd5b506100596100ee565b005b34801561006757600080fd5b5061008b61007636600461016a565b60016020526000908152604090205460ff1681565b60405190151581526020015b60405180910390f35b6100596100ae36600461016a565b61013a565b3480156100bf57600080fd5b506100e06100ce36600461016a565b60006020819052908152604090205481565b604051908152602001610097565b336000818152600160208181526040808420805460ff191690931790925582905280822054905181156108fc0292818181858888f1505033600090815260208190526040812055505050565b6001600160a01b0381166000908152602081905260408120805434929061016290849061019a565b909155505050565b60006020828403121561017c57600080fd5b81356001600160a01b038116811461019357600080fd5b9392505050565b808201808211156101bb57634e487b7160e01b600052601160045260246000fd5b9291505056fea2646970667358221220bf624f473f0e0208efe55bd74460364c0d7326a562a33e16e2604f482e212c5d64736f6c634300081c0033"
+    },
+    "UnprotectedInit": {
+      "file": "UnprotectedInit.sol",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "balances",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "deposit",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "initialize",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506101b18061001f6000396000f3fe60806040526004361061003f5760003560e01c806327e235e3146100445780638da5cb5b14610084578063c4d66de8146100bc578063d0e30db0146100fb575b600080fd5b34801561005057600080fd5b5061007161005f366004610124565b60016020526000908152604090205481565b6040519081526020015b60405180910390f35b34801561009057600080fd5b506000546100a4906001600160a01b031681565b6040516001600160a01b03909116815260200161007b565b3480156100c857600080fd5b506100f96100d7366004610124565b600080546001600160a01b0319166001600160a01b0392909216919091179055565b005b6100f9336000908152600160205260408120805434929061011d908490610154565b9091555050565b60006020828403121561013657600080fd5b81356001600160a01b038116811461014d57600080fd5b9392505050565b8082018082111561017557634e487b7160e01b600052601160045260246000fd5b9291505056fea264697066735822122037d99beb01d07ce6bdf9f4bd0a08550e78372d5c1f7626ba60b50f1aefcb80a264736f6c634300081c0033",
+      "runtime": "0x60806040526004361061003f5760003560e01c806327e235e3146100445780638da5cb5b14610084578063c4d66de8146100bc578063d0e30db0146100fb575b600080fd5b34801561005057600080fd5b5061007161005f366004610124565b60016020526000908152604090205481565b6040519081526020015b60405180910390f35b34801561009057600080fd5b506000546100a4906001600160a01b031681565b6040516001600160a01b03909116815260200161007b565b3480156100c857600080fd5b506100f96100d7366004610124565b600080546001600160a01b0319166001600160a01b0392909216919091179055565b005b6100f9336000908152600160205260408120805434929061011d908490610154565b9091555050565b60006020828403121561013657600080fd5b81356001600160a01b038116811461014d57600080fd5b9392505050565b8082018082111561017557634e487b7160e01b600052601160045260246000fd5b9291505056fea264697066735822122037d99beb01d07ce6bdf9f4bd0a08550e78372d5c1f7626ba60b50f1aefcb80a264736f6c634300081c0033"
+    },
+    "UnprotectedKill": {
+      "file": "UnprotectedKill.sol",
+      "abi": [
+        {
+          "inputs": [],
+          "name": "deposit",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "kill",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b50607480601d6000396000f3fe60806040526004361060265760003560e01c806341c0e1b514602b578063d0e30db014603c575b600080fd5b348015603657600080fd5b50603c33ff5b00fea26469706673582212202a1a43246be97c24806faf0edd49c1c006d7b72b7babd25a270458cf4799decf64736f6c634300081c0033",
+      "runtime": "0x60806040526004361060265760003560e01c806341c0e1b514602b578063d0e30db014603c575b600080fd5b348015603657600080fd5b50603c33ff5b00fea26469706673582212202a1a43246be97c24806faf0edd49c1c006d7b72b7babd25a270458cf4799decf64736f6c634300081c0033"
+    },
+    "WeakRandomLottery": {
+      "file": "WeakRandomLottery.sol",
+      "abi": [
+        {
+          "inputs": [],
+          "name": "draw",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "enter",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "players",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "creation": "0x6080604052348015600f57600080fd5b506102d78061001f6000396000f3fe6080604052600436106100345760003560e01c80630eecae2114610039578063e97dcb6214610050578063f71d96cb14610058575b600080fd5b34801561004557600080fd5b5061004e610094565b005b61004e610171565b34801561006457600080fd5b50610078610073366004610250565b6101f4565b6040516001600160a01b03909116815260200160405180910390f35b6000546100d05760405162461bcd60e51b8152602060048201526005602482015264656d70747960d81b60448201526064015b60405180910390fd5b600080546040805142602082015244918101919091526060016040516020818303038152906040528051906020012060001c61010c9190610269565b9050600081815481106101215761012161028b565b60009182526020822001546040516001600160a01b03909116914780156108fc02929091818181858888f19350505050158015610162573d6000803e3d6000fd5b5061016e60008061021e565b50565b34662386f26fc10000146101b35760405162461bcd60e51b8152602060048201526009602482015268656e7472792066656560b81b60448201526064016100c7565b600080546001810182559080527f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e5630180546001600160a01b03191633179055565b6000818154811061020457600080fd5b6000918252602090912001546001600160a01b0316905081565b508054600082559060005260206000209081019061016e91905b8082111561024c5760008155600101610238565b5090565b60006020828403121561026257600080fd5b5035919050565b60008261028657634e487b7160e01b600052601260045260246000fd5b500690565b634e487b7160e01b600052603260045260246000fdfea26469706673582212204184d67a7d9dc65f7aa5e96eaa3cabf0d233c2470ae683dcce718b45f2fda94f64736f6c634300081c0033",
+      "runtime": "0x6080604052600436106100345760003560e01c80630eecae2114610039578063e97dcb6214610050578063f71d96cb14610058575b600080fd5b34801561004557600080fd5b5061004e610094565b005b61004e610171565b34801561006457600080fd5b50610078610073366004610250565b6101f4565b6040516001600160a01b03909116815260200160405180910390f35b6000546100d05760405162461bcd60e51b8152602060048201526005602482015264656d70747960d81b60448201526064015b60405180910390fd5b600080546040805142602082015244918101919091526060016040516020818303038152906040528051906020012060001c61010c9190610269565b9050600081815481106101215761012161028b565b60009182526020822001546040516001600160a01b03909116914780156108fc02929091818181858888f19350505050158015610162573d6000803e3d6000fd5b5061016e60008061021e565b50565b34662386f26fc10000146101b35760405162461bcd60e51b8152602060048201526009602482015268656e7472792066656560b81b60448201526064016100c7565b600080546001810182559080527f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e5630180546001600160a01b03191633179055565b6000818154811061020457600080fd5b6000918252602090912001546001600160a01b0316905081565b508054600082559060005260206000209081019061016e91905b8082111561024c5760008155600101610238565b5090565b60006020828403121561026257600080fd5b5035919050565b60008261028657634e487b7160e01b600052601260045260246000fd5b500690565b634e487b7160e01b600052603260045260246000fdfea26469706673582212204184d67a7d9dc65f7aa5e96eaa3cabf0d233c2470ae683dcce718b45f2fda94f64736f6c634300081c0033"
     }
   }
 }

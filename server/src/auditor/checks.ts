@@ -32,6 +32,15 @@ export const FINDING_IDS = [
   "blacklist-switch",
   "pause-switch",
   "trading-switch",
+  "reentrancy-risk",
+  "unchecked-call",
+  "unprotected-init",
+  "owner-seize",
+  "weak-randomness",
+  "dos-loop-payment",
+  "signature-replay",
+  "strict-balance",
+  "unchecked-math",
 ] as const;
 
 export function normalizedHex(hex: string): string {

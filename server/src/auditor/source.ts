@@ -147,6 +147,38 @@ function txOriginViaVariable(code: string): boolean {
   return false;
 }
 const TRADING_NAME = /^(?:enable|disable|open|close|set|toggle|start|stop)Trad(?:e|ing)\w*$|^(?:setTradingEnabled|setTradable|setSwapEnabled|enableSwap)$/i;
+// --- more vulnerability patterns (all heuristics, all medium or low) -------------------------
+
+const ETHER_CALL = /\.\s*call\s*\{[^}]*value\s*:|\.\s*call\.value\s*\(/;
+const STATE_WRITE = /\b\w+(?:\s*\[[^\]]*\])+\s*(?:-=|\+=|=(?!=))/;
+const NON_REENTRANT = /\bnonReentrant\b|\block(?:ed)?\b|\bmutex\b/i;
+
+// An external ether call followed, later in the same function, by a write to a mapping entry
+// (the balance is zeroed AFTER the money is sent). A guard modifier or lock variable clears it.
+function reentrancyRisk(f: Fn): boolean {
+  if (NON_REENTRANT.test(f.header) || NON_REENTRANT.test(f.body)) return false;
+  const m = ETHER_CALL.exec(f.body);
+  return m !== null && STATE_WRITE.test(f.body.slice(m.index + m[0].length));
+}
+
+// A call, send or delegatecall used as a bare statement: its success value is thrown away.
+function uncheckedCall(body: string): boolean {
+  return body
+    .split(/[;{}]/)
+    .some((st) => /^\s*[\w.$()\[\]\s]*?\.\s*(?:call|send)\s*(?:\{[^}]*\})?\s*\(/.test(st) && !/=|\brequire\b|\bassert\b|\bif\b|\breturn\b|\bemit\b/.test(st.split(/\.\s*(?:call|send)/)[0]));
+}
+
+const INIT_NAME = /^(?:initialize|init|__\w*init\w*|setup|setOwner|initOwner)$/i;
+const INIT_GUARD = /\binitializer\b|\breinitializer\b|\bonlyInitializing\b|\binitialized\b|\b_initialized\b/i;
+const SETS_OWNER = /\b_?(?:owner|admin|governance|operator)\s*=/;
+const SEIZE_NAME = /^(?:force|seize|confiscate|clawback|takeFrom|adminTransfer|ownerTransfer|moveFrom|stealFrom)\w*$/i;
+const BLOCK_RANDOM = /\b(?:block\s*\.\s*(?:timestamp|number|difficulty|prevrandao|coinbase)|blockhash\s*\()/;
+const PAYS_IN_LOOP = /\b(?:for|while)\s*\([^)]*(?:length|\.size)[^)]*\)\s*\{[\s\S]*?(?:\.\s*transfer\s*\(|\.\s*send\s*\(|\.\s*call\s*[({])/;
+const ECRECOVER = /\becrecover\s*\(|\bECDSA\s*\.\s*recover\s*\(/;
+const REPLAY_GUARD = /\bnonce\w*\b|\bused\w*\b|\bexecuted\b|\bclaimed\b|\bDOMAIN_SEPARATOR\b|\bdeadline\b/i;
+const STRICT_BALANCE = /address\s*\(\s*this\s*\)\s*\.\s*balance\s*(?:==|!=)|(?:==|!=)\s*address\s*\(\s*this\s*\)\s*\.\s*balance/;
+const UNCHECKED_MATH = /\bunchecked\s*\{[^}]*\b\w*(?:balance|balances|amount|supply|owed|deposit)\w*(?:\s*\[[^\]]*\])*\s*(?:-=|\+=|\*=)/i;
+
 const TX_ORIGIN_AUTH =
   /(?:require|assert|if)\s*\([^;{]*\btx\s*\.\s*origin\b|\btx\s*\.\s*origin\s*(?:==|!=)|(?:==|!=)\s*tx\s*\.\s*origin\b/;
 
@@ -167,14 +199,32 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
   const blacklist: string[] = [];
   const pause: string[] = [];
   const trading: string[] = [];
+  const reentrancy: string[] = [];
+  const unchecked: string[] = [];
+  const unprotectedInit: string[] = [];
+  const seize: string[] = [];
+  const randomness: string[] = [];
+  const dosLoop: string[] = [];
+  let replay = false;
+  let strictBalance = false;
+  let uncheckedMath = false;
 
   for (const raw of Object.values(sources)) {
     const code = strip(raw);
     if (TX_ORIGIN_AUTH.test(code) || txOriginViaVariable(code)) txOrigin = true;
     const modNames = ownerModifiers(code);
     const mods = modNames.length > 0 ? new RegExp(`\\b(?:${modNames.map((n) => n.replace(/\$/g, "\\$")).join("|")})\\b`) : null;
+    if (ECRECOVER.test(code) && !REPLAY_GUARD.test(code)) replay = true;
+    if (STRICT_BALANCE.test(code)) strictBalance = true;
+    if (UNCHECKED_MATH.test(code)) uncheckedMath = true;
     for (const f of functionsOf(code)) {
       const gated = isGated(f, mods);
+      if (reentrancyRisk(f)) reentrancy.push(f.name);
+      if (uncheckedCall(f.body)) unchecked.push(f.name);
+      if (INIT_NAME.test(f.name) && !gated && !INIT_GUARD.test(f.header + f.body) && SETS_OWNER.test(f.body)) unprotectedInit.push(f.name);
+      if (gated && (SEIZE_NAME.test(f.name) || /\.\s*transferFrom\s*\(\s*(?!msg\.sender|_msgSender)[A-Za-z_]\w*\s*,/.test(f.body))) seize.push(f.name);
+      if (BLOCK_RANDOM.test(f.body) && /%|keccak256|blockhash/.test(f.body) && /\.\s*(?:transfer|send|call)\b|\bwinner\b|\bwin\b|\brandom\b/i.test(f.body)) randomness.push(f.name);
+      if (PAYS_IN_LOOP.test(f.body)) dosLoop.push(f.name);
       if (gated) {
         const ethSweep = WHOLE_ETH_BALANCE.test(f.body) && SENDS_ETHER.test(f.body);
         const tokenSweep = WHOLE_TOKEN_BALANCE.test(f.body) && SENDS_TOKEN.test(f.body);
@@ -225,6 +275,16 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
       message: `Heuristic: the source has a blacklist or block switch${quoted(blacklist)} that can stop an address from moving funds.`,
     });
   }
+  const add = (id: string, severity: Finding["severity"], message: string) => findings.push({ id, severity, message });
+  if (reentrancy.length > 0) add("reentrancy-risk", "medium", `Heuristic: a function${quoted(reentrancy)} sends ether before it updates its records, so a malicious receiver may call back in and withdraw again.`);
+  if (unchecked.length > 0) add("unchecked-call", "medium", `Heuristic: a function${quoted(unchecked)} ignores whether a send or call succeeded, so a failed payment can look like a successful one.`);
+  if (unprotectedInit.length > 0) add("unprotected-init", "medium", `Heuristic: an initializer${quoted(unprotectedInit)} sets the owner but has no guard, so anyone may be able to call it and take control.`);
+  if (seize.length > 0) add("owner-seize", "medium", `Heuristic: an owner-only function${quoted(seize)} can move tokens out of other people's wallets.`);
+  if (randomness.length > 0) add("weak-randomness", "medium", `Heuristic: a function${quoted(randomness)} uses block values as randomness, which miners and other contracts can predict.`);
+  if (dosLoop.length > 0) add("dos-loop-payment", "medium", `Heuristic: a function${quoted(dosLoop)} pays many recipients in one loop, so one failing recipient or a long list can block everyone.`);
+  if (replay) add("signature-replay", "medium", "Heuristic: the source checks a signature but shows no nonce or used-signature record, so the same signature may be replayable.");
+  if (strictBalance) add("strict-balance", "low", "Heuristic: the source compares the contract's balance with an exact value, which anyone can break by force-sending ether.");
+  if (uncheckedMath) add("unchecked-math", "medium", "Heuristic: balance or amount arithmetic sits inside an unchecked block, so it can wrap around instead of reverting.");
   if (trading.length > 0) {
     findings.push({
       id: "trading-switch",

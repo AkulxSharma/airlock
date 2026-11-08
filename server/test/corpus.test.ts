@@ -21,11 +21,11 @@ const VULNERABLE: Record<string, string> = {
   "honeypot-sell-fee.sol": "adjustable-fee",
   "honeypot-trading-gate.sol": "trading-switch",
   "mint-owner.sol": "owner-mint",
+  "reentrancy-vault.sol": "reentrancy-risk",
 };
 
-// Not a source-level signal. selfdestruct and delegatecall are caught from the bytecode, and
-// reentrancy (a general bug, not a drainer signal) is outside what Airlock claims to check.
-const NOT_IN_SOURCE_SCOPE = ["selfdestruct-kill.sol", "delegatecall-arbitrary.sol", "reentrancy-vault.sol"];
+// Not a source-level signal: selfdestruct and delegatecall are caught from the bytecode.
+const NOT_IN_SOURCE_SCOPE = ["selfdestruct-kill.sol", "delegatecall-arbitrary.sol"];
 
 const GOOD = [
   "erc20-plain.sol",

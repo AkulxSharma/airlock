@@ -170,6 +170,15 @@ const FINDING_TEXT: Record<(typeof FINDING_IDS)[number], string> = {
   "blacklist-switch": "the owner can block specific addresses",
   "pause-switch": "the owner can pause the contract",
   "trading-switch": "the owner can switch trading on and off",
+  "reentrancy-risk": "a function sends ether before updating its records, which can allow repeated withdrawals",
+  "unchecked-call": "a function ignores whether a payment succeeded",
+  "unprotected-init": "an initializer has no guard, so anyone may take control",
+  "owner-seize": "the owner can move tokens out of other people's wallets",
+  "weak-randomness": "randomness comes from block values that can be predicted",
+  "dos-loop-payment": "one loop pays many recipients, so one failure can block everyone",
+  "signature-replay": "a signature check shows no replay protection",
+  "strict-balance": "the code compares the balance with an exact value",
+  "unchecked-math": "balance arithmetic can wrap around instead of reverting",
 };
 
 // Returns the cleaned text, or null if it breaks a rule. The caller then shows only the

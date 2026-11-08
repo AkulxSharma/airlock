@@ -47,7 +47,37 @@ describe("Solidity demo contracts", () => {
     expect(r.verdict).toBe("MEDIUM");
   });
 
-  it("no demo contract trips a bytecode check by accident (metadata bytes are not opcodes)", () => {
-    for (const n of Object.keys(compiled.contracts)) expect(audit(n).bytecodeIds).toEqual([]);
+  it("compiler metadata bytes never trip a bytecode check on a contract that has no such opcode", () => {
+    const real = new Set(["UnprotectedKill", "DelegateToUser", "IERC20"]); // IERC20 is an interface: no code
+    for (const n of Object.keys(compiled.contracts)) if (!real.has(n)) expect(audit(n).bytecodeIds).toEqual([]);
   });
+});
+
+// One contract per vulnerability class. `ids` is exactly what the auditor reports (bytecode + source).
+// SpotOracleLender is the one class Airlock does NOT detect (flash-loan price manipulation needs
+// economic analysis, not pattern matching). It is listed so the gap is on record, not hidden.
+const CLASSES: Array<[string, string, string[], "LOW" | "MEDIUM" | "HIGH"]> = [
+  ["ReentrancyBank", "reentrancy", ["reentrancy-risk"], "MEDIUM"],
+  ["UncheckedSend", "unchecked call return", ["unchecked-call"], "MEDIUM"],
+  ["UnprotectedKill", "unprotected selfdestruct", ["selfdestruct"], "HIGH"],
+  ["UnprotectedInit", "unprotected initializer", ["unprotected-init"], "MEDIUM"],
+  ["DelegateToUser", "delegatecall to a caller-chosen address", ["delegatecall"], "MEDIUM"],
+  ["WeakRandomLottery", "weak randomness", ["weak-randomness"], "MEDIUM"],
+  ["StrictBalanceGame", "forced ether / strict balance check", ["strict-balance"], "LOW"],
+  ["DosRefund", "denial of service by looped payments", ["dos-loop-payment"], "MEDIUM"],
+  ["SignatureReplay", "signature replay", ["signature-replay"], "MEDIUM"],
+  ["BackdoorToken", "hidden owner backdoor", ["owner-seize"], "MEDIUM"],
+  ["ApprovalDrainer", "approval phishing", ["owner-seize"], "MEDIUM"],
+  ["UncheckedMath", "unchecked arithmetic", ["unchecked-math"], "MEDIUM"],
+  ["SpotOracleLender", "oracle manipulation (NOT detected)", [], "LOW"],
+];
+
+describe("one demo contract per vulnerability class", () => {
+  for (const [name, label, ids, verdict] of CLASSES) {
+    it(`${name} (${label}): ${verdict}${ids.length ? " with " + ids.join(", ") : ""}`, () => {
+      const r = audit(name);
+      expect(r.ids).toEqual(ids);
+      expect(r.verdict).toBe(verdict);
+    });
+  }
 });
