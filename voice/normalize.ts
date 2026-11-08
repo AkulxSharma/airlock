@@ -112,9 +112,15 @@ export function canonicalizeCommand(text: string): string {
   return t.replace(/\s+/g, " ").trim();
 }
 
+/** Longest transcript considered. Real commands are a few dozen characters. */
+export const MAX_TRANSCRIPT_CHARS = 2000;
+
 export function normalizeTranscript(input: string): string {
   // "Hey Airlock, send ..." and "Airlock, send ..." mean the same as "send ...".
-  let s = stripWakeWord(input).toLowerCase().replace(/[-–—_]/g, " ");
+  // A spoken command is short. Bound the input and collapse runs of whitespace first: the patterns below
+  // retry from every position in a run of spaces, which took 38 seconds on 200 KB of spaces.
+  const bounded = input.slice(0, MAX_TRANSCRIPT_CHARS).replace(/\s+/g, " ");
+  let s = stripWakeWord(bounded).toLowerCase().replace(/[-–—_]/g, " ");
   s = s.replace(/[.,;:!?]+(?=\s|$)/g, ""); // trailing punctuation, keeps 0.01 and 11,155,111
   s = s.replace(/\bzero\s?x(?=\s|[0-9a-f])/g, "0x");
   s = s.replace(/\s+dot\s+eth\b/g, ".eth");

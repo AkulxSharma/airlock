@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { MessageRequestSchema } from "../types.js";
@@ -42,7 +43,10 @@ export function createApp(deps: AppDeps) {
 
   app.get("/health", (c) => c.json({ ok: true }));
 
-  app.post("/api/message", async (c) => {
+  // The largest legitimate request is a few hundred bytes. Refuse anything big before it is read.
+  const tooLarge = bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ error: "request too large" }, 413) });
+
+  app.post("/api/message", tooLarge, async (c) => {
     // Requiring JSON forces a CORS preflight for cross-site pages, so a plain-text form
     // post cannot trigger a send.
     if (!(c.req.header("content-type") ?? "").toLowerCase().startsWith("application/json")) {
