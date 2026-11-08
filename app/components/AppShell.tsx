@@ -21,17 +21,17 @@ const TARGETS = [
 
 export function AppShell() {
   const [view, setView] = useState<View>("console");
-  const handleVoiceText = useRef<(t: string) => void>(() => {});
-  const voice = useVoice((t) => handleVoiceText.current(t));
+  const handleVoiceText = useRef<(t: string, source: "hold" | "hands-free") => void>(() => {});
+  const voice = useVoice((t) => handleVoiceText.current(t, "hold"));
   const air = useAirlock();
   // Hands-free: pause while Airlock is speaking, recording, or busy so it never hears itself.
-  const wake = useWakeWord((t) => handleVoiceText.current(t), voice.state !== "idle" || air.busy, air.note);
+  const wake = useWakeWord((t) => handleVoiceText.current(t, "hands-free"), voice.state !== "idle" || air.busy, air.note);
 
   // Keep the latest handler in the ref after each render (refs must not be written during render).
   useEffect(() => {
-    handleVoiceText.current = async (t: string) => {
+    handleVoiceText.current = async (t: string, source: "hold" | "hands-free") => {
       setView("console");
-      const parsed = await air.send(t, "voice");
+      const parsed = await air.send(t, "voice", source);
       if (parsed) void voice.say(speechFor(parsed));
     };
   });

@@ -85,7 +85,7 @@ export function useAirlock() {
     return () => clearTimeout(t);
   }, [pending]);
 
-  const send = useCallback(async (text: string, channel: "gui" | "voice" = "gui"): Promise<ParsedReply | null> => {
+  const send = useCallback(async (text: string, channel: "gui" | "voice" = "gui", source?: "hold" | "hands-free"): Promise<ParsedReply | null> => {
     const clean = text.trim();
     if (!clean || !sessionId) return null;
     setBusy(true);
@@ -95,7 +95,7 @@ export function useAirlock() {
     setMessages((m) => [...m, { id: nextId(), from: "you", text: clean, channel }]);
     addLog("message", `you (${channel}): ${clean}`);
     try {
-      const res = await sendMessage({ sessionId, channel, text: clean });
+      const res = await sendMessage({ sessionId, channel, text: clean, ...(source ? { source } : {}) });
       const parsed = parseResponse(res);
       // The response carries each stage's final state. Queue them in order after anything the stream
       // already sent (repeats are dropped), then wait for the cards to finish playing before showing

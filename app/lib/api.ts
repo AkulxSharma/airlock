@@ -5,7 +5,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787
 
 export class ApiError extends Error {}
 
-export async function sendMessage(body: { sessionId: string; channel: "gui" | "voice"; text: string }): Promise<MessageResponse> {
+export async function sendMessage(body: { sessionId: string; channel: "gui" | "voice"; text: string; source?: "hold" | "hands-free" }): Promise<MessageResponse> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/message`, {
