@@ -73,31 +73,52 @@ function strip(code: string): string {
 
 type Fn = { name: string; header: string; body: string };
 
+// Hostile input: this text comes from whoever published the contract, and the analysis runs on the single
+// thread that serves everyone. Every scan below is bounded, so no input can make it quadratic. Found by
+// fuzzing: 400 KB of "if (" took 40 seconds and froze the server. Real contracts are far below these limits.
+const MAX_FUNCTIONS = 1500; // per file
+const MAX_MODIFIERS = 200;
+const MAX_MODIFIER_NAMES = 30; // names put into one regex
+const MAX_HEADER = 2000; // characters between ")" and "{" in a function header
+const MAX_ASSIGNMENTS = 50; // tx.origin copied into variables
+
+/** Index of every "{" and "(" mapped to its matching closer, found in one pass. Unmatched openers are absent. */
+function matchBrackets(code: string): { brace: Map<number, number>; paren: Map<number, number> } {
+  const brace = new Map<number, number>();
+  const paren = new Map<number, number>();
+  const braceStack: number[] = [];
+  const parenStack: number[] = [];
+  for (let i = 0; i < code.length; i++) {
+    const c = code[i];
+    if (c === "{") braceStack.push(i);
+    else if (c === "}") { const o = braceStack.pop(); if (o !== undefined) brace.set(o, i); }
+    else if (c === "(") parenStack.push(i);
+    else if (c === ")") { const o = parenStack.pop(); if (o !== undefined) paren.set(o, i); }
+  }
+  return { brace, paren };
+}
+
 // Functions that have a body, found by matching braces. Interface and abstract declarations
 // end in ";" and are skipped.
-function functionsOf(code: string): Fn[] {
+function functionsOf(code: string, brackets: ReturnType<typeof matchBrackets>): Fn[] {
   const out: Fn[] = [];
   const re = /\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(code))) {
-    let i = re.lastIndex;
-    let depth = 1;
-    while (i < code.length && depth > 0) {
-      if (code[i] === "(") depth++;
-      else if (code[i] === ")") depth--;
-      i++;
-    }
+  let unclosed = 0;
+  while ((m = re.exec(code)) && out.length < MAX_FUNCTIONS) {
+    const closeParen = brackets.paren.get(re.lastIndex - 1);
+    if (closeParen === undefined) continue;
+    const i = closeParen + 1;
     let j = i;
-    while (j < code.length && code[j] !== "{" && code[j] !== ";") j++;
+    const limit = Math.min(code.length, i + MAX_HEADER);
+    while (j < limit && code[j] !== "{" && code[j] !== ";") j++;
     if (code[j] !== "{") continue;
-    let k = j + 1;
-    let d = 1;
-    while (k < code.length && d > 0) {
-      if (code[k] === "{") d++;
-      else if (code[k] === "}") d--;
-      k++;
+    let closeBrace = brackets.brace.get(j);
+    if (closeBrace === undefined) {
+      if (unclosed++ > 0) continue; // only the first unclosed body runs to the end; more would make the work quadratic
+      closeBrace = code.length;
     }
-    out.push({ name: m[1], header: code.slice(i, j), body: code.slice(j + 1, k - 1) });
+    out.push({ name: m[1], header: code.slice(i, j), body: code.slice(j + 1, closeBrace) });
   }
   return out;
 }
@@ -108,19 +129,15 @@ const GATED_BODY =
 
 // Modifiers declared in the source whose body checks the caller against owner/admin, whatever they are
 // called ("auth", "restricted", "onlyGov"...). A function that lists one in its header is owner-gated.
-function ownerModifiers(code: string): string[] {
+function ownerModifiers(code: string, brackets: ReturnType<typeof matchBrackets>): string[] {
   const out: string[] = [];
-  const re = /\bmodifier\s+([A-Za-z_$][\w$]*)\s*(?:\([^)]*\))?[^{;]*\{/g;
+  const re = /\bmodifier\s+([A-Za-z_$][\w$]*)\s*(?:\([^)]{0,300}\))?[^{;]{0,300}\{/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(code))) {
-    let k = re.lastIndex;
-    let d = 1;
-    while (k < code.length && d > 0) {
-      if (code[k] === "{") d++;
-      else if (code[k] === "}") d--;
-      k++;
-    }
-    if (GATED_BODY.test(code.slice(re.lastIndex, k - 1))) out.push(m[1]);
+  let seen = 0;
+  while ((m = re.exec(code)) && seen++ < MAX_MODIFIERS && out.length < MAX_MODIFIER_NAMES) {
+    const open = re.lastIndex - 1;
+    const close = brackets.brace.get(open) ?? code.length;
+    if (GATED_BODY.test(code.slice(open + 1, close))) out.push(m[1]);
   }
   return out;
 }
@@ -140,17 +157,19 @@ const MINT_NAME = /^mint$/i;
 function txOriginViaVariable(code: string): boolean {
   const re = /\b([A-Za-z_$][\w$]*)\s*=\s*tx\s*\.\s*origin\b/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(code))) {
+  let seen = 0;
+  while ((m = re.exec(code)) && seen++ < MAX_ASSIGNMENTS) {
     const v = m[1].replace(/\$/g, "\\$");
-    if (new RegExp(`(?:require|assert|if)\\s*\\([^;{]*\\b${v}\\b`).test(code.slice(re.lastIndex))) return true;
+    // only look a little way ahead: the comparison sits close to the assignment
+    if (new RegExp(`(?:require|assert|if)\\s*\\([^;{]{0,300}\\b${v}\\b`).test(code.slice(re.lastIndex, re.lastIndex + 20_000))) return true;
   }
   return false;
 }
 const TRADING_NAME = /^(?:enable|disable|open|close|set|toggle|start|stop)Trad(?:e|ing)\w*$|^(?:setTradingEnabled|setTradable|setSwapEnabled|enableSwap)$/i;
 // --- more vulnerability patterns (all heuristics, all medium or low) -------------------------
 
-const ETHER_CALL = /\.\s*call\s*\{[^}]*value\s*:|\.\s*call\.value\s*\(/;
-const STATE_WRITE = /\b\w+(?:\s*\[[^\]]*\])+\s*(?:-=|\+=|=(?!=))/;
+const ETHER_CALL = /\.\s*call\s*\{[^}]{0,200}value\s*:|\.\s*call\.value\s*\(/;
+const STATE_WRITE = /\b\w{1,64}(?:\s*\[[^\]]{0,200}\]){1,6}\s*(?:-=|\+=|=(?!=))/;
 const NON_REENTRANT = /\bnonReentrant\b|\block(?:ed)?\b|\bmutex\b/i;
 
 // An external ether call followed, later in the same function, by a write to a mapping entry
@@ -165,7 +184,7 @@ function reentrancyRisk(f: Fn): boolean {
 function uncheckedCall(body: string): boolean {
   return body
     .split(/[;{}]/)
-    .some((st) => /^\s*[\w.$()\[\]\s]*?\.\s*(?:call|send)\s*(?:\{[^}]*\})?\s*\(/.test(st) && !/=|\brequire\b|\bassert\b|\bif\b|\breturn\b|\bemit\b/.test(st.split(/\.\s*(?:call|send)/)[0]));
+    .some((st) => st.length <= 400 && /^\s*[\w.$()\[\]\s]*?\.\s*(?:call|send)\s*(?:\{[^}]*\})?\s*\(/.test(st) && !/=|\brequire\b|\bassert\b|\bif\b|\breturn\b|\bemit\b/.test(st.split(/\.\s*(?:call|send)/)[0]));
 }
 
 const INIT_NAME = /^(?:initialize|init|__\w*init\w*|setup|setOwner|initOwner)$/i;
@@ -173,14 +192,14 @@ const INIT_GUARD = /\binitializer\b|\breinitializer\b|\bonlyInitializing\b|\bini
 const SETS_OWNER = /\b_?(?:owner|admin|governance|operator)\s*=/;
 const SEIZE_NAME = /^(?:force|seize|confiscate|clawback|takeFrom|adminTransfer|ownerTransfer|moveFrom|stealFrom)\w*$/i;
 const BLOCK_RANDOM = /\b(?:block\s*\.\s*(?:timestamp|number|difficulty|prevrandao|coinbase)|blockhash\s*\()/;
-const PAYS_IN_LOOP = /\b(?:for|while)\s*\([^)]*(?:length|\.size)[^)]*\)\s*\{[\s\S]*?(?:\.\s*transfer\s*\(|\.\s*send\s*\(|\.\s*call\s*[({])/;
+const PAYS_IN_LOOP = /\b(?:for|while)\s*\([^)]{0,200}(?:length|\.size)[^)]{0,200}\)\s*\{[\s\S]{0,3000}?(?:\.\s*transfer\s*\(|\.\s*send\s*\(|\.\s*call\s*[({])/;
 const ECRECOVER = /\becrecover\s*\(|\bECDSA\s*\.\s*recover\s*\(/;
 const REPLAY_GUARD = /\bnonce\w*\b|\bused\w*\b|\bexecuted\b|\bclaimed\b|\bDOMAIN_SEPARATOR\b|\bdeadline\b/i;
 const STRICT_BALANCE = /address\s*\(\s*this\s*\)\s*\.\s*balance\s*(?:==|!=)|(?:==|!=)\s*address\s*\(\s*this\s*\)\s*\.\s*balance/;
-const UNCHECKED_MATH = /\bunchecked\s*\{[^}]*\b\w*(?:balance|balances|amount|supply|owed|deposit)\w*(?:\s*\[[^\]]*\])*\s*(?:-=|\+=|\*=)/i;
+const UNCHECKED_MATH = /\bunchecked\s*\{[^}]{0,500}\b\w{0,40}(?:balance|balances|amount|supply|owed|deposit)\w{0,40}(?:\s*\[[^\]]{0,200}\]){0,6}\s*(?:-=|\+=|\*=)/i;
 
 const TX_ORIGIN_AUTH =
-  /(?:require|assert|if)\s*\([^;{]*\btx\s*\.\s*origin\b|\btx\s*\.\s*origin\s*(?:==|!=)|(?:==|!=)\s*tx\s*\.\s*origin\b/;
+  /(?:require|assert|if)\s*\([^;{]{0,300}\btx\s*\.\s*origin\b|\btx\s*\.\s*origin\s*(?:==|!=)|(?:==|!=)\s*tx\s*\.\s*origin\b/;
 
 // Function names come from untrusted code. Only plain identifiers are quoted, capped in
 // length, and any that contain a reassuring word are left out.
@@ -212,12 +231,13 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
   for (const raw of Object.values(sources)) {
     const code = strip(raw);
     if (TX_ORIGIN_AUTH.test(code) || txOriginViaVariable(code)) txOrigin = true;
-    const modNames = ownerModifiers(code);
+    const brackets = matchBrackets(code);
+    const modNames = ownerModifiers(code, brackets);
     const mods = modNames.length > 0 ? new RegExp(`\\b(?:${modNames.map((n) => n.replace(/\$/g, "\\$")).join("|")})\\b`) : null;
     if (ECRECOVER.test(code) && !REPLAY_GUARD.test(code)) replay = true;
     if (STRICT_BALANCE.test(code)) strictBalance = true;
     if (UNCHECKED_MATH.test(code)) uncheckedMath = true;
-    for (const f of functionsOf(code)) {
+    for (const f of functionsOf(code, brackets)) {
       const gated = isGated(f, mods);
       if (reentrancyRisk(f)) reentrancy.push(f.name);
       if (uncheckedCall(f.body)) unchecked.push(f.name);
