@@ -105,10 +105,30 @@ function functionsOf(code: string): Fn[] {
 const GATED_HEADER = /\bonly[A-Z_]\w*/;
 const GATED_BODY =
   /require\s*\(\s*(?:_?msgSender\s*\(\s*\)|msg\.sender)\s*==\s*_?(?:owner|admin|governance|deployer|operator)\b|(?:msg\.sender|_?msgSender\s*\(\s*\))\s*!=\s*_?(?:owner|admin|governance|deployer|operator)\b|\b_checkOwner\s*\(\s*\)/;
-const isGated = (f: Fn) => GATED_HEADER.test(f.header) || GATED_BODY.test(f.body);
 
-const SENDS_ETHER = /\.\s*(?:transfer|send)\s*\(|\.\s*call\s*[({]/;
-const WHOLE_ETH_BALANCE = /address\s*\(\s*this\s*\)\s*\.\s*balance/;
+// Modifiers declared in the source whose body checks the caller against owner/admin, whatever they are
+// called ("auth", "restricted", "onlyGov"...). A function that lists one in its header is owner-gated.
+function ownerModifiers(code: string): string[] {
+  const out: string[] = [];
+  const re = /\bmodifier\s+([A-Za-z_$][\w$]*)\s*(?:\([^)]*\))?[^{;]*\{/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code))) {
+    let k = re.lastIndex;
+    let d = 1;
+    while (k < code.length && d > 0) {
+      if (code[k] === "{") d++;
+      else if (code[k] === "}") d--;
+      k++;
+    }
+    if (GATED_BODY.test(code.slice(re.lastIndex, k - 1))) out.push(m[1]);
+  }
+  return out;
+}
+const isGated = (f: Fn, mods: RegExp | null) =>
+  GATED_HEADER.test(f.header) || GATED_BODY.test(f.body) || (mods !== null && mods.test(f.header));
+
+const SENDS_ETHER = /\.\s*(?:transfer|send)\s*\(|\.\s*call\s*[({]|\bcall\s*\(\s*gas\s*\(\s*\)/;
+const WHOLE_ETH_BALANCE = /address\s*\(\s*this\s*\)\s*\.\s*balance|\bselfbalance\s*\(\s*\)|\bbalance\s*\(\s*address\s*\(\s*\)\s*\)/;
 const WHOLE_TOKEN_BALANCE = /balanceOf\s*\(\s*address\s*\(\s*this\s*\)\s*\)/;
 const SENDS_TOKEN = /\.\s*(?:safeT|t)ransfer(?:From)?\s*\(/;
 
@@ -116,6 +136,17 @@ const FEE_NAME = /^(?:set|update|change)(?:Buy|Sell|Transfer|Total|Max)?(?:Fee|F
 const BLACKLIST_NAME = /(?:black|block|deny|ban)list|^freeze|^setBots?$|^addBot/i;
 const PAUSE_NAME = /^(?:pause|unpause|setPaused|togglePause)$/i;
 const MINT_NAME = /^mint$/i;
+// tx.origin copied into a variable that is then compared in a require/if/assert.
+function txOriginViaVariable(code: string): boolean {
+  const re = /\b([A-Za-z_$][\w$]*)\s*=\s*tx\s*\.\s*origin\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code))) {
+    const v = m[1].replace(/\$/g, "\\$");
+    if (new RegExp(`(?:require|assert|if)\\s*\\([^;{]*\\b${v}\\b`).test(code.slice(re.lastIndex))) return true;
+  }
+  return false;
+}
+const TRADING_NAME = /^(?:enable|disable|open|close|set|toggle|start|stop)Trad(?:e|ing)\w*$|^(?:setTradingEnabled|setTradable|setSwapEnabled|enableSwap)$/i;
 const TX_ORIGIN_AUTH =
   /(?:require|assert|if)\s*\([^;{]*\btx\s*\.\s*origin\b|\btx\s*\.\s*origin\s*(?:==|!=)|(?:==|!=)\s*tx\s*\.\s*origin\b/;
 
@@ -135,12 +166,15 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
   const fee: string[] = [];
   const blacklist: string[] = [];
   const pause: string[] = [];
+  const trading: string[] = [];
 
   for (const raw of Object.values(sources)) {
     const code = strip(raw);
-    if (TX_ORIGIN_AUTH.test(code)) txOrigin = true;
+    if (TX_ORIGIN_AUTH.test(code) || txOriginViaVariable(code)) txOrigin = true;
+    const modNames = ownerModifiers(code);
+    const mods = modNames.length > 0 ? new RegExp(`\\b(?:${modNames.map((n) => n.replace(/\$/g, "\\$")).join("|")})\\b`) : null;
     for (const f of functionsOf(code)) {
-      const gated = isGated(f);
+      const gated = isGated(f, mods);
       if (gated) {
         const ethSweep = WHOLE_ETH_BALANCE.test(f.body) && SENDS_ETHER.test(f.body);
         const tokenSweep = WHOLE_TOKEN_BALANCE.test(f.body) && SENDS_TOKEN.test(f.body);
@@ -150,6 +184,7 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
       if (FEE_NAME.test(f.name)) fee.push(f.name);
       if (BLACKLIST_NAME.test(f.name)) blacklist.push(f.name);
       if (PAUSE_NAME.test(f.name)) pause.push(f.name);
+      if (gated && TRADING_NAME.test(f.name)) trading.push(f.name);
     }
   }
 
@@ -188,6 +223,13 @@ export function analyzeSource(sources: Record<string, string>): Finding[] {
       id: "blacklist-switch",
       severity: "medium",
       message: `Heuristic: the source has a blacklist or block switch${quoted(blacklist)} that can stop an address from moving funds.`,
+    });
+  }
+  if (trading.length > 0) {
+    findings.push({
+      id: "trading-switch",
+      severity: "medium",
+      message: `Heuristic: the owner can switch trading or swaps on and off${quoted(trading)}, which a honeypot uses to stop buyers from selling.`,
     });
   }
   if (pause.length > 0) {

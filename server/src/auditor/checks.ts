@@ -31,6 +31,7 @@ export const FINDING_IDS = [
   "adjustable-fee",
   "blacklist-switch",
   "pause-switch",
+  "trading-switch",
 ] as const;
 
 export function normalizedHex(hex: string): string {

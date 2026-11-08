@@ -169,6 +169,7 @@ const FINDING_TEXT: Record<(typeof FINDING_IDS)[number], string> = {
   "adjustable-fee": "the owner can change a fee",
   "blacklist-switch": "the owner can block specific addresses",
   "pause-switch": "the owner can pause the contract",
+  "trading-switch": "the owner can switch trading on and off",
 };
 
 // Returns the cleaned text, or null if it breaks a rule. The caller then shows only the

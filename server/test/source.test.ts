@@ -231,19 +231,19 @@ describe("known limits of the source heuristics (documented, not hidden)", () =>
     expect(ids("contract A { function totallyInnocent() external onlyOwner { payable(msg.sender).transfer(address(this).balance); } }")).toEqual(["owner-sweep"]);
   });
 
-  it("MISS: a sweep written in inline assembly", () => {
+  it("catches a sweep written in inline assembly (was a miss)", () => {
     const src = "contract A { function f() external onlyOwner { assembly { let ok := call(gas(), caller(), selfbalance(), 0, 0, 0, 0) } } }";
-    expect(ids(src)).toEqual([]);
+    expect(ids(src)).toEqual(["owner-sweep"]);
   });
 
-  it("MISS: an owner check by a modifier with a name that does not start with 'only'", () => {
+  it("catches an owner check by a modifier that does not start with 'only' (was a miss)", () => {
     const src = "contract A { modifier auth() { require(msg.sender == owner); _; } function drain() external auth { payable(owner).transfer(address(this).balance); } }";
-    expect(ids(src)).toEqual([]);
+    expect(ids(src)).toEqual(["owner-sweep"]);
   });
 
-  it("MISS: tx.origin copied into a variable first", () => {
+  it("catches tx.origin copied into a variable first (was a miss)", () => {
     const src = "contract A { function f() external { address o = tx.origin; require(o == owner); } }";
-    expect(ids(src)).toEqual([]);
+    expect(ids(src)).toEqual(["tx-origin"]);
   });
 
   it("MISS: a sweep that reaches the balance through a helper in another function", () => {
