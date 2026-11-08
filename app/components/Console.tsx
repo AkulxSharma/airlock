@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoChips } from "./DemoChips";
 import { Clock, RotateCcw, SendHorizonal, ShieldCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { ChatMessage, LogEntry, Pending } from "@/lib/useAirlock";
@@ -65,7 +66,12 @@ export function Console({ messages, stages, log, verdict, pending, busy, voice, 
 
       <section aria-label="Conversation" className="space-y-4">
         <Label>Conversation</Label>
-        {messages.length === 0 && <p className="text-sm text-muted-foreground">Try: <button className="underline underline-offset-4 hover:text-foreground" onClick={() => onSend("send 0.01 to vitalik.eth")}>send 0.01 to vitalik.eth</button></p>}
+        {messages.length === 0 && (
+          <div className="space-y-5">
+            <p className="text-sm text-muted-foreground">Try: <button className="underline underline-offset-4 hover:text-foreground" onClick={() => onSend("send 0.01 to vitalik.eth")}>send 0.01 to vitalik.eth</button></p>
+            <DemoChips onPick={onSend} disabled={busy} />
+          </div>
+        )}
         {messages.map((m) => (
           <div key={m.id} className={`animate-fade-in-up flex ${m.from === "you" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm ${m.from === "you" ? "bg-foreground text-background" : "border border-border bg-card/80 text-foreground backdrop-blur"}`}>
