@@ -3,7 +3,7 @@ import { serve } from "@hono/node-server";
 import { config } from "dotenv";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
-import { createExplainer, createGeminiAgent, createGeminiClient, withCooldown } from "./agent/gemini.js";
+import { createExplainer, createGeminiAgent, createGeminiClient, describeGeminiError, modelFromEnv, withCooldown } from "./agent/gemini.js";
 import { auditAddress, auditTimeoutFromEnv, readerFromEnv } from "./auditor/chain.js";
 import { createSourcifyFetcher } from "./auditor/source.js";
 import { createApp, parseAllowedOrigins } from "./api/app.js";
@@ -41,8 +41,15 @@ const demoAliases = loadDemoAliases();
 // With a Gemini key: loose phrasing and plain-language notes. Without one, or if a call
 // fails, the rule-based parser and the fixed replies still work.
 const geminiKey = env.GEMINI_API_KEY?.trim();
-const gemini = geminiKey ? withCooldown(createGeminiClient(geminiKey)) : null;
-console.log(gemini ? "Gemini: on (gemini-2.5-flash)" : "Gemini: off (no GEMINI_API_KEY), using the rule-based parser");
+const geminiModel = modelFromEnv(env);
+const gemini = geminiKey
+  ? withCooldown(createGeminiClient(geminiKey, 8_000, geminiModel), 20_000, Date.now, (err) => {
+      // Say what failed (never the key), then carry on with the rule parser and the template reply.
+      const msg = describeGeminiError(err, geminiKey);
+      if (!/cooling down/.test(msg)) console.warn(`Gemini call failed, using the rule parser for now: ${msg}`);
+    })
+  : null;
+console.log(gemini ? `Gemini: on (${geminiModel})` : "Gemini: off (no GEMINI_API_KEY), using the rule-based parser");
 const ttlSeconds = Number(env.CONFIRM_TTL_SECONDS);
 // Item 12. IMESSAGE_CONFIRM_ALLOWLIST (comma list of phone numbers/emails): only these iMessage senders may
 // confirm a send. Unset = any sender may (demo-friendly). GUI and voice sessions are never blocked by it.

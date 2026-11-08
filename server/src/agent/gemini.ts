@@ -11,7 +11,22 @@ import { parseCommand, type Agent, type Intent } from "./parse.js";
 //  - It never decides YES or NO, never sees a way to send funds, and never changes the gate.
 //    Every exact command, and every YES and NO, goes through the rule parser instead.
 
-export const MODEL = "gemini-2.5-flash";
+// "gemini-2.5-flash" now answers 404 ("no longer available to new users") for keys created recently, so a new
+// teammate's key silently fell back to the rule parser. Tested 2026-11-07 with the real client: 3.5-flash parses
+// loose wording in 1 to 2 seconds and writes the explanation; the "-latest" aliases and 3.8-flash timed out, and
+// 2.5-flash-lite never made the tool call. Override with GEMINI_MODEL if Google retires this one too.
+export const MODEL = "gemini-3.5-flash";
+
+/** A short, single-line description of a Gemini failure that can be logged. The key is masked, never printed. */
+export function describeGeminiError(err: unknown, key: string): string {
+  const raw = String(err instanceof Error ? err.message : err);
+  return (key ? raw.split(key).join("***") : raw).replace(/\s+/g, " ").slice(0, 220);
+}
+
+/** The model to use: GEMINI_MODEL if it is set, otherwise the default above. */
+export function modelFromEnv(env: { GEMINI_MODEL?: string }): string {
+  return env.GEMINI_MODEL?.trim() || MODEL;
+}
 
 export type GeminiCall = { name: string; args: Record<string, unknown> };
 export type GeminiResult = { text: string; calls: GeminiCall[] };
@@ -85,7 +100,12 @@ export function createGeminiClient(apiKey: string, timeoutMs = 8_000, model = MO
 // After a failed call (for example the free tier's 5-requests-per-minute limit), skip the
 // model for a short while instead of retrying on every message. Callers already fall back
 // to the rule parser and the template reply, so this only saves time and quota.
-export function withCooldown(client: GeminiClient, cooldownMs = 20_000, now: () => number = Date.now): GeminiClient {
+export function withCooldown(
+  client: GeminiClient,
+  cooldownMs = 20_000,
+  now: () => number = Date.now,
+  onError?: (err: unknown) => void,
+): GeminiClient {
   let blockedUntil = 0;
   return {
     async generate(req) {
@@ -94,6 +114,7 @@ export function withCooldown(client: GeminiClient, cooldownMs = 20_000, now: () 
         return await client.generate(req);
       } catch (err) {
         blockedUntil = now() + cooldownMs;
+        onError?.(err); // so a bad model name or key is visible instead of silently using the fallback
         throw err;
       }
     },
