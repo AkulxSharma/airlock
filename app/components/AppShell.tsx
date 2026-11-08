@@ -8,6 +8,7 @@ import { useWakeWord } from "@/lib/useWakeWord";
 import { Console } from "./Console";
 import { EventLog, LogHeader } from "./EventLog";
 import { Sidebar, type View } from "./Sidebar";
+import { HowWeWork } from "./HowWeWork";
 import { WalletsPanel } from "./WalletsPanel";
 import { VoicePanel } from "./VoicePanel";
 
@@ -73,6 +74,7 @@ export function AppShell() {
             </div>
           )}
           {view === "wallets" && <WalletsPanel onPick={sendTyped} />}
+          {view === "how" && <HowWeWork />}
           {view === "targets" && (
             <div className="animate-fade-in-up space-y-6">
               <h2 className="font-serif text-4xl italic">Demo targets</h2>

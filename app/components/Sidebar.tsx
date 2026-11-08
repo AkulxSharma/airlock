@@ -1,14 +1,15 @@
 "use client";
 
-import { ChevronLeft, Crosshair, LayoutDashboard, Moon, ScrollText, Sun, Wallet } from "lucide-react";
+import { ChevronLeft, Crosshair, LayoutDashboard, Moon, ScrollText, Sun, Wallet, Workflow } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
-export type View = "console" | "log" | "targets" | "wallets";
+export type View = "console" | "log" | "targets" | "wallets" | "how";
 const NAV: { id: View; name: string; icon: typeof LayoutDashboard }[] = [
   { id: "console", name: "Console", icon: LayoutDashboard },
   { id: "log", name: "Event log", icon: ScrollText },
   { id: "targets", name: "Demo targets", icon: Crosshair },
   { id: "wallets", name: "Wallets", icon: Wallet },
+  { id: "how", name: "How we work", icon: Workflow },
 ];
 
 // The theme lives on <html class="dark">. Subscribe to it so the label always matches the page.

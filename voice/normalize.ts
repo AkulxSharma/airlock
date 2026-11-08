@@ -3,8 +3,8 @@
 // run on normalizeTranscript(text) so spoken and typed input behave the same.
 import {
   CANCEL_PHRASES, CONFIRM_PHRASES, CONNECTORS, CURRENCY_WORDS, POLITE_OPENERS, SEND_VERBS,
-} from "./vocabulary.js";
-import { stripWakeWord } from "./wake.js";
+} from "./vocabulary.ts";
+import { stripWakeWord } from "./wake.ts";
 
 const ONES: Record<string, number> = {
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
