@@ -92,7 +92,8 @@ export function AppShell() {
         </div>
       </main>
 
-      <VoicePanel voice={voice} wake={wake} />
+      {/* The voice box only belongs next to the console: the other pages (event log, targets, wallets, how we work) are for reading. */}
+      {view === "console" && <VoicePanel voice={voice} wake={wake} />}
     </div>
   );
 }
