@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { activityUrl, ApiError, checkHealth, sendMessage, streamUrl, type Stage, type StoredActivity } from "./api";
 import { parseResponse, resolveExpiry, type ParsedReply } from "./parseReply";
 import { createStagePacer } from "./stagePacer";
+import { openEventStream } from "./sse";
 
 export interface ChatMessage {
   id: number;
@@ -63,46 +64,50 @@ export function useAirlock() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
-  // Live audit stages. EventSource reconnects by itself after a drop.
+  // Live audit stages. The reader (lib/sse.ts) reconnects by itself after a drop.
   useEffect(() => {
     if (!sessionId) return;
-    const es = new EventSource(streamUrl(sessionId));
-    es.addEventListener("ready", () => { setStreamUp(true); addLog("system", "Live stream connected"); });
-    es.addEventListener("stage", (e) => {
-      try {
-        const stage = JSON.parse((e as MessageEvent).data) as Stage;
-        pacer.push(stage);
-        addLog("stage", `${stage.name}: ${stage.status}${stage.detail ? ` (${stage.detail})` : ""}`);
-      } catch { /* ignore a malformed event */ }
-    });
-    es.onerror = () => { setStreamUp(false); };
-    return () => es.close();
+    let wasUp = false;
+    const close = openEventStream(
+      streamUrl(sessionId),
+      (m) => {
+        if (m.event === "ready") { addLog("system", "Live stream connected"); return; }
+        if (m.event !== "stage") return;
+        try {
+          const stage = JSON.parse(m.data) as Stage;
+          pacer.push(stage);
+          addLog("stage", `${stage.name}: ${stage.status}${stage.detail ? ` (${stage.detail})` : ""}`);
+        } catch { /* ignore a malformed event */ }
+      },
+      (up) => { if (up !== wasUp) { wasUp = up; setStreamUp(up); } },
+    );
+    return close;
   }, [sessionId, addLog, pacer]);
 
   // What happens on the iMessage line: show each text, the live stages and Airlock's reply here too.
   // The server replays its latest events on connect, so ids already seen are skipped.
   useEffect(() => {
-    const es = new EventSource(activityUrl());
     let lastId = 0;
-    es.addEventListener("activity", (e) => {
+    const close = openEventStream(activityUrl(), (m) => {
+      if (m.event !== "activity") return;
       try {
-        const ev = JSON.parse((e as MessageEvent).data) as StoredActivity;
+        const ev = JSON.parse(m.data) as StoredActivity;
         if (ev.id <= lastId) return;
         lastId = ev.id;
         if (ev.kind === "message") {
-          setMessages((m) => [...m, { id: nextId(), from: "you", text: ev.text, channel: "imessage", who: ev.who }]);
+          setMessages((list) => [...list, { id: nextId(), from: "you", text: ev.text, channel: "imessage", who: ev.who }]);
           addLog("message", `iMessage from ${ev.who}${ev.channel === "voice" ? " (voice note)" : ""}: ${ev.text}`);
         } else if (ev.kind === "stage") {
           pacer.push(ev.stage);
           addLog("stage", `iMessage ${ev.who} · ${ev.stage.name}: ${ev.stage.status}${ev.stage.detail ? ` (${ev.stage.detail})` : ""}`);
         } else if (ev.kind === "reply") {
           const parsed = parseResponse(ev.response);
-          setMessages((m) => [...m, { id: nextId(), from: "airlock", text: ev.response.reply, channel: "imessage", who: ev.who, parsed }]);
+          setMessages((list) => [...list, { id: nextId(), from: "airlock", text: ev.response.reply, channel: "imessage", who: ev.who, parsed }]);
           addLog("message", `Airlock replied to ${ev.who}: ${ev.response.reply.split("\n")[0]}`);
         }
       } catch { /* ignore a malformed event */ }
     });
-    return () => es.close();
+    return close;
   }, [addLog, pacer]);
 
   // Drop the confirm state when its time is up (the server enforces the real expiry).
