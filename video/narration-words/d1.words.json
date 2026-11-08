@@ -1,0 +1,182 @@
+[
+  {
+    "text": "Here's",
+    "start": 0.12,
+    "end": 0.74,
+    "id": "w0"
+  },
+  {
+    "text": "a",
+    "start": 0.74,
+    "end": 0.85,
+    "id": "w1"
+  },
+  {
+    "text": "quick",
+    "start": 0.85,
+    "end": 1.47,
+    "id": "w2"
+  },
+  {
+    "text": "demo,",
+    "start": 1.47,
+    "end": 2.13,
+    "id": "w3"
+  },
+  {
+    "text": "take",
+    "start": 2.34,
+    "end": 2.41,
+    "id": "w4"
+  },
+  {
+    "text": "one",
+    "start": 2.41,
+    "end": 2.49,
+    "id": "w5"
+  },
+  {
+    "text": "of",
+    "start": 2.62,
+    "end": 2.76,
+    "id": "w6"
+  },
+  {
+    "text": "these",
+    "start": 2.76,
+    "end": 3.1,
+    "id": "w7"
+  },
+  {
+    "text": "vulnerable",
+    "start": 3.11,
+    "end": 3.69,
+    "id": "w8"
+  },
+  {
+    "text": "smart",
+    "start": 3.88,
+    "end": 4.15,
+    "id": "w9"
+  },
+  {
+    "text": "contracts",
+    "start": 4.15,
+    "end": 4.72,
+    "id": "w10"
+  },
+  {
+    "text": "and",
+    "start": 4.88,
+    "end": 5,
+    "id": "w11"
+  },
+  {
+    "text": "click",
+    "start": 5,
+    "end": 5.27,
+    "id": "w12"
+  },
+  {
+    "text": "it.",
+    "start": 5.28,
+    "end": 6.24,
+    "id": "w13"
+  },
+  {
+    "text": "Airlock",
+    "start": 6.35,
+    "end": 6.82,
+    "id": "w14"
+  },
+  {
+    "text": "verifies",
+    "start": 6.82,
+    "end": 7.49,
+    "id": "w15"
+  },
+  {
+    "text": "that",
+    "start": 7.49,
+    "end": 7.82,
+    "id": "w16"
+  },
+  {
+    "text": "this",
+    "start": 7.82,
+    "end": 8.17,
+    "id": "w17"
+  },
+  {
+    "text": "specific",
+    "start": 8.21,
+    "end": 8.79,
+    "id": "w18"
+  },
+  {
+    "text": "smart",
+    "start": 8.86,
+    "end": 9.26,
+    "id": "w19"
+  },
+  {
+    "text": "contract",
+    "start": 9.26,
+    "end": 9.93,
+    "id": "w20"
+  },
+  {
+    "text": "is",
+    "start": 9.93,
+    "end": 9.94,
+    "id": "w21"
+  },
+  {
+    "text": "vulnerable",
+    "start": 10.12,
+    "end": 10.96,
+    "id": "w22"
+  },
+  {
+    "text": "and",
+    "start": 11.12,
+    "end": 11.24,
+    "id": "w23"
+  },
+  {
+    "text": "it",
+    "start": 11.24,
+    "end": 11.48,
+    "id": "w24"
+  },
+  {
+    "text": "won't",
+    "start": 11.48,
+    "end": 11.91,
+    "id": "w25"
+  },
+  {
+    "text": "proceed",
+    "start": 12.01,
+    "end": 12.56,
+    "id": "w26"
+  },
+  {
+    "text": "with",
+    "start": 12.67,
+    "end": 12.8,
+    "id": "w27"
+  },
+  {
+    "text": "the",
+    "start": 12.8,
+    "end": 12.98,
+    "id": "w28"
+  },
+  {
+    "text": "transaction.",
+    "start": 13.08,
+    "end": 13.68,
+    "id": "w29"
+  }
+]

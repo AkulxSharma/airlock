@@ -52,11 +52,14 @@ W1_0 = N["n3"] + DUR["n3"] + GAP  # the explainer ends, the walkthrough starts
 EXD = W1_0 - EX0
 N["d1"] = W1_0
 W1_1 = W1_0 + DUR["d1"] + GAP
-W2_0, W2_1 = W1_1, W1_1 + 10.0
+W2_0 = W1_1
+W2_1 = W2_0 + 0.3 + DUR["d2"] + GAP
 N["d2"] = W2_0 + 0.3
-W3_0, W3_1 = W2_1, W2_1 + 4.1
+W3_0 = W2_1
+W3_1 = W3_0 + 0.2 + DUR["d3"] + GAP
 N["d3"] = W3_0 + 0.2
-W4_0, W4_1 = W3_1, W3_1 + 8.2
+W4_0 = W3_1
+W4_1 = W4_0 + 0.2 + DUR["d4"] + 0.2
 N["d4"] = W4_0 + 0.2
 RU0 = W4_1
 N["d5"] = RU0 + 0.2
@@ -67,7 +70,7 @@ TITLE = 2.7
 PS0, PS1 = TITLE, EX0
 
 # footage windows inside the walkthrough recording (seconds): only the moments with action
-WALK = {"W1": 49.0, "W2": 71.0, "W3": 84.8, "W4": 91.0}
+WALK = {"W1": 49.0, "W2": 71.0, "W3": 83.7, "W4": 91.0}
 
 S = []
 add = S.append
@@ -117,7 +120,7 @@ out("#exIntroA", w2("when") - 0.2)
 out("#exIntroB", w2("when") - 0.2)
 tween("#exCap1", '{ opacity: 0, y: 14 }', RISE, w2("when"))  # "When an AI agent sends money..."
 out("#exCap1", w2("sometimes") - 0.2)
-tween("#ex1", '{ opacity: 0, y: 24 }', RISE, w2("agent") - 0.2)
+tween("#ex1", '{ opacity: 0, y: 24 }', RISE, w2("agent", 2) - 0.2)
 tween("#ex3", '{ opacity: 0, y: 24 }', RISE, w2("wallet"))
 tween("#ex2", '{ opacity: 0, y: 24 }', RISE, w2("smart"))  # "...a smart contract"
 add(f'tl.fromTo("#exL1", {{ scaleX: 0 }}, {GROW}, {t(w2("smart") + 0.15)});')
@@ -164,7 +167,6 @@ r = RU0
 tween("#ruTitle", '{ opacity: 0, y: 20 }', RISE, r + 0.2)
 for i, d in ((1, 0.8), (2, 2.4), (3, 4.0)):
     tween(f"#rc{i}", '{ opacity: 0, scale: 0.6, y: 40 }', '{ opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.8)" }', r + d)
-tween("#ruNote", '{ opacity: 0, y: 14 }', RISE, r + 5.8)
 out("#scRU", RU1 - 0.25)
 
 # ---- outro ----
@@ -191,9 +193,40 @@ SFX_ITEMS = [
 ]
 SFX = "\n      ".join(f'<audio id="sfx_{k}" data-start="{t(at)}" data-duration="{d}" data-track-index="6" data-volume="{v}" src="assets/sfx/{f}"></audio>' for k, (at, d, v, f) in enumerate(SFX_ITEMS))
 
+# ---- captions: the script text, chunked, timed to the spoken words ----
+import re
+SCRIPT = json.load(open(os.path.join(BUILD, "narration.json")))
+CAPS = []
+for line in ["n1", "n2", "n3", "d1", "d2", "d3", "d4", "d5"]:
+    sw = SCRIPT[line].split()
+    chunks, cur = [], []
+    for w in sw:
+        cur.append(w)
+        if (re.search(r"[,.:;!?]$", w) and len(cur) >= 5) or len(" ".join(cur)) >= 50:
+            chunks.append(cur)
+            cur = []
+    if cur:
+        if chunks and len(cur) < 4 and len(" ".join(chunks[-1] + cur)) <= 62:
+            chunks[-1] += cur
+        else:
+            chunks.append(cur)
+    ww = words_of(line)
+    idx = 0
+    starts = []
+    for c in chunks:
+        k = round(idx * (len(ww) - 1) / max(1, len(sw) - 1))
+        starts.append(ww[min(k, len(ww) - 1)]["start"])
+        idx += len(c)
+    starts[0] = 0.0
+    ends = starts[1:] + [ww[-1]["end"] + 0.25]
+    for c, a, b in zip(chunks, starts, ends):
+        CAPS.append((N[line] + a, N[line] + b, " ".join(c)))
+assert all(len(x[2]) <= 66 for x in CAPS), [x[2] for x in CAPS if len(x[2]) > 66]  # a caption must fit on one line
+CAPHTML = "\n      ".join(f'<div id="cap{k}" class="clip cap" data-start="{t(a)}" data-duration="{t(b - a)}" data-track-index="9"><span>{txt}</span></div>' for k, (a, b, txt) in enumerate(CAPS))
+
 HTML = open(os.path.join(BUILD, "v5_template.html")).read()
 for key, val in {
-    "@@TIMELINE@@": TIMELINE, "@@AUDIO@@": AUDIO, "@@SFX@@": SFX, "@@END@@": t(END), "@@TITLE@@": t(TITLE),
+    "@@TIMELINE@@": TIMELINE, "@@AUDIO@@": AUDIO, "@@CAPS@@": CAPHTML, "@@SFX@@": SFX, "@@END@@": t(END), "@@TITLE@@": t(TITLE),
     "@@PS0@@": t(PS0), "@@PSD@@": t(PS1 - PS0),
     "@@EX0@@": t(EX0), "@@EXD@@": t(EXD),
     "@@W0@@": t(W1_0), "@@WD@@": t(W4_1 - W1_0),

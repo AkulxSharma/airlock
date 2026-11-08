@@ -1,0 +1,128 @@
+[
+  {
+    "text": "everything",
+    "start": 0.07,
+    "end": 0.77,
+    "id": "w0"
+  },
+  {
+    "text": "runs",
+    "start": 0.77,
+    "end": 1.08,
+    "id": "w1"
+  },
+  {
+    "text": "on",
+    "start": 1.08,
+    "end": 1.23,
+    "id": "w2"
+  },
+  {
+    "text": "the",
+    "start": 1.23,
+    "end": 1.45,
+    "id": "w3"
+  },
+  {
+    "text": "sepuliar",
+    "start": 1.45,
+    "end": 2.06,
+    "id": "w4"
+  },
+  {
+    "text": "testnet",
+    "start": 2.06,
+    "end": 2.64,
+    "id": "w5"
+  },
+  {
+    "text": "with",
+    "start": 2.64,
+    "end": 3.15,
+    "id": "w6"
+  },
+  {
+    "text": "a",
+    "start": 3.15,
+    "end": 3.27,
+    "id": "w7"
+  },
+  {
+    "text": "cap",
+    "start": 3.29,
+    "end": 3.59,
+    "id": "w8"
+  },
+  {
+    "text": "on",
+    "start": 3.74,
+    "end": 3.92,
+    "id": "w9"
+  },
+  {
+    "text": "every",
+    "start": 3.92,
+    "end": 4.23,
+    "id": "w10"
+  },
+  {
+    "text": "transfer.",
+    "start": 4.33,
+    "end": 5,
+    "id": "w11"
+  },
+  {
+    "text": "ALAB",
+    "start": 5.07,
+    "end": 5.34,
+    "id": "w12"
+  },
+  {
+    "text": "gives",
+    "start": 5.42,
+    "end": 5.77,
+    "id": "w13"
+  },
+  {
+    "text": "you",
+    "start": 5.77,
+    "end": 6.03,
+    "id": "w14"
+  },
+  {
+    "text": "a",
+    "start": 6.03,
+    "end": 6.11,
+    "id": "w15"
+  },
+  {
+    "text": "risk",
+    "start": 6.11,
+    "end": 6.45,
+    "id": "w16"
+  },
+  {
+    "text": "signal,",
+    "start": 6.45,
+    "end": 7.26,
+    "id": "w17"
+  },
+  {
+    "text": "not",
+    "start": 7.26,
+    "end": 7.64,
+    "id": "w18"
+  },
+  {
+    "text": "a",
+    "start": 7.66,
+    "end": 7.79,
+    "id": "w19"
+  },
+  {
+    "text": "guarantee.",
+    "start": 7.84,
+    "end": 9,
+    "id": "w20"
+  }
+]

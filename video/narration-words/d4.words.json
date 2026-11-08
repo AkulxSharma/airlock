@@ -1,0 +1,134 @@
+[
+  {
+    "text": "And",
+    "start": 0.12,
+    "end": 0.24,
+    "id": "w0"
+  },
+  {
+    "text": "here",
+    "start": 0.33,
+    "end": 0.72,
+    "id": "w1"
+  },
+  {
+    "text": "are",
+    "start": 0.72,
+    "end": 1.03,
+    "id": "w2"
+  },
+  {
+    "text": "all",
+    "start": 1.03,
+    "end": 1.34,
+    "id": "w3"
+  },
+  {
+    "text": "the",
+    "start": 1.34,
+    "end": 1.63,
+    "id": "w4"
+  },
+  {
+    "text": "demo",
+    "start": 1.7,
+    "end": 2.06,
+    "id": "w5"
+  },
+  {
+    "text": "wallets",
+    "start": 2.06,
+    "end": 2.76,
+    "id": "w6"
+  },
+  {
+    "text": "with",
+    "start": 2.83,
+    "end": 3.12,
+    "id": "w7"
+  },
+  {
+    "text": "the",
+    "start": 3.12,
+    "end": 3.3,
+    "id": "w8"
+  },
+  {
+    "text": "balances",
+    "start": 3.3,
+    "end": 4,
+    "id": "w9"
+  },
+  {
+    "text": "so",
+    "start": 4,
+    "end": 4.19,
+    "id": "w10"
+  },
+  {
+    "text": "you",
+    "start": 4.48,
+    "end": 4.68,
+    "id": "w11"
+  },
+  {
+    "text": "can",
+    "start": 4.68,
+    "end": 4.98,
+    "id": "w12"
+  },
+  {
+    "text": "see",
+    "start": 5.08,
+    "end": 5.38,
+    "id": "w13"
+  },
+  {
+    "text": "which",
+    "start": 5.68,
+    "end": 5.8,
+    "id": "w14"
+  },
+  {
+    "text": "one",
+    "start": 5.92,
+    "end": 6,
+    "id": "w15"
+  },
+  {
+    "text": "received",
+    "start": 6.12,
+    "end": 6.91,
+    "id": "w16"
+  },
+  {
+    "text": "the",
+    "start": 6.91,
+    "end": 7.25,
+    "id": "w17"
+  },
+  {
+    "text": "money",
+    "start": 7.25,
+    "end": 7.82,
+    "id": "w18"
+  },
+  {
+    "text": "and",
+    "start": 7.82,
+    "end": 8.16,
+    "id": "w19"
+  },
+  {
+    "text": "which",
+    "start": 8.16,
+    "end": 8.7,
+    "id": "w20"
+  },
+  {
+    "text": "haven't.",
+    "start": 8.99,
+    "end": 9.9,
+    "id": "w21"
+  }
+]

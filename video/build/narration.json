@@ -1,0 +1,10 @@
+{
+  "n1": "Text Airlock from iMessage. Your message pops up live on the website, gets audited, and the answer comes back to your phone.",
+  "n2": "This is Airlock, a firewall for agentic crypto transactions. When an AI agent sends money from one wallet to another, it goes through a smart contract. Sometimes that smart contract is vulnerable, and those vulnerabilities are what we check for.",
+  "n3": "Airlock reads the contract's bytecode and, when the source is verified, its source code. The findings become a risk score, and plain code, not the AI, decides: refuse, or ask for a yes.",
+  "d1": "Here's a quick demo. Take one of these vulnerable smart contracts and click it. Airlock verifies that this specific contract is vulnerable, and it won't proceed with the transaction.",
+  "d2": "Now try a safer wallet. Airlock checks it, asks me for confirmation, and then the transaction goes through.",
+  "d3": "The transaction is real, and you can view it on Etherscan.",
+  "d4": "And here are all the demo wallets, with their balances, so you can see which ones received the money and which haven't.",
+  "d5": "Everything runs on the Sepolia testnet, with a cap on every transfer. Airlock gives you a risk signal, not a guarantee."
+}
