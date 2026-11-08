@@ -78,25 +78,29 @@ export function useWakeWord(onCommand: (text: string) => void, paused: boolean, 
     let processor: ScriptProcessorNode | null = null;
     let resume: (() => void) | null = null;
 
+    // Speech that is not addressed to Airlock is never shown (not in the panel, not in the event log).
+    // The transcript only appears once "Hey Airlock" has been heard.
     const handleText = (text: string) => {
       if (!text) return;
-      setHeard(text);
-      if (pausedRef.current) { say(`hands-free heard (ignored, busy): “${text}”`); return; }
+      if (pausedRef.current) { say("hands-free: speech ignored, Airlock is busy"); return; }
 
       if (Date.now() < awaitUntil.current) { // the command after a bare "Hey Airlock"
         awaitUntil.current = 0;
         setAwaiting(false);
         const cmd = extractWakeCommand(text).command || text;
+        setHeard(cmd);
         say(`hands-free command: “${cmd}”`);
         commandRef.current(cmd);
         return;
       }
       const wake = extractWakeCommand(text);
-      if (!wake.woke) { say(`hands-free heard (no wake phrase, ignored): “${text}”`); return; }
+      if (!wake.woke) { say("hands-free: heard speech without “Hey Airlock”, ignored and not kept"); return; }
       if (wake.command) {
+        setHeard(wake.command);
         say(`hands-free command: “${wake.command}”`);
         commandRef.current(wake.command);
       } else {
+        setHeard("");
         say("hands-free: heard “Hey Airlock”, waiting for the command");
         awaitUntil.current = Date.now() + AWAIT_MS;
         setAwaiting(true);

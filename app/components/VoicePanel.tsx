@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, Volume2, VolumeX } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import type { VoiceState } from "@/lib/useVoice";
 import type { WakeControls } from "@/lib/useWakeWord";
 
@@ -103,6 +103,18 @@ export function VoicePanel({ voice, wake }: { voice: VoiceControls; wake: WakeCo
         <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
           <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" /> Airlock voice · ElevenLabs
         </p>
+        <div className="flex items-center gap-1">
+        {wake.supported && (
+          <button
+            onClick={wake.toggle}
+            aria-label={wake.enabled ? "Mute the microphone: stop listening for Hey Airlock" : "Unmute the microphone: listen for Hey Airlock"}
+            aria-pressed={!wake.enabled}
+            title={wake.enabled ? "Listening for “Hey Airlock”. Click to mute." : "Muted. Click to listen again."}
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            {wake.enabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+          </button>
+        )}
         <button
           onClick={voice.toggleSpeak}
           aria-label={voice.speakReplies ? "Mute spoken replies" : "Unmute spoken replies"}
@@ -110,6 +122,7 @@ export function VoicePanel({ voice, wake }: { voice: VoiceControls; wake: WakeCo
         >
           {voice.speakReplies ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
         </button>
+        </div>
       </div>
     </aside>
   );
